@@ -1,0 +1,12 @@
+# Dependencies (reinstall with: npm install)
+node_modules/
+
+# Packaged copies for sending out
+*.zip
+
+# OS / editor clutter
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
