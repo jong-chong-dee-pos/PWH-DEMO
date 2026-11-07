@@ -3,7 +3,6 @@
 (function (g) {
   var PWH = g.PWH, t = PWH.t;
   var LEVEL_H = 0.5;                       // metres per rack level in the 3D view
-  var COS30 = 0.866;
   // The map is a small kit: Module 2 and Module 3 each get their own instance (own view, own state).
   function create(modeKey) {
   var M = {
@@ -11,8 +10,8 @@
     names: true, q: '', qp: '', qb: '', color: 'zone', fs: false, hl: null, results: [], partNames: new Map(),
     v: { z: 1, ox: 0, oy: 0 }, canvas: null, ctx: null, hits: [], dpr: 1, root: null, confirmRemove: false, busy: ''
   };
-  M.rot = 0;   // 3D yaw in radians (turned with the rotate buttons or Shift/right-drag)
-  try { var sm = localStorage.getItem(modeKey); if (sm === '2d' || sm === '3d') M.mode = sm; M.rot = +localStorage.getItem(modeKey + '-rot') || 0; } catch (e) {}
+  M.rot = 0; M.tilt = 0.6155;   // 3D camera: turn around the floor centre and height angle (drag on the map, or the buttons)
+  try { var sm = localStorage.getItem(modeKey); if (sm === '2d' || sm === '3d') M.mode = sm; M.rot = +localStorage.getItem(modeKey + '-rot') || 0; var tl0 = +localStorage.getItem(modeKey + '-tilt'); if (tl0) M.tilt = tl0; } catch (e) {}
   M.overlay = null;
   // floor / 2D-3D changes redraw in place (a rebuilt page would drop the real full screen)
   M.rerender = function () {
@@ -34,21 +33,25 @@
   function zoneOf(id) { var m = String(id).match(/^([0-9]*[A-Z]+)/); return m ? m[1] : String(id); }
   function zoneColor(id) { var z = zoneOf(id), h = 0; for (var i = 0; i < z.length; i++) h = (h * 31 + z.charCodeAt(i)) >>> 0; return ZONES[h % ZONES.length]; }
   function pal() {
-    return { l: { 1: '#46628a', 3: '#7a6448', 4: '#4b7a60' }, rack: '#3a4e6b', none: '#2b3a50', aisle: '#21406a', ground: '#13233a', bg: '#0c1726', outside: '#211f3d',
-      stock: '#4f8cff', ink: '#e8eef7', sel: '#ffffff', hit: '#2f86ff', hitLine: '#9cc8ff', start: '#22c55e', drop: '#3b82f6', door: '#d4a72c', lift: '#8b5cf6', exit: '#a08c5a',
-      line: 'rgba(150,180,220,0.30)', route: '#38a3ff' };
+    return { l: { 1: '#4a6fa5', 2: '#3f8f8a', 3: '#a07a45', 4: '#5b8f5f' }, rack: '#1b2b44', none: '#18263b', aisle: '#10213b', ground: '#0b1729', bg: '#060d19', outside: '#16142c',
+      grid: 'rgba(120,160,215,0.07)', lane: 'rgba(150,190,240,0.20)',
+      stock: '#5aa9ff', ink: '#e8eef7', sel: '#f2b705', hit: '#2f86ff', hitLine: '#9cc8ff', start: '#22c55e', drop: '#3b82f6', door: '#d4a72c', lift: '#8b5cf6', exit: '#a08c5a',
+      line: 'rgba(150,185,230,0.22)', route: '#38a3ff' };
   }
   function rgb(hex) { var h = hex.replace('#', ''); return [parseInt(h.substr(0, 2), 16), parseInt(h.substr(2, 2), 16), parseInt(h.substr(4, 2), 16)]; }
   function shade(hex, f, a) { var c = rgb(hex); return 'rgba(' + Math.min(255, Math.round(c[0] * f)) + ',' + Math.min(255, Math.round(c[1] * f)) + ',' + Math.min(255, Math.round(c[2] * f)) + ',' + (a == null ? 1 : a) + ')'; }
+  function mix(a, b, k, al) { var p = rgb(a), q = rgb(b); return 'rgba(' + Math.round(p[0] * k + q[0] * (1 - k)) + ',' + Math.round(p[1] * k + q[1] * (1 - k)) + ',' + Math.round(p[2] * k + q[2] * (1 - k)) + ',' + (al == null ? 1 : al) + ')'; }
 
   // ---------- projection ----------
+  // 2D: plan view.  3D: orthographic orbit camera; M.rot = turn around the floor centre, M.tilt = camera height angle.
+  var TILT0 = 0.6155, TILT_MIN = 0.2, TILT_MAX = 1.5;
   function P(x, y, z) {
     var v = M.v;
     if (M.mode === '2d') return [x * v.z + v.ox, y * v.z + v.oy];
     if (M.rot) { var q = rot(x, y); x = q[0]; y = q[1]; }
-    return [((x - y) * COS30) * v.z + v.ox, ((x + y) * 0.5 - (z || 0)) * v.z + v.oy];
+    var st = Math.sin(M.tilt), ct = Math.cos(M.tilt);
+    return [((x - y) * 0.7071) * v.z + v.ox, (((x + y) * 0.7071) * st - (z || 0) * ct * 0.866) * v.z + v.oy];
   }
-  // turn floor coordinates around the floor centre (3D only)
   function rot(x, y) {
     var f = floorObj(), b = f ? f.bbox : [0, 0, 0, 0], cx = (b[0] + b[2]) / 2, cy = (b[1] + b[3]) / 2, c = Math.cos(M.rot), s2 = Math.sin(M.rot), dx = x - cx, dy = y - cy;
     return [cx + dx * c - dy * s2, cy + dx * s2 + dy * c];
@@ -58,32 +61,49 @@
     var tau = Math.PI * 2; M.rot = ((a % tau) + tau) % tau; if (Math.abs(M.rot) < 1e-3 || Math.abs(M.rot - tau) < 1e-3) M.rot = 0;
     try { localStorage.setItem(modeKey + '-rot', String(M.rot)); } catch (e) {}
   }
-  // space the map must leave free: toolbar and side panel in full screen, legend, Module 3 dock
+  function setTilt(a) { M.tilt = Math.max(TILT_MIN, Math.min(TILT_MAX, a)); try { localStorage.setItem(modeKey + '-tilt', String(M.tilt)); } catch (e) {} }
+  // space the map must leave free: floating toolbar, side panel in full screen, legend, Module 3 dock
   function insets() {
     var o = { l: 0, t: 0, r: 0, b: 0 }; if (!M.root) return o;
     var leg = M.root.querySelector('#m2legend'); if (leg) o.b = leg.offsetHeight + 16;
+    var box = M.root.querySelector('[data-fsbox]'), tool = box && box.querySelector('.m2tool');
+    if (tool) o.t = tool.offsetTop + tool.offsetHeight + 40;           // toolbar + floor tag under it
+    else if (M.fs && box && box.querySelector('.m2bar')) { var b2 = box.querySelector('.m2bar'); o.t = b2.offsetTop + b2.offsetHeight + 8; }
     if (M.fs) {
-      var tool = M.root.querySelector('[data-fsbox] .m2tool, [data-fsbox] .m2bar'); if (tool) o.t = tool.offsetTop + tool.offsetHeight + 8;
       var sd = M.root.querySelector('.m2side:not([hidden])'); if (sd) o.r = sd.offsetWidth + 20;
       var dk = M.root.querySelector('.m3dock:not([hidden])'); if (dk) o.b = Math.max(o.b, dk.offsetHeight + 16);
-    } else o.t = 40;   // floor / rack count tag in the top-left corner
+    }
     return o;
   }
   function floorObj() { return M.layout && M.layout.floors[M.floor]; }
   function levelPx() { return LEVEL_H * M.layout.scale; }
-  function fit() {
-    var f = floorObj(); if (!f || !M.canvas) return;
+  function fitView() {
+    var f = floorObj(); if (!f || !M.canvas) return null;
     var cw = M.canvas.clientWidth, ch = M.canvas.clientHeight, b = f.bbox, maxH = f.racks.reduce(function (a, r) { return Math.max(a, r.levels || 1); }, 1) * levelPx();
-    M.v = { z: 1, ox: 0, oy: 0 };
+    var keep = M.v; M.v = { z: 1, ox: 0, oy: 0 };
     var xs = [], ys = [];
     [[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]]].forEach(function (c) {
       [0, M.mode === '3d' ? maxH : 0].forEach(function (z) { var p = P(c[0], c[1], z); xs.push(p[0]); ys.push(p[1]); });
     });
+    M.v = keep;
     var minx = Math.min.apply(null, xs), maxx = Math.max.apply(null, xs), miny = Math.min.apply(null, ys), maxy = Math.max.apply(null, ys);
     var o = insets(), aw = cw - o.l - o.r, ah = ch - o.t - o.b;
-    var z = Math.min((aw - 32) / (maxx - minx), (ah - 24) / (maxy - miny));
-    M.v = { z: z, ox: o.l + (aw - (maxx - minx) * z) / 2 - minx * z, oy: o.t + (ah - (maxy - miny) * z) / 2 - miny * z };
-    M.fitZ = z;
+    var z = Math.min((aw - 32) / (maxx - minx), (ah - 16) / (maxy - miny));
+    return { z: z, ox: o.l + (aw - (maxx - minx) * z) / 2 - minx * z, oy: o.t + (ah - (maxy - miny) * z) / 2 - miny * z };
+  }
+  function fit() { var v = fitView(); if (v) { M.v = v; M.fitZ = v.z; } }
+  // glide the view to a new fit (used when the full-screen side panel opens or closes)
+  function glideFit() {
+    var to = fitView(); if (!to) return; M.fitZ = to.z;
+    var from = { z: M.v.z, ox: M.v.ox, oy: M.v.oy }, t0 = performance.now(), dur = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 320;
+    if (!dur) { M.v = to; draw(); return; }
+    M.glide = t0;
+    (function step(now) {
+      if (M.glide !== t0) return;
+      var k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
+      M.v = { z: from.z * Math.pow(to.z / from.z, e), ox: from.ox + (to.ox - from.ox) * e, oy: from.oy + (to.oy - from.oy) * e }; draw();
+      if (k < 1) requestAnimationFrame(step);
+    })(t0);
   }
 
   // ---------- drawing ----------
@@ -94,121 +114,182 @@
     if (fill) { c.fillStyle = fill; c.fill(); }
     if (stroke) { c.strokeStyle = stroke; c.lineWidth = lw || 1; c.stroke(); }
   }
+  function line(a, b, col, lw, dash) { var c = M.ctx; c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.strokeStyle = col; c.lineWidth = lw || 1; if (dash) c.setLineDash(dash); c.stroke(); if (dash) c.setLineDash([]); }
   function rectPts(o, z) { return [P(o.x, o.y, z), P(o.x + o.w, o.y, z), P(o.x + o.w, o.y + o.h, z), P(o.x, o.y + o.h, z)]; }
+  function rr(x, y, w, h, r) { var c = M.ctx; c.beginPath(); if (c.roundRect) c.roundRect(x, y, w, h, r); else c.rect(x, y, w, h); }
   function label(txt, p, color, bg, size) {
     var c = M.ctx; c.font = '600 ' + size + 'px "IBM Plex Sans Thai", system-ui, sans-serif';
-    var w = c.measureText(txt).width + 10, h = size + 6;
-    c.fillStyle = bg; c.beginPath(); if (c.roundRect) c.roundRect(p[0] - w / 2, p[1] - h / 2, w, h, 4); else c.rect(p[0] - w / 2, p[1] - h / 2, w, h); c.fill();
+    var w = c.measureText(txt).width + 12, h = size + 8;
+    c.save(); c.shadowColor = 'rgba(0,0,0,0.45)'; c.shadowBlur = 8; c.shadowOffsetY = 2; c.fillStyle = bg; rr(p[0] - w / 2, p[1] - h / 2, w, h, h / 2); c.fill(); c.restore();
     c.fillStyle = color; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, p[0], p[1] + 0.5);
   }
   function occOf(r) { return M.match && M.match.occ.get(r.id); }
   function stockLevels(r) { var o = occOf(r); return o ? Object.keys(o).map(Number).filter(function (l) { return l >= 1 && l <= r.levels; }) : []; }
-
-  // side faces of a box with the light/visibility for the current turn
+  // side faces of a box that point at the viewer for the current turn, with their light
   var SIDES = [[0, 1, 0, -1], [1, 2, 1, 0], [2, 3, 0, 1], [3, 0, -1, 0]];
   function faces(o) {
     var c = [[o.x, o.y], [o.x + o.w, o.y], [o.x + o.w, o.y + o.h], [o.x, o.y + o.h]], out = [];
     SIDES.forEach(function (sd) {
       var n = M.rot ? rotN(sd[2], sd[3]) : [sd[2], sd[3]];
-      if (n[0] + n[1] > 0.001) out.push({ p: c[sd[0]], q: c[sd[1]], lit: 0.88 + 0.08 * (n[1] - n[0]) });
+      if (n[0] + n[1] > 0.001) out.push({ p: c[sd[0]], q: c[sd[1]], lit: 0.82 + 0.12 * (n[1] - n[0]) });
     });
     return out;
   }
   function wall(fc, z0, z1) { return [P(fc.p[0], fc.p[1], z0), P(fc.q[0], fc.q[1], z0), P(fc.q[0], fc.q[1], z1), P(fc.p[0], fc.p[1], z1)]; }
-  // rack names: only the first two racks of each row segment (left / top end), the rest on hover or when zoomed in
-  function labelSet(f) {
-    if (f._lab) return f._lab;
-    var by = {}, set = new Set();
+  // rows: racks with the same zone code (1N, K, 3L ...) in one straight run; each run gets one zone sign at its start
+  function rowsOf(f) {
+    if (f._rows) return f._rows;
+    var by = {}, rows = [];
     f.racks.forEach(function (r) { var k = zoneOf(r.id); (by[k] = by[k] || []).push(r); });
     Object.keys(by).forEach(function (k) {
       var g2 = by[k], xs = g2.map(function (r) { return r.x; }), ys = g2.map(function (r) { return r.y; });
       var horiz = (Math.max.apply(null, xs) - Math.min.apply(null, xs)) >= (Math.max.apply(null, ys) - Math.min.apply(null, ys));
       var A = horiz ? 'x' : 'y', B = horiz ? 'y' : 'x', LA = horiz ? 'w' : 'h', LB = horiz ? 'h' : 'w';
       g2.sort(function (a, b2) { return Math.abs(a[B] - b2[B]) > a[LB] * 0.5 ? a[B] - b2[B] : a[A] - b2[A]; });
-      var n = 0;
+      var cur = null;
       g2.forEach(function (r, i) {
         var pr = g2[i - 1], brk = !pr || Math.abs(r[B] - pr[B]) > r[LB] * 0.5 || r[A] - (pr[A] + pr[LA]) > Math.min(r[LA], pr[LA]) * 0.6;
-        if (brk) n = 0;
-        if (n < 2) set.add(r.id);
-        n++;
+        if (brk) { cur = { zone: k, horiz: horiz, racks: [] }; rows.push(cur); }
+        cur.racks.push(r);
       });
     });
-    f._lab = set; return set;
+    rows.forEach(function (w) {
+      var x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity, lv = 1;
+      w.racks.forEach(function (r) { x0 = Math.min(x0, r.x); y0 = Math.min(y0, r.y); x1 = Math.max(x1, r.x + r.w); y1 = Math.max(y1, r.y + r.h); lv = Math.max(lv, r.levels || 1); });
+      w.box = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 }; w.lv = lv; w.col = zoneColor(w.racks[0].id); w.sign = true;
+    });
+    // short runs (3 racks or fewer) of one zone that sit close together share a single sign
+    var byZ = {}; rows.forEach(function (w) { (byZ[w.zone] = byZ[w.zone] || []).push(w); });
+    Object.keys(byZ).forEach(function (k) {
+      var list = byZ[k].filter(function (w) { return w.racks.length <= 3; }); if (list.length < 2) return;
+      var rk = list[0].racks[0], near = Math.max(rk.w, rk.h) * 3;
+      list.sort(function (a, b2) { return (a.box.x + a.box.y) - (b2.box.x + b2.box.y); });
+      var keep = [];
+      list.forEach(function (w) {
+        var close = keep.some(function (q) { return w.box.x < q.box.x + q.box.w + near && w.box.x + w.box.w > q.box.x - near && w.box.y < q.box.y + q.box.h + near && w.box.y + w.box.h > q.box.y - near; });
+        if (close) w.sign = false; else keep.push(w);
+        if (close) keep.push(w);
+      });
+    });
+    f._rows = rows; return rows;
   }
+  function numOf(id) { var m = String(id).match(/-(\d+)$/); return m ? m[1] : String(id); }
+  // a zone sign: solid pill in the zone colour with the zone code in dark type
+  function zoneSign(txt, p, col, size, lead) {
+    var c = M.ctx; c.font = '700 ' + size + 'px "IBM Plex Mono", ui-monospace, monospace';
+    var w = Math.max(size * 1.9, c.measureText(txt).width + size * 0.9), h = size + 7, x = p[0] - w / 2, y = p[1] - h / 2;
+    if (lead) { line([p[0], p[1] + h / 2], lead, shade(col, 1, 0.8), 1.2); c.beginPath(); c.arc(lead[0], lead[1], 2.2, 0, 7); c.fillStyle = col; c.fill(); }
+    c.save(); c.shadowColor = shade(col, 1, 0.55); c.shadowBlur = 10; c.fillStyle = col; rr(x, y, w, h, 5); c.fill(); c.restore();
+    c.fillStyle = 'rgba(6,13,25,0.92)'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, p[0], p[1] + 0.5);
+    return [x, y, w, h];
+  }
+
   function draw() {
     var c = M.ctx, f = floorObj(); if (!c || !f) return;
     var cw = M.canvas.clientWidth, ch = M.canvas.clientHeight, C = pal();
     c.setTransform(M.dpr, 0, 0, M.dpr, 0, 0);
-    c.fillStyle = C.bg; c.fillRect(0, 0, cw, ch);
+    var bgG = c.createRadialGradient(cw * 0.5, ch * 0.45, 0, cw * 0.5, ch * 0.45, Math.max(cw, ch) * 0.75);
+    bgG.addColorStop(0, '#0b1a30'); bgG.addColorStop(1, C.bg); c.fillStyle = bgG; c.fillRect(0, 0, cw, ch);
     M.hits = [];
+    var d3 = M.mode === '3d', lp = levelPx(), z = M.v.z, sc = M.layout.scale || 30;
     var b = f.bbox, pad = 14, plate = { x: b[0] - pad, y: b[1] - pad, w: b[2] - b[0] + 2 * pad, h: b[3] - b[1] + 2 * pad };
-    poly(rectPts(plate, 0), C.ground, C.line, 1);
+    // floor plate with a 2 m grid
+    if (d3) { var sh = rectPts({ x: plate.x + 10, y: plate.y + 10, w: plate.w, h: plate.h }, -18); poly(sh, 'rgba(0,0,0,0.35)'); }
+    poly(rectPts(plate, 0), C.ground, 'rgba(120,165,225,0.28)', 1);
+    var gs = sc * 2; if (gs * z >= 7) {
+      for (var gx = Math.ceil(plate.x / gs) * gs; gx <= plate.x + plate.w; gx += gs) line(P(gx, plate.y, 0), P(gx, plate.y + plate.h, 0), C.grid, 1);
+      for (var gy = Math.ceil(plate.y / gs) * gs; gy <= plate.y + plate.h; gy += gs) line(P(plate.x, gy, 0), P(plate.x + plate.w, gy, 0), C.grid, 1);
+    }
     f.outside.forEach(function (o) { poly(rectPts(o, 0), C.outside); });
-    f.aisles.forEach(function (o) { poly(rectPts(o, 0), C.aisle); });
-    var d3 = M.mode === '3d', lp = levelPx(), z = M.v.z;
-    // markers lie flat on the floor
+    // aisles: darker lanes with a dashed centre line (forklift lanes)
+    f.aisles.forEach(function (o) {
+      poly(rectPts(o, 0), C.aisle);
+      if (Math.min(o.w, o.h) * z >= 10) {
+        var a1 = o.w >= o.h ? [o.x + 4, o.y + o.h / 2] : [o.x + o.w / 2, o.y + 4], a2 = o.w >= o.h ? [o.x + o.w - 4, o.y + o.h / 2] : [o.x + o.w / 2, o.y + o.h - 4];
+        line(P(a1[0], a1[1], 0), P(a2[0], a2[1], 0), C.lane, 1, [6, 6]);
+      }
+    });
+    // markers lie flat on the floor with a soft glow
     f.markers.forEach(function (m) {
       var col = C[m.type] || C.door;
-      poly(rectPts(m, 0), shade(col, 1, 0.9), null);
+      c.save(); c.shadowColor = col; c.shadowBlur = 14; poly(rectPts(m, 0), shade(col, 1, 0.85), shade(col, 1.25, 0.9), 1); c.restore();
     });
+    var rows = rowsOf(f), allNums = M.fitZ && z >= M.fitZ * 2.2;
     // racks
     var racks = f.racks.slice();
     if (d3) racks.sort(function (a, b2) { var p = rot(a.x + a.w / 2, a.y + a.h / 2), q = rot(b2.x + b2.w / 2, b2.y + b2.h / 2); return (p[0] + p[1]) - (q[0] + q[1]); });
-    var labs = labelSet(f), allNames = M.fitZ && z >= M.fitZ * 2.2;
+    if (d3) racks.forEach(function (r) { poly(rectPts({ x: r.x - 1, y: r.y - 1, w: r.w + 2, h: r.h + 2 }, 0), 'rgba(0,0,0,0.38)'); });   // contact shadows
     racks.forEach(function (r) {
-      var base = M.color === 'levels' ? (C.l[r.levels] || C.none) : C.rack, sl = stockLevels(r), H = r.levels * lp;
-      if (M.color === 'stock') base = sl.length ? C.stock : C.none;
+      var zc = zoneColor(r.id), sl = stockLevels(r), H = r.levels * lp, has = sl.length > 0;
+      var tint = M.color === 'levels' ? (C.l[r.levels] || C.l[1]) : M.color === 'stock' ? (has ? C.stock : '#33455f') : zc;
+      var k = M.color === 'stock' ? (has ? 0.55 : 0.12) : M.color === 'levels' ? 0.6 : 0.16;
       var hit = { id: r.id, polys: [] };
       if (!d3) {
-        var rp = rectPts(r, 0), op = sl.length / r.levels;
-        poly(rp, M.color === 'stock' ? shade(base, 1, sl.length ? 0.35 + 0.65 * op : 1) : shade(base, 1, 1), C.line, 1);
-        if (M.color === 'zone') {   // thin zone strip along the long edge
-          var sw = Math.max(1.5, 3.5 / z), sx = r.w >= r.h ? { x: r.x, y: r.y, w: r.w, h: Math.min(r.h * 0.2, sw) } : { x: r.x, y: r.y, w: Math.min(r.w * 0.2, sw), h: r.h };
-          poly(rectPts(sx, 0), zoneColor(r.id));
+        var gap = Math.min(1.2 / z, Math.min(r.w, r.h) * 0.08), rp = rectPts({ x: r.x + gap, y: r.y + gap, w: r.w - 2 * gap, h: r.h - 2 * gap }, 0);
+        var tl = rp[0], br = rp[2], rad = Math.min(3, (br[0] - tl[0]) * 0.2, (br[1] - tl[1]) * 0.2);
+        var gr = c.createLinearGradient(0, tl[1], 0, br[1]); gr.addColorStop(0, mix(tint, '#1a2a43', k + 0.08)); gr.addColorStop(1, mix(tint, '#122036', k));
+        c.fillStyle = gr; rr(tl[0], tl[1], br[0] - tl[0], br[1] - tl[1], Math.max(0, rad)); c.fill();
+        c.strokeStyle = shade(tint, 1, M.color === 'zone' ? 0.42 : 0.55); c.lineWidth = 1; c.stroke();
+        if (M.color === 'zone') {   // bright zone edge along the long side
+          var sw = Math.max(1.5, 2.5 / z), sx = r.w >= r.h ? { x: r.x + gap, y: r.y + gap, w: r.w - 2 * gap, h: Math.min(r.h * 0.22, sw) } : { x: r.x + gap, y: r.y + gap, w: Math.min(r.w * 0.22, sw), h: r.h - 2 * gap };
+          poly(rectPts(sx, 0), zc);
+        }
+        if (has && M.color !== 'stock') {   // stock pips: one dot per level that holds stock
+          var cx2 = (tl[0] + br[0]) / 2, cy2 = br[1] - Math.min(6, (br[1] - tl[1]) * 0.28), dr = Math.min(2.2, (br[1] - tl[1]) * 0.12);
+          if (dr >= 1) sl.forEach(function (l, i) { c.beginPath(); c.arc(cx2 + (i - (sl.length - 1) / 2) * dr * 3, cy2, dr, 0, 7); c.fillStyle = 'rgba(160,205,255,0.85)'; c.fill(); });
         }
         hit.polys.push(rp);
+        if (M.names && allNums) {
+          var fs = Math.min(12, (br[0] - tl[0]) * 0.45, (br[1] - tl[1]) * 0.5);
+          if (fs >= 7) { c.font = '500 ' + fs.toFixed(1) + 'px "IBM Plex Mono", monospace'; c.fillStyle = 'rgba(232,238,247,0.72)'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(numOf(r.id), (tl[0] + br[0]) / 2, (tl[1] + br[1]) / 2); }
+        }
       } else {
-        // glass-like rack seen from the current turn: only the side faces that point at the viewer are drawn
-        var fb = M.color === 'stock' ? C.none : base, a = M.color === 'stock' && !sl.length ? 0.35 : 0.55;
-        sl.forEach(function (l) {   // stock cubes inside, one per level that holds stock
-          var inx = r.w * 0.18, iny = r.h * 0.18, cb = { x: r.x + inx, y: r.y + iny, w: r.w - 2 * inx, h: r.h - 2 * iny }, z0 = (l - 1) * lp + 1, z1 = z0 + lp * 0.78;
-          faces(cb).forEach(function (fc) { poly(wall(fc, z0, z1), shade(C.stock, fc.lit * 0.88)); });
-          poly(rectPts(cb, z1), shade(C.stock, 1.12));
+        // glass rack: tinted glass walls, bright zone-coloured edges, stock as solid blocks inside
+        var gh = rgbHex(mix(tint, '#1b2c47', k + 0.22)), ga = M.color === 'stock' && !has ? 0.28 : 0.42, glass = shade(gh, 1.05, ga);
+        sl.forEach(function (l) {
+          var inx = r.w * 0.16, iny = r.h * 0.16, cb = { x: r.x + inx, y: r.y + iny, w: r.w - 2 * inx, h: r.h - 2 * iny }, z0 = (l - 1) * lp + lp * 0.06, z1 = z0 + lp * 0.74;
+          faces(cb).forEach(function (fc) { poly(wall(fc, z0, z1), shade(C.stock, fc.lit * 0.9, 0.95)); });
+          poly(rectPts(cb, z1), shade(C.stock, 1.18, 0.98));
         });
-        if (M.color === 'zone') { var sw3 = Math.max(1.5, 3.5 / z), fz = r.w >= r.h ? { x: r.x, y: r.y + r.h, w: r.w, h: Math.min(r.h * 0.25, sw3) } : { x: r.x + r.w, y: r.y, w: Math.min(r.w * 0.25, sw3), h: r.h }; poly(rectPts(fz, 0), zoneColor(r.id)); }
-        var top = rectPts(r, H);
+        var top = rectPts(r, H), edge = shade(M.color === 'zone' ? zc : tint, 1.1, 0.75);
         faces(r).forEach(function (fc) {
-          var wp = wall(fc, 0, H); poly(wp, shade(fb, fc.lit, a), C.line, 0.8); hit.polys.push(wp);
-          for (var k = 1; k < r.levels; k++) poly([P(fc.p[0], fc.p[1], k * lp), P(fc.q[0], fc.q[1], k * lp)], null, C.line, 0.7);   // shelf boards
+          var wp = wall(fc, 0, H); poly(wp, shade(gh, fc.lit, ga), null); hit.polys.push(wp);
+          for (var kk = 1; kk < r.levels; kk++) line(P(fc.p[0], fc.p[1], kk * lp), P(fc.q[0], fc.q[1], kk * lp), 'rgba(170,200,240,0.28)', 0.8);
+          line(P(fc.p[0], fc.p[1], 0), P(fc.p[0], fc.p[1], H), edge, 1); line(P(fc.q[0], fc.q[1], 0), P(fc.q[0], fc.q[1], H), edge, 1);
         });
-        poly(top, shade(fb, 1.08, Math.min(1, a + 0.2)), C.line, 0.8);
+        poly(top, glass, edge, 1.2);
         hit.polys.unshift(top);
       }
       M.hits.push(hit);
-      if (M.names && (allNames || labs.has(r.id))) {
-        var cw2 = r.w * z * (d3 ? 0.8 : 1), ch2 = r.h * z * (d3 ? 0.55 : 1), len = String(r.id).length;
-        var fs = Math.min(d3 ? 12 : 13, cw2 * 0.92 / (len * 0.62), ch2 * 0.72);
-        if (fs >= 6) {
-          var tp = d3 ? P(r.x + r.w / 2, r.y + r.h / 2, H) : P(r.x + r.w / 2, r.y + r.h / 2, 0);
-          c.font = '500 ' + fs.toFixed(1) + 'px "IBM Plex Mono", monospace';
-          c.fillStyle = C.ink; c.globalAlpha = 0.78; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(r.id, tp[0], tp[1]); c.globalAlpha = 1;
-        }
-      }
     });
+    // zone signs: one per row run, at its start (left / top end), floating above the racks in 3D
+    if (M.names) {
+      var placed = [];
+      rows.forEach(function (w) {
+        if (!w.sign) return;
+        var bx = w.box, size = Math.max(10, Math.min(14, (w.horiz ? bx.h : bx.w) * z * 0.7));
+        var anchor = w.horiz ? [bx.x, bx.y + bx.h / 2] : [bx.x + bx.w / 2, bx.y], p;
+        if (d3) { var a3 = P(anchor[0], anchor[1], w.lv * lp); p = [a3[0], a3[1] - 16]; var lead = a3; }
+        else { var a2 = P(anchor[0], anchor[1], 0); p = w.horiz ? [a2[0] - size * 1.3, a2[1]] : [a2[0], a2[1] - size * 0.95]; }
+        var est = [p[0] - size, p[1] - size * 0.6, size * 2, size * 1.2];
+        if (placed.some(function (q) { return est[0] < q[0] + q[2] && est[0] + est[2] > q[0] && est[1] < q[1] + q[3] && est[1] + est[3] > q[1]; })) { if (w.horiz) p = [p[0] - size * 2.2, p[1]]; }
+        placed.push(zoneSign(w.zone, p, w.col, size, d3 ? lead : null));
+      });
+    }
     // racks found by the search
     if (M.hl && M.hl.size) {
       f.racks.forEach(function (r) {
         if (!M.hl.has(r.id)) return;
         var H3 = d3 ? r.levels * lp : 0;
-        c.save(); c.shadowColor = C.hit; c.shadowBlur = 12; poly(rectPts(r, H3), 'rgba(47,134,255,0.85)', C.hitLine, 2); c.restore();
-        if (M.names) { var tq = P(r.x + r.w / 2, r.y + r.h / 2, H3), fq = Math.max(9, Math.min(13, r.w * z / (String(r.id).length * 0.62))); c.font = '600 ' + fq + 'px "IBM Plex Mono", monospace'; c.fillStyle = '#ffffff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(r.id, tq[0], tq[1]); }
+        c.save(); c.shadowColor = C.hit; c.shadowBlur = 14; poly(rectPts(r, H3), 'rgba(47,134,255,0.85)', C.hitLine, 2); c.restore();
+        if (r.id === M.sel) return;
+        var tq = P(r.x + r.w / 2, r.y + r.h / 2, H3), fq = Math.max(9, Math.min(13, r.w * z / (String(r.id).length * 0.62))); c.font = '600 ' + fq + 'px "IBM Plex Mono", monospace'; c.fillStyle = '#ffffff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(r.id, tq[0], tq[1]);
       });
     }
     // marker labels on top
     f.markers.forEach(function (m) {
       var col = C[m.type] || C.door, mid = P(m.x + m.w / 2, m.y + m.h / 2, d3 ? 26 : 0);
-      var name = t('m2.mk.' + m.type);
-      label(name, mid, '#ffffff', shade(col, 0.95), 11);
+      label(t('m2.mk.' + m.type), mid, '#ffffff', shade(col, 0.9), 11);
     });
     // selection / hover outlines
     [[M.hover, 1.5], [M.sel, 3]].forEach(function (pair) {
@@ -218,15 +299,17 @@
       if (!r || r.floor !== f.id) return;
       var H2 = d3 ? r.levels * lp : 0;
       if (pair[0] === M.sel && pair[1] === 3) {
-        c.save(); c.shadowColor = C.hit; c.shadowBlur = 14; poly(rectPts(r, H2), 'rgba(47,134,255,0.55)', C.sel, 3); c.restore();
-        var ts = P(r.x + r.w / 2, r.y + r.h / 2, H2), fsz = Math.max(10, Math.min(14, r.w * z / (String(r.id).length * 0.62)));
-        c.font = '700 ' + fsz + 'px "IBM Plex Mono", monospace'; c.fillStyle = '#ffffff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(r.id, ts[0], ts[1]);
+        if (d3) faces(r).forEach(function (fc) { poly(wall(fc, 0, H2), 'rgba(242,183,5,0.22)', C.sel, 1.5); });
+        c.save(); c.shadowColor = C.sel; c.shadowBlur = 16; poly(rectPts(r, H2), 'rgba(242,183,5,0.35)', C.sel, 2.5); c.restore();
+        var ts = P(r.x + r.w / 2, r.y + r.h / 2, H2);
+        label(r.id, [ts[0], ts[1] - (d3 ? 18 : 0) - 14], '#060d19', C.sel, 12);
       }
-      else poly(rectPts(r, H2), null, 'rgba(255,255,255,0.7)', pair[1]);
-      if (d3) poly(rectPts(r, 0), null, C.sel, pair[1]);
+      else poly(rectPts(r, H2), null, 'rgba(255,255,255,0.75)', pair[1]);
     });
     if (M.overlay) M.overlay(c, P, f, { d3: d3, lp: lp, z: z, pal: C });
+    var cmp = M.root && M.root.querySelector('#m2cmp'); if (cmp) cmp.style.transform = 'rotate(' + (-M.rot * 180 / Math.PI + 45) + 'deg)';
   }
+  function rgbHex(rgba) { var m = rgba.match(/\d+/g); return '#' + [m[0], m[1], m[2]].map(function (n) { return (+n < 16 ? '0' : '') + (+n).toString(16); }).join(''); }
 
   // ---------- hit testing ----------
   function inPoly(p, pts) {
@@ -384,7 +467,12 @@
     return '<b>' + esc(t('m2.cnt.here', { f: f.id.slice(1), n: nf(f.racks.length) })) + '</b>' + (L.floors.length > 1 ? '<span>' + esc(t('m2.cnt.all', { n: nf(n) })) + '</span>' : '');
   }
   function rotCtl() {
-    return '<div class="m2rot" id="m2rot"' + (M.mode === '3d' ? '' : ' hidden') + ' title="' + esc(t('m2.rot.tip')) + '"><button class="btn ic" data-m2="rot" data-v="-1" aria-label="' + esc(t('m2.rot.l')) + '">⟲</button><button class="btn" data-m2="rot" data-v="0">' + esc(t('m2.rot.reset')) + '</button><button class="btn ic" data-m2="rot" data-v="1" aria-label="' + esc(t('m2.rot.r')) + '">⟳</button></div>';
+    var needle = '<svg id="m2cmp" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-opacity=".35"/><path d="M12 3l3 9h-6z" fill="#f2b705"/><path d="M12 21l-3-9h6z" fill="currentColor" fill-opacity=".55"/></svg>';
+    return '<div class="m2rot" id="m2rot"' + (M.mode === '3d' ? '' : ' hidden') + ' title="' + esc(t('m2.rot.tip')) + '">' +
+      '<button class="btn ic" data-m2="rot" data-v="-1" aria-label="' + esc(t('m2.rot.l')) + '" title="' + esc(t('m2.rot.l')) + '">⟲</button>' +
+      '<button class="btn ic m2cmpb" data-m2="rot" data-v="0" aria-label="' + esc(t('m2.rot.reset')) + '" title="' + esc(t('m2.rot.reset')) + '">' + needle + '</button>' +
+      '<button class="btn ic" data-m2="rot" data-v="1" aria-label="' + esc(t('m2.rot.r')) + '" title="' + esc(t('m2.rot.r')) + '">⟳</button>' +
+      '<span class="m2rsep"></span><button class="btn ic" data-m2="tilt" data-v="1" aria-label="' + esc(t('m2.tilt.up')) + '" title="' + esc(t('m2.tilt.up')) + '">⤒</button><button class="btn ic" data-m2="tilt" data-v="-1" aria-label="' + esc(t('m2.tilt.down')) + '" title="' + esc(t('m2.tilt.down')) + '">⤓</button></div>';
   }
   function warnBar() {
     var s = M.match && M.match.stat; if (!s) return '';
@@ -467,14 +555,14 @@
   function wireMap() {
     M.canvas = $('#m2cv'); M.ctx = M.canvas.getContext('2d');
     var drag = null, tip = $('#m2tip');
-    M.canvas.addEventListener('pointerdown', function (e) { M.canvas.setPointerCapture(e.pointerId); drag = { x: e.clientX, y: e.clientY, ox: M.v.ox, oy: M.v.oy, moved: false, turn: M.mode === '3d' && (e.shiftKey || e.button === 2), r0: M.rot }; });
+    M.canvas.addEventListener('pointerdown', function (e) { M.canvas.setPointerCapture(e.pointerId); drag = { x: e.clientX, y: e.clientY, ox: M.v.ox, oy: M.v.oy, moved: false, turn: M.mode === '3d' && e.button === 0 && !e.shiftKey, r0: M.rot, t0: M.tilt }; M.glide = 0; });
     M.canvas.addEventListener('contextmenu', function (e) { if (M.mode === '3d') e.preventDefault(); });
     M.canvas.addEventListener('pointermove', function (e) {
       var rc = M.canvas.getBoundingClientRect(), px = e.clientX - rc.left, py = e.clientY - rc.top;
       if (drag) {
         var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
         if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
-        if (drag.moved && drag.turn) { turnTo(drag.r0 + dx * 0.006); tip.hidden = true; return; }
+        if (drag.moved && drag.turn) { orbit(drag.r0 + dx * 0.006, drag.t0 + dy * 0.005); M.canvas.style.cursor = 'grabbing'; tip.hidden = true; return; }
         if (drag.moved) { M.v.ox = drag.ox + dx; M.v.oy = drag.oy + dy; draw(); tip.hidden = true; return; }
       }
       var id = hitAt(px, py);
@@ -489,9 +577,8 @@
     M.canvas.addEventListener('pointerup', function (e) {
       if (drag && !drag.moved) {
         var rc = M.canvas.getBoundingClientRect(), id = hitAt(e.clientX - rc.left, e.clientY - rc.top);
-        M.sel = id; side(!!id);
-        if (id && M.fs) { var o = insets(), cw = M.canvas.clientWidth, px = e.clientX - rc.left; if (px > cw - o.r - 30) M.v.ox -= px - (cw - o.r) / 2; }
-        draw();
+        var wasOpen = !!(M.sel || M.q); M.sel = id; side(!!id);
+        if (M.fs && wasOpen !== !!(M.sel || M.q)) glideFit(); else draw();   // full screen: map slides left of the panel and shows whole
       }
       drag = null;
     });
@@ -546,16 +633,18 @@
   M.toggleFs = function () { toggleFs(null); };
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && M.fs && !document.fullscreenElement && M.root && document.body.contains(M.root)) { var a = document.activeElement; if (a && /^(INPUT|SELECT)$/.test(a.tagName) && a.value) return; toggleFs(null); } });
   // turn the 3D view about the floor centre, keeping that centre where it is on screen
-  function turnTo(a) {
+  function orbit(a, tl) {
     var f = floorObj(); if (!f) return; var b = f.bbox, cx = (b[0] + b[2]) / 2, cy = (b[1] + b[3]) / 2, p0 = P(cx, cy, 0);
-    setRot(a); var p1 = P(cx, cy, 0); M.v.ox += p0[0] - p1[0]; M.v.oy += p0[1] - p1[1]; draw();
+    setRot(a); if (tl != null) setTilt(tl); var p1 = P(cx, cy, 0); M.v.ox += p0[0] - p1[0]; M.v.oy += p0[1] - p1[1]; draw();
   }
+  function turnTo(a) { orbit(a, null); }
   function animTurn(to) {
     var from = M.rot, t0 = performance.now(), dur = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 260;
     if (!dur) { turnTo(to); return; }
     (function step(now) { var k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3); turnTo(from + (to - from) * e); if (k < 1) requestAnimationFrame(step); })(t0);
   }
   function zoomAt(mx, my, f) {
+    M.glide = 0;
     var v = M.v; v.ox = mx - (mx - v.ox) * f; v.oy = my - (my - v.oy) * f; v.z *= f; draw();
   }
   function resize() {
@@ -564,7 +653,7 @@
     M.canvas.width = Math.max(1, Math.round(w.clientWidth * M.dpr)); M.canvas.height = Math.max(1, Math.round(w.clientHeight * M.dpr));
     // full screen: things that float on the map start below the floating toolbar
     var box = M.root && M.root.querySelector('[data-fsbox]'), tool = box && box.querySelector('.m2tool, .m2bar');
-    if (box) box.style.setProperty('--fs-top', M.fs && tool ? (tool.offsetTop + tool.offsetHeight + 8) + 'px' : '');
+    if (box) box.style.setProperty('--fs-top', tool ? (tool.offsetTop + tool.offsetHeight + 8) + 'px' : '');
   }
 
   document.addEventListener('click', function (e) {
@@ -575,8 +664,9 @@
     else if (a === 'zin') zoomAt(M.canvas.clientWidth / 2, M.canvas.clientHeight / 2, 1.25);
     else if (a === 'zout') zoomAt(M.canvas.clientWidth / 2, M.canvas.clientHeight / 2, 0.8);
     else if (a === 'fit') { fit(); draw(); }
-    else if (a === 'rot') { if (v === '0') { setRot(0); fit(); draw(); } else animTurn(M.rot + (+v) * Math.PI / 4); }
-    else if (a === 'close') { if (M.sel) M.sel = null; else { var q0 = $('#m2q'); if (q0) q0.value = ''; doSearch(''); } side(); draw(); }
+    else if (a === 'rot') { if (v === '0') { setRot(0); setTilt(TILT0); glideFit(); } else animTurn(M.rot + (+v) * Math.PI / 4); }
+    else if (a === 'tilt') orbit(M.rot, M.tilt + (+v) * 0.2);
+    else if (a === 'close') { if (M.sel) M.sel = null; else { var q0 = $('#m2q'); if (q0) q0.value = ''; doSearch(''); } side(); if (M.fs && !(M.sel || M.q)) glideFit(); else draw(); }
     else if (a === 'back') { var mc = M.root.querySelector('[data-fsbox]'); if (mc) mc.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     else if (a === 'search') M.runSearch();
     else if (a === 'clear') M.clearSearch();

@@ -946,3 +946,28 @@ h1 { font-size: 24px; font-weight: 600; }
 .m2mapcard.fs > .m2side .m2tt { font-size: 20px; }
 .m2legend { right: auto; max-width: calc(100% - 240px); }
 .m2rot[hidden] ~ .m2legend { max-width: calc(100% - 20px); }
+
+/* ===== v20 — map: toolbar floats inside the map at every size; new map chrome ===== */
+.m2mapcard { position: relative; }
+.m2mapcard .m2canvas { height: max(620px, calc(100vh - 150px)); border-radius: 14px; background: #060d19; box-shadow: inset 0 0 0 1px rgba(120, 165, 225, 0.18); }
+.m2mapcard .m2tool { position: absolute; top: 10px; left: 10px; right: 10px; z-index: 6; margin: 0; background: rgba(9, 18, 33, 0.82); border: 1px solid rgba(150, 185, 230, 0.22); border-radius: 12px; padding: 6px 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); color: #dbe5f2; }
+.m2mapcard .m2tool .btn:not(.primary), .m2mapcard .m2tool select { background: rgba(255, 255, 255, 0.06); color: #dbe5f2; border-color: rgba(150, 185, 230, 0.25); }
+.m2mapcard .m2tool .btn:not(.primary):hover { background: rgba(255, 255, 255, 0.13); }
+.m2mapcard .m2tool .btn[aria-pressed="true"]:not(.primary) { background: rgba(242, 183, 5, 0.16); border-color: #f2b705; color: #ffe08a; }
+.m2mapcard .m2tool select option { color: #0c1726; background: #fff; }
+.m2mapcard .m2tool .seg { background: rgba(255, 255, 255, 0.06); border-color: rgba(150, 185, 230, 0.25); }
+.m2mapcard .m2tool .seg button { color: #9fb2c9; }
+.m2mapcard .m2tool .seg button:hover { color: #fff; }
+.m2mapcard .m2tool .seg button[aria-pressed="true"] { background: #f2f6fb; color: #0c1726; box-shadow: none; }
+.m2mapcard .m2tool .m2q1 { background: rgba(255, 255, 255, 0.08); color: #fff; border: 1px solid rgba(150, 185, 230, 0.3); border-radius: 8px; }
+.m2mapcard .m2tool .m2q1::placeholder { color: #8ea3bb; }
+.m2mapcard .m2tool :focus-visible { outline: 2px solid #f2b705; outline-offset: 1px; }
+.m2mapcard .m2cntag { top: var(--fs-top, 64px); }
+.m2mapcard > .m2side { margin-top: 12px; }
+/* turn / tilt controls with a compass that shows the current turn */
+.m2rot { align-items: center; }
+.m2rot .m2cmpb { width: 38px; color: #dbe5f2; }
+.m2rot #m2cmp { transition: transform 0.12s linear; }
+.m2rsep { width: 1px; align-self: stretch; background: rgba(150, 185, 230, 0.25); margin: 2px 2px; }
+.m2legend { background: rgba(9, 18, 33, 0.82); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+@media (prefers-reduced-motion: reduce) { .m2rot #m2cmp { transition: none; } }

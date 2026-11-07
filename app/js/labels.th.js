@@ -314,7 +314,7 @@
   "m2.color.stock": "สต็อก",   // Stock
   "m2.fit": "พอดีจอ",   // Fit
   "m2.q.ph2": "ค้นหา Part หรือช่อง",   // Search Part or bin
-  "m2.names.tip": "แสดงชื่อ 2 ช่องแรกของแต่ละแถว (ซูมเข้าใกล้จะแสดงทุกช่อง)",   // Show the first two rack names of each row (all names when zoomed in)
+  "m2.names.tip": "แสดงป้ายโซนที่หัวแถวของชั้นวาง (ซูมเข้าใกล้จะเห็นเลขช่อง)",   // Show a zone sign at the start of each rack row (rack numbers appear when zoomed in)
   "m2.color.opt": "สี: {v}",   // Colour: {v}
   "m2.zin": "ซูมเข้า",   // Zoom in
   "m2.zout": "ซูมออก",   // Zoom out
@@ -322,15 +322,17 @@
   "m2.cnt.all": "รวมทุกชั้น {n}",   // All floors {n}
   "m2.rot.l": "หมุนซ้าย",   // Turn left
   "m2.rot.r": "หมุนขวา",   // Turn right
-  "m2.rot.reset": "มุมเริ่มต้น",   // Reset turn
-  "m2.rot.tip": "หมุนมุมมอง 3D: กดปุ่มนี้ หรือลากด้วยเมาส์ขวา (หรือกด Shift ค้างแล้วลาก)",   // Turn the 3D view: these buttons, or drag with the right mouse button (or Shift + drag)
+  "m2.rot.reset": "กลับมุมเริ่มต้น",   // Reset turn
+  "m2.rot.tip": "3D: ลากบนแผนที่เพื่อหมุนและปรับมุมก้มเงย · ลากด้วยเมาส์ขวา หรือกด Shift ค้างแล้วลาก เพื่อเลื่อนแผนที่",   // 3D: drag on the map to turn and tilt; right-drag or Shift + drag to move the map
+  "m2.tilt.up": "มองจากมุมสูงขึ้น",   // Look from higher
+  "m2.tilt.down": "มองจากมุมต่ำลง",   // Look from lower
   "m2.legend.l1": "1 ระดับ",   // 1 level
   "m2.legend.l": "{n} ระดับ",   // {n} levels
   "m2.legend.ln": "{n} ระดับ",   // {n} levels
   "m2.legend.stock": "ระดับที่มีสต็อก",   // Level with stock
   "m2.legend.aisle": "ทางเดินรถเข็น",   // Cart aisle
   "m2.search.placeholder": "ค้นหา Part หรือ Bin",   // Find a Part or Bin
-  "m2.names": "ชื่อชั้นวาง",   // Rack names
+  "m2.names": "ป้ายโซน",   // Zone signs
   "m2.res.title": "พบ {n} รายการใน {r} ชั้นวาง",   // Found {n} items in {r} racks
   "m2.res.none": "ไม่พบ Part หรือ Bin ที่ตรงกับคำค้น",   // No Part or Bin matches this search.
   "m2.res.more": "แสดง {n} รายการแรกจากทั้งหมด {t}",   // Showing the first {n} of {t}.
