@@ -13,6 +13,8 @@
 (function (g) {
   var PWH = (g.PWH = g.PWH || {});
   var G = 4;               // sheet px per grid cell
+  // simulation factors shared by Module 3 and Module 4 (estimates until measured): walk m/s pushing the cart, s per pick, s per lift ride
+  PWH.SIM = PWH.SIM || { walk: 0.8, pick: 25, lift: 90 };
   var LIFT_M = 0;          // the lift ride adds no distance (agreed 07/11/2026: count floor walking only)
   var INF = 1 << 29;
   var CAND_MAX = 6;        // bins per Part considered when choosing the route

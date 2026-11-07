@@ -1491,3 +1491,31 @@ a { text-underline-offset: 3px; }
 .m2mapcard.m4hbox.fs .m4hbody .m2canvas { position: relative; inset: auto; height: 100% !important; border-radius: 12px; }
 .m2mapcard.m4hbox.fs .m4hside { overflow-y: auto; max-height: none; }
 .m2mapcard.m4hbox.fs { padding: 14px 16px !important; background: var(--bg) !important; gap: 10px; }
+
+/* ---------- v36 Module 4: product status table, continuous heat ramp, before/after routes ---------- */
+.m4ramp { display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+.m4ramp i { width: 160px; height: 10px; border-radius: 5px; display: inline-block; }
+.m4ramp b { font-weight: 600; }
+.m4psum { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-bottom: var(--sp-3); }
+.m4psel { min-height: 32px; padding: 2px 8px; border: 1px solid var(--warn); border-radius: 8px; background: var(--warn-soft); color: var(--ink); font-size: var(--fs-label); }
+.m4rpair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--sp-4); }
+@media (max-width: 1100px) { .m4rpair { grid-template-columns: minmax(0, 1fr); } }
+.m4rpbox { padding: var(--sp-3); border: 1px solid var(--line); border-radius: 12px; background: var(--surface); display: flex; flex-direction: column; gap: var(--sp-2); }
+.m4rpbox .m2canvas { height: 460px !important; margin: 0; border-radius: 10px; }
+.m2mapcard.m4rpbox.fs { padding: 14px 16px !important; background: var(--bg) !important; }
+.m2mapcard.m4rpbox.fs .m2canvas { position: relative; inset: auto; flex: 1; height: auto !important; border-radius: 10px; }
+.m4rph { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--sp-2) var(--sp-5); }
+.m4rpt { font-size: var(--fs-card); }
+.m4rpk { display: inline-flex; align-items: baseline; gap: 6px; }
+.m4rpk .k { font-size: var(--fs-label); color: var(--muted); }
+.m4rpk .v { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.m4rpk .s { font-size: var(--fs-meta); color: var(--muted); }
+.m4dl { font-size: var(--fs-label); font-weight: 600; padding: 2px 10px; border-radius: 999px; }
+.m4dl.good { background: var(--ok-soft); color: var(--ok); } .m4dl.up { background: var(--err-soft); color: var(--err); }
+.m4flow { flex-wrap: wrap; row-gap: 6px; }
+.m4ord tr.m4swA td { background: #fff6d6; } .m4ord tr.m4swB td { background: #e0f7fb; } .m4ord tr.m4re td { background: var(--surface-2); }
+.m3flow.m4flow { color: var(--ink); white-space: normal; padding: 6px 10px; background: var(--surface-2); border-radius: 8px; }
+.m4flow .m3ln { background: var(--line-2, var(--line)); }
+.m4flow .m3st, .m4flow .m3st.floor, .m4flow .m3st.lift, .m4flow .m3st.end { color: var(--ink); }
+.m4flow .m3st.floor { font-weight: 600; }
+.m4rph { min-height: 60px; align-content: flex-start; }

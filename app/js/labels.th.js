@@ -597,7 +597,7 @@
   "m4.scope.gap": "ไม่มีแผน: {list}",   // no plan: {list}
   "m4.scope.upto": "ข้อมูลถึงวันที่ {d}",   // data up to {d}
   "m4.scope.product": "เฉพาะ Product {p}",   // Product {p} only
-  "m4.scope.note": "วิเคราะห์แผนย้อนหลังโดยใช้ตำแหน่งจัดเก็บปัจจุบัน ระยะเป็นเมตรจำลองตามผัง (ไม่คิดระยะลิฟต์) ไม่แสดงเวลา",   // Past plans are analysed with today's storage locations. Distances are simulated metres along the layout (lift ride not counted); no times are shown.
+  "m4.scope.note": "วิเคราะห์แผนย้อนหลังโดยใช้ตำแหน่งจัดเก็บปัจจุบัน ระยะเป็นเมตรจำลองตามผัง (ไม่คิดระยะลิฟต์) เวลาใน Simulation เป็นเวลาจำลองตามค่าเดียวกับหน้านำทาง",   // Past plans are analysed with today's storage locations. Distances are simulated metres along the layout (lift ride not counted). Times in Simulation are estimates with the Module 3 factors.
   "m4.scope.at": "คำนวณเมื่อ {t}",   // calculated at {t}
   "m4.scope.files": "ชุดข้อมูลที่ใช้",   // Data used
   "m4.scope.dailyf": "แผนรายวัน {d}",   // Daily plan {d}
@@ -746,6 +746,30 @@
   "m4.sim.heat": "Heatmap ก่อน–หลัง",   // Heatmap before and after
   "m4.sim.heat_sub": "ใช้เกณฑ์สีเดียวกัน ความถี่รวมก่อน {b} หลัง {a} สิ่งที่เปลี่ยนคือตำแหน่งที่หยิบ",   // Same colour scale on both. Total picks before {b}, after {a}: only where they are picked changes.
   "m4.h.fsexit": "ออกจากเต็มจอ",   // Exit full screen
+  "m4.h.unit2": "ครั้งในช่วงที่เลือก สีเข้มสุด = ช่องที่หยิบมากสุด ({n} ครั้ง) ช่วงสีปรับตามข้อมูลจริง",   // picks in the chosen range; the darkest colour is the busiest rack ({n})
+  "m4.prods.title2": "Product ในแผน",   // Products in the plan
+  "m4.prods.sub3": "ทุก Product ในแผนช่วงที่เลือก · JOB = จำนวนรอบในช่วงนี้ · หาตำแหน่งได้ = Part ที่มีจุดหยิบที่รถเข็นเข้าถึง · ระยะต่อรอบแสดงเมื่อหาตำแหน่งได้ครบทุก Part",   // Every Product in the plans of the range. JOB = rounds in the range. Found = Parts with a pick point the cart can reach. Distance per round is shown only when every Part can be found.
+  "m4.col.found": "หาตำแหน่งได้",   // Found
+  "m4.ps.ok": "ครบ",   // Complete
+  "m4.ps.partial": "Part ขาดตำแหน่ง {n}",   // {n} Parts without a pick point
+  "m4.ps.partial0": "Part ขาดตำแหน่ง",   // Part missing a location
+  "m4.ps.plant": "ไม่รู้ Plant",   // Plant unknown
+  "m4.ps.nobom": "ไม่มี BOM",   // No BOM
+  "m4.ps.choose": "เลือก Plant",   // Choose Plant
+  "m4.ps.own": "เลือกเอง",   // chosen here
+  "m4.simtime": "เวลาจำลอง",   // Simulated time
+  "m4.tdown": "เร็วขึ้น {n} นาที",   // {n} min less
+  "m4.tup": "ช้าลง {n} นาที",   // {n} min more
+  "m4.rp.title": "เส้นทางก่อน–หลัง",   // Route before and after
+  "m4.rp.note": "เส้นทาง 1 รอบของ Product นี้ (ทุก JOB ของ Product เดียวกันใช้เส้นทางเดียวกัน) มี {n} รอบในช่วงที่เลือก",   // One round of this Product (every JOB of it uses the same route); {n} rounds in the range.
+  "m4.rp.order": "ลำดับหยิบก่อน–หลัง",   // Pick order before and after
+  "m4.rp.seq_b": "ลำดับก่อน",   // Before #
+  "m4.rp.bin_b": "Bin ก่อน",   // Bin before
+  "m4.rp.seq_a": "ลำดับหลัง",   // After #
+  "m4.rp.bin_a": "Bin หลัง",   // Bin after
+  "m4.rp.swapped": "Part {t} ที่สลับ",   // swapped Part {t}
+  "m4.rp.moved": "Bin เปลี่ยน",   // bin changed
+  "m4.rp.reorder": "ลำดับเปลี่ยน",   // order changed
   "m5.intro": "กติกาที่ใช้ตรวจทุกการสลับ Part และ Bin ที่ล็อกจะไม่ถูกเสนอและสลับไม่ได้",   // Rules every swap is checked against. Locked Parts and bins are never suggested or swapped.
   "m5.rules.title": "กติกาที่ใช้",   // Rules in use
   "m5.rules.sub": "ตามที่ตกลงกับคลัง",   // Agreed with the warehouse

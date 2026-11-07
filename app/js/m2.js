@@ -86,8 +86,8 @@
     M.v = keep;
     var minx = Math.min.apply(null, xs), maxx = Math.max.apply(null, xs), miny = Math.min.apply(null, ys), maxy = Math.max.apply(null, ys);
     var o = insets(), aw = cw - o.l - o.r, ah = ch - o.t - o.b;
-    var z = Math.min((aw - (M.names ? 90 : 32)) / (maxx - minx), (ah - 16) / (maxy - miny));   // room for the zone signs at row starts
-    return { z: z, ox: o.l + (aw - (maxx - minx) * z) / 2 - minx * z, oy: o.t + (ah - (maxy - miny) * z) / 2 - miny * z };
+    var z = Math.min((aw - (M.names ? 90 : 32)) / (maxx - minx), (ah - 56) / (maxy - miny));   // room for the zone signs at row starts
+    return { z: z, ox: o.l + (aw - (maxx - minx) * z) / 2 - minx * z, oy: o.t + 6 + (ah - (maxy - miny) * z) / 2 - miny * z };
   }
   function fit() { var v = fitView(); if (v) { M.v = v; M.fitZ = v.z; } }
   // glide the view to a new fit (used when the full-screen side panel opens or closes)

@@ -166,11 +166,13 @@
       r.parts = []; r.m = 0; r.missing = 0; r.unknown = 0; r.byProd = {};
       r.products.forEach(function (prod) {
         if (opt.product && prod !== opt.product) return;
-        var pp = plantOf(d, r.job, prod);
-        if (!pp.plant) { r.unknown++; issues.push({ why: pp.why, date: r.date, line: r.line, job: r.job, product: prod, file: r.file, plants: pp.plants }); return; }
+        var pp = plantOf(d, r.job, prod), own = opt.plantPick && opt.plantPick[prod];
+        if (!pp.plant && own && (pp.plants || []).indexOf(own) >= 0) pp = { plant: own, how: 'user', plants: pp.plants };   // chosen on the page, this calculation only
+        function prodRow(status, plant) { var P0 = prods.get(prod); if (!P0) prods.set(prod, (P0 = { product: prod, plant: plant, how: pp.how || '', plants: pp.plants || [], status: status, rounds: 0, complete: 0, m: 0, mAll: 0, parts: 0, routedParts: 0, rlist: [] })); return P0; }
+        if (!pp.plant) { r.unknown++; issues.push({ why: pp.why, date: r.date, line: r.line, job: r.job, product: prod, file: r.file, plants: pp.plants }); var U = prodRow(pp.why, null); U.rounds++; U.rlist.push(r); return; }
         var codes = partsOf(d, prod, pp.plant);
-        if (!codes.length) { r.unknown++; issues.push({ why: 'noparts', date: r.date, line: r.line, job: r.job, product: prod, file: r.file }); return; }
-        var P = prods.get(prod); if (!P) prods.set(prod, (P = { product: prod, plant: pp.plant, rounds: 0, complete: 0, m: 0, mAll: 0, parts: codes.length, rlist: [] }));
+        if (!codes.length) { r.unknown++; issues.push({ why: 'noparts', date: r.date, line: r.line, job: r.job, product: prod, file: r.file }); var U2 = prodRow('noparts', pp.plant); U2.rounds++; U2.rlist.push(r); return; }
+        var P = prodRow('ok', pp.plant); P.parts = codes.length;
         var list = codes.map(function (c) { return { code: c, pick: pick(c) }; });
         var rt = route(list, prod + '|' + pp.plant);
         var miss = 0;
@@ -184,6 +186,7 @@
           if (routed) { x.nRoute++; var L = locs.get(it.pick.bin); if (!L) locs.set(it.pick.bin, (L = { bin: it.pick.bin, rack: it.pick.rack, level: it.pick.level, floor: it.pick.floor, n: 0, parts: new Map() })); L.n++; L.parts.set(it.code, (L.parts.get(it.code) || 0) + 1); }
         });
         r.missing += miss; r.m += rt.m; r.byProd[prod] = { m: rt.m, complete: miss === 0 };
+        P.routedParts = codes.length - miss; if (miss) P.status = 'partial';
         P.rounds++; P.mAll += rt.m; P.rlist.push(r);
         if (miss === 0) { P.complete++; P.m += rt.m; }
         P.missing = miss;
@@ -202,7 +205,7 @@
       var heatSum = 0; heat.forEach(function (h) { heatSum += h.n; });
       partList.forEach(function (p) { if (p.pick.status !== 'ok') issues.push({ why: 'loc_' + p.pick.status, part: p.code, name: p.name, n: p.n, bins: (p.pick.bins || []).map(function (b) { return b.bin; }), products: Array.from(p.products.keys()) }); });
       return {
-        from: opt.from, to: opt.to, product: opt.product || '', at: Date.now(), key: d.key,
+        from: opt.from, to: opt.to, product: opt.product || '', plantPick: opt.plantPick || null, at: Date.now(), key: d.key,
         rounds: rounds, identified: ident, complete: comp, partial: ident.filter(function (r) { return !r.complete; }),
         parts: partList, locs: locList, heat: heat, heatSum: heatSum,
         products: Array.from(prods.values()).sort(function (a, b) { return b.rounds - a.rounds || natural(a.product, b.product); }),
@@ -244,7 +247,7 @@
   /* simulate(d, base, pairs) -> before / after on the same rounds and the same data */
   function simulate(d, base, pairs, progress) {
     var ov = overrideOf(d, pairs);
-    return analyze(d, { from: base.from, to: base.to, product: base.product, ov: ov, router: base.router, progress: progress }).then(function (after) {
+    return analyze(d, { from: base.from, to: base.to, product: base.product, plantPick: base.plantPick, ov: ov, router: base.router, progress: progress }).then(function (after) {
       var useKeys = new Set(base.complete.map(function (r) { return r.key; })), aBy = new Map(); after.rounds.forEach(function (r) { aBy.set(r.key, r); });
       var prod = new Map(), before = 0, aft = 0, lost = [];
       base.complete.forEach(function (r) {
@@ -332,6 +335,8 @@
     });
   }
 
-  PWH.freq = { load: load, keyNow: keyNow, analyze: analyze, simulate: simulate, recommend: recommend, checkSwap: checkSwap, pickOf: pickOf, pointOf: pointOf,
+  // time of one pick trip, the same simulation factors as Module 3 (estimates, labelled as such)
+  function timeOf(m, stops, lifts) { var S = PWH.SIM; var walk = m / S.walk, pick = stops * S.pick, lift = lifts * S.lift; return { walk: walk, pick: pick, lift: lift, sec: walk + pick + lift }; }
+  PWH.freq = { timeOf: timeOf, load: load, keyNow: keyNow, analyze: analyze, simulate: simulate, recommend: recommend, checkSwap: checkSwap, pickOf: pickOf, pointOf: pointOf,
     defaultRange: defaultRange, daysIn: daysIn, plantOf: plantOf, partsOf: partsOf, makeRouter: makeRouter };
 })(window);

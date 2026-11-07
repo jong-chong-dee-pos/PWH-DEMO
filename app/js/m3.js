@@ -269,7 +269,7 @@
 
   // ---------- simulation: distance and time of one pick trip (estimates, the factors are in SIM) ----------
   // walk speed pushing a pick cart, time to find + pick one Part, one lift ride (wait + travel + unload)
-  var SIM = { walk: 0.8, pick: 25, lift: 90 };
+  var SIM = PWH.SIM;
   function simOf(R) {
     if (!R || !R.routed || !R.routed.length || R.noLayout) return null;
     var lifts = 0;
