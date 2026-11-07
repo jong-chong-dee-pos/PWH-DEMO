@@ -65,7 +65,10 @@
             if (!onRing || cx < 0 || cy < 0 || cx >= o.W || cy >= o.H) continue;
             var n = o.off + cy * o.W + cx; if (walk[n]) cells.push(n);
           }
-          if (graph.zone) { var outZ = cells.filter(function (c) { return !graph.zone[c]; }); if (outZ.length) cells = outZ; }
+          if (graph.zone && cells.length) {   // reach a rack from its own area: inside first, then outside; never from the DROP corner
+            var z0 = cells.filter(function (c) { return graph.zone[c] === 0; }), z2 = cells.filter(function (c) { return graph.zone[c] === 2; });
+            if (z0.length) cells = z0; else if (z2.length) cells = z2;
+          }
         }
         graph.rackAccess.set(r.id, cells);
       });
@@ -127,11 +130,27 @@
       if (rects.some(function (r) { return inside(r, px, py); })) { zone[n] = 1; if (!block[n]) gr.walk[n] = 1; if (inside(door, px, py)) dcell[n] = 1; }
     }
     gr.zone = zone; gr.zoneDoor = dcell; gr.doorNS = door.w >= door.h;
+    // Outside the building (zone 2): everything below the 'exit' marker. Reached only through the exit, from the
+    // DROP corner; the outdoor path then leads to the fenced 2A area through its own gate (a door outside).
+    var exit = mk.filter(function (m) { return m.type === 'exit'; })[0];
+    if (exit) {
+      var yOut = exit.y + exit.h, ecell = new Uint8Array(gr.N);
+      for (var y2 = 0; y2 < o.H; y2++) for (var x2 = 0; x2 < o.W; x2++) {
+        var n2 = o.off + y2 * o.W + x2, px2 = o.x0 + (x2 + 0.5) * G, py2 = o.y0 + (y2 + 0.5) * G;
+        if (!zone[n2] && py2 >= yOut) zone[n2] = 2;
+        if (zone[n2] === 1 && inside(exit, px2, py2)) ecell[n2] = 1;
+      }
+      gr.exitCell = ecell; gr.exitNS = exit.w >= exit.h;
+    }
   }
+  // steps between areas: inside <-> DROP corner only through the door; DROP corner <-> outside only through the exit
   function canStep(gr, a, b, vertical) {
-    if (!gr.zone || gr.zone[a] === gr.zone[b]) return true;
-    var z = gr.zone[a] ? a : b;
-    return gr.zoneDoor[z] === 1 && vertical === gr.doorNS;
+    if (!gr.zone) return true;
+    var za = gr.zone[a], zb = gr.zone[b]; if (za === zb) return true;
+    var lo = Math.min(za, zb), hi = Math.max(za, zb), z1 = za === 1 ? a : b;
+    if (lo === 0 && hi === 1) return gr.zoneDoor[z1] === 1 && vertical === gr.doorNS;
+    if (lo === 1 && hi === 2) return !!gr.exitCell && gr.exitCell[z1] === 1 && vertical === gr.exitNS;
+    return false;
   }
 
   // Parts of the walkable area that are not joined to the main aisles (the file only colours the cart aisles, so
@@ -329,22 +348,21 @@
         var set = live.filter(function (i) { return floorOfNode(itemNode(i)) === gf; });
         var entry = floorOfNode(cur) === gf ? cur : liftIdx[gf];
         var nextFloor = k < pm.length - 1 ? pm[k + 1] : dropFloor;
-        var exit = nextFloor === gf ? (doorIdx != null ? doorIdx : di) : liftIdx[gf];
+        var exit = nextFloor === gf ? di : liftIdx[gf];
         if (entry == null || exit == null) { okp = false; return; }
         cost += D[cur][entry];
         var r = optimizePath(set, entry, exit);
         cost += r.cost; ord = ord.concat(sameRackTogether(r.order)); cur = exit;
       });
       if (!okp) return;
-      if (floorOfNode(cur) !== dropFloor && doorIdx != null) cost += D[cur][doorIdx] + D[doorIdx][di];   // down by lift, then through the door
-      else cost += D[cur][di];
+      cost += D[cur][di];   // the walls of the DROP corner make every way in pass the door (or the exit from outside)
       if (!best || cost < best.cost) best = { cost: cost, order: ord };
     });
     var order = best ? best.order : live.slice();
 
     // walk the final tour again to draw it
     var lastN = order.length ? idx[order[order.length - 1]][choice[order[order.length - 1]]] : 0;
-    var via = order.length && doorIdx != null ? [doorIdx] : [];
+    var via = [];
     var legs = [], total = 0, out = [], path = [0].concat(order.map(function (it) { return idx[it][choice[it]]; }), via, [di]);
     for (var s = 0; s < path.length - 1; s++) {
       var A2 = path[s], B2 = path[s + 1], par = new Int32Array(gr.N).fill(-1), dist2 = dijkstra(gr, nodes[A2].nodes, par);

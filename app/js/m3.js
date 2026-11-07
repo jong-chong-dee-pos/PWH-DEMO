@@ -129,7 +129,9 @@
     if (!D.parents.has(sel.product)) { R.nobom = true; renderResult(); drawMap(); return; }
     if (!pp.plant) { R.ask = pp.ask; renderResult(); drawMap(); return; }
     var qtyJob = sel.job ? sel.job.qty : null;
-    var leaves = Array.from(exploder(pp.plant).leaves(sel.product).entries()).sort(function (a, b) { return natural(a[0], b[0]); });
+    // first level of the BOM only (agreed): a SUB-AS set is picked as one Part from its own bin, not broken down
+    var pm = D.index.byPlant.get(pp.plant), kids = pm && pm.get(sel.product);
+    var leaves = kids ? Array.from(kids.entries()).sort(function (a, b) { return natural(a[0], b[0]); }) : [];
     if (!leaves.length) { R.noparts = true; renderResult(); drawMap(); return; }
     var routable = [];
     leaves.forEach(function (e) {
