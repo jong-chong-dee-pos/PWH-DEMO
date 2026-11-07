@@ -371,6 +371,13 @@
     if (refit) K.fit();
     K.draw();
   }
+  // stop numbers on one badge: runs of 3+ as a range, the rest listed (6,8,9 -> "6,8,9"; 6,7,8 -> "6–8")
+  function numLabel(nums) {
+    nums = nums.slice().sort(function (a, b) { return a - b; });
+    var out = [], i = 0;
+    while (i < nums.length) { var j = i; while (j + 1 < nums.length && nums[j + 1] === nums[j] + 1) j++; out.push(j - i >= 2 ? nums[i] + '–' + nums[j] : nums.slice(i, j + 1).join(',')); i = j + 1; }
+    return out.join(',');
+  }
   function overlay(c, Pj, f, o) {
     var R = P.result; if (!R || !R.legs) return;
     var z = o.z, col = '#38a3ff';
@@ -403,7 +410,7 @@
       var rp = [Pj(r.x, r.y, H), Pj(r.x + r.w, r.y, H), Pj(r.x + r.w, r.y + r.h, H), Pj(r.x, r.y + r.h, H)];
       c.beginPath(); rp.forEach(function (p, i) { if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); }); c.closePath();
       c.fillStyle = 'rgba(47,134,255,0.35)'; c.fill(); c.lineWidth = sel ? 3 : 1.5; c.strokeStyle = sel ? '#facc15' : col; c.stroke();
-      var nums = items.map(function (it) { return it.seq; }), label = nums.length > 2 ? nums[0] + '–' + nums[nums.length - 1] : nums.join(','), w = Math.max(24, 12 + label.length * 8.5);
+      var nums = items.map(function (it) { return it.seq; }), label = numLabel(nums), w = Math.max(24, 12 + label.length * 8.5);
       var anchor = q, tries = [[0, 0], [0, -28], [0, 28], [w + 6, 0], [-(w + 6), 0], [0, -54], [w + 6, -28], [-(w + 6), -28], [0, 54]];
       for (var ti = 0; ti < tries.length; ti++) { if (free(anchor[0] + tries[ti][0] - w / 2, anchor[1] + tries[ti][1] - 12, w, 24)) { q = [anchor[0] + tries[ti][0], anchor[1] + tries[ti][1]]; break; } }
       placed.push([q[0] - w / 2, q[1] - 12, w, 24]);

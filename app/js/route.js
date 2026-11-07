@@ -310,6 +310,16 @@
       arr.forEach(function (x, i) { perms(arr.slice(0, i).concat(arr.slice(i + 1))).forEach(function (r) { res.push([x].concat(r)); }); });
       return res;
     }
+    // Parts in the same rack are picked in one go: a later Part of a rack moves up next to the first one.
+    // Walking between them is 0, so by the triangle rule the walk can only get shorter, never longer.
+    function sameRackTogether(ord) {
+      var out = [], at = {};
+      ord.forEach(function (it) {
+        var rk = items[it].cs[choice[it]].c.rack;
+        if (at[rk] == null) { at[rk] = out.length; out.push([it]); } else out[at[rk]].push(it);
+      });
+      return [].concat.apply([], out);
+    }
     var dropFloor = floorOfNode(di), best = null;
     // the picker always starts on floor 1: floors are taken in ascending order
     floorsHere.sort(function (a, b) { return gr.F[a].f.id < gr.F[b].f.id ? -1 : gr.F[a].f.id > gr.F[b].f.id ? 1 : 0; });
@@ -323,7 +333,7 @@
         if (entry == null || exit == null) { okp = false; return; }
         cost += D[cur][entry];
         var r = optimizePath(set, entry, exit);
-        cost += r.cost; ord = ord.concat(r.order); cur = exit;
+        cost += r.cost; ord = ord.concat(sameRackTogether(r.order)); cur = exit;
       });
       if (!okp) return;
       if (floorOfNode(cur) !== dropFloor && doorIdx != null) cost += D[cur][doorIdx] + D[doorIdx][di];   // down by lift, then through the door
