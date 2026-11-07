@@ -60,7 +60,8 @@
   "upload.hint2": "หรือลากไฟล์ .xlsx มาวางบนการ์ดนี้",   // or drop .xlsx files on this card
   "cal.week": "จ,อ,พ,พฤ,ศ,ส,อา",   // Mon,Tue,Wed,Thu,Fri,Sat,Sun
   "cal.has": "อัปโหลดแล้ว {n} วัน",   // Uploaded {n} days
-  "cal.miss": "ยังไม่มีแผน {n} วัน (จ.–ส. ถึงวันนี้)",   // No plan yet {n} days (Mon–Sat up to today)
+  "cal.miss": "ยังไม่มีแผน {n} วัน",   // Missing {n} days
+  "cal.miss_tip": "",   // Mon–Sat up to today with no daily plan uploaded
   "sum.err": "มีแถวถูกตัด {n} เรื่อง",   // {n} with dropped rows
   "sum.warn": "คำเตือน {n} เรื่อง",   // {n} warnings
   "sum.info": "หมายเหตุ {n} เรื่อง",   // {n} notes

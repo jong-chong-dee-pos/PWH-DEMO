@@ -380,6 +380,13 @@
     var keyCol = ty === 'daily' ? t('col.planDate') : ty === 'monthly' ? t('col.month') : null;
     var rows = fl.map(function (f) {
       var st = fileStatus(f), inUse = use[f.id], confirming = S.confirm === f.id, confirmingUse = S.confirmUse === f.id;
+      var acts = '<td><div class="acts">' + (inUse ? '' : '<button class="btn sm' + (confirmingUse ? ' confirm' : '') + '" data-act="use" data-id="' + f.id + '">' + esc(t(confirmingUse ? 'act.use_confirm' : 'act.use_this')) + '</button>') + '<button class="btn sm" data-act="download" data-id="' + f.id + '">' + esc(t('act.download')) + '</button><button class="btn sm danger' + (confirming ? ' confirm' : '') + '" data-act="delete" data-id="' + f.id + '">' + esc(t(confirming ? 'act.confirm' : 'act.delete')) + '</button></div></td>';
+      var stChip = '<span class="chip ' + (st === 'ok' ? 'ok' : st === 'warn' ? 'warn' : 'error') + '">' + esc(t('status.' + st)) + '</span>';
+      if (ty === 'daily') // compact: date + file name in one cell, status and "replaced" in one cell
+        return '<tr class="file ' + (S.sel[ty] === f.id ? 'sel ' : '') + (inUse ? '' : 'old') + '" data-act="select" data-id="' + f.id + '" tabindex="0">' +
+          '<td class="name"><span class="fk">' + esc(fmtDate(f.planDate)) + '</span><span class="fn sub2" title="' + esc(f.name) + '">' + esc(f.name) + '</span></td>' +
+          '<td class="when">' + fmtDT(f.uploadedAt) + (f.uploadedBy ? '<div class="sub2">' + esc(f.uploadedBy) + '</div>' : '') + '</td><td class="num">' + nf(f.rows) + '</td>' +
+          '<td><div class="chips">' + stChip + (inUse ? '' : '<span class="chip pending">' + esc(t('use.replaced')) + '</span>') + '</div></td></tr>';
       return '<tr class="file ' + (S.sel[ty] === f.id ? 'sel ' : '') + (inUse ? '' : 'old') + '" data-act="select" data-id="' + f.id + '" tabindex="0">' +
         (keyCol ? '<td class="fk">' + esc(ty === 'daily' ? fmtDate(f.planDate) : monthName(f.month)) + '</td>' : '') +
         '<td class="name"><span class="fn" title="' + esc(f.name) + '">' + esc(f.name) + '</span></td><td>' + fmtDT(f.uploadedAt) + (f.uploadedBy ? '<div class="sub2">' + esc(f.uploadedBy) + '</div>' : '') + '</td><td class="num">' + nf(f.rows) + '</td>' +
@@ -387,7 +394,7 @@
         '<td><span class="chip ' + (inUse ? 'info' : 'pending') + '">' + esc(t(inUse ? 'use.active' : 'use.replaced')) + '</span></td>' +
         '<td><div class="acts">' + (inUse ? '' : '<button class="btn sm' + (confirmingUse ? ' confirm' : '') + '" data-act="use" data-id="' + f.id + '">' + esc(t(confirmingUse ? 'act.use_confirm' : 'act.use_this')) + '</button>') + '<button class="btn sm" data-act="download" data-id="' + f.id + '">' + esc(t('act.download')) + '</button><button class="btn sm danger' + (confirming ? ' confirm' : '') + '" data-act="delete" data-id="' + f.id + '">' + esc(t(confirming ? 'act.confirm' : 'act.delete')) + '</button></div></td></tr>';
     }).join('');
-    var head = (keyCol ? '<th>' + esc(keyCol) + '</th>' : '') + '<th>' + esc(t('col.name')) + '</th><th>' + esc(t('col.uploaded')) + '</th><th class="num">' + esc(t('col.rows')) + '</th><th>' + esc(t('col.status')) + '</th><th>' + esc(t('col.use')) + '</th><th></th>';
+    var head = ty === 'daily' ? '<th>' + esc(keyCol) + '</th><th>' + esc(t('col.uploaded')) + '</th><th class="num">' + esc(t('col.rows')) + '</th><th>' + esc(t('col.status')) + '</th>' : (keyCol ? '<th>' + esc(keyCol) + '</th>' : '') + '<th>' + esc(t('col.name')) + '</th><th>' + esc(t('col.uploaded')) + '</th><th class="num">' + esc(t('col.rows')) + '</th><th>' + esc(t('col.status')) + '</th><th>' + esc(t('col.use')) + '</th><th></th>';
     var list = fl.length ? '<div class="tablebox ftable"><table><thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table></div>'
       : '<div class="fempty"><p>' + esc(S.mf && filesOf(ty).length ? t('mf.empty', { m: monthName(S.mf) }) : t('files.empty2')) + '</p>' + (S.mf ? curNote(ty, use) : '') + '</div>';
     var files = '<section class="panel fcard" id="drop"><div class="chd"><div class="chd-l"><div class="cap">' + esc(t('tab.' + ty)) + '</div><h2>' + esc(t('files.title')) + (S.mf ? ' <span class="chip info">' + esc(monthName(S.mf)) + '</span>' : '') + '</h2><p class="sub">' + esc(t('help.' + ty)) + '</p></div>' +
@@ -417,17 +424,22 @@
       var iso = m + '-' + p2(d), f = by[iso], wd = (lead + d - 1) % 7, sun = wd === 6;
       var cls = 'cd' + (f ? (fileStatus(f) === 'ok' ? ' has' : ' haswarn') : '') + (sun ? ' sun' : '') + (iso === today ? ' today' : '') + (f && S.sel.daily === f.id ? ' sel' : '');
       if (f) have++; else if (iso <= today && !sun) miss++;
-      cells += f ? '<button class="' + cls + '" data-act="select" data-id="' + f.id + '" title="' + esc(f.name) + '"><b>' + d + '</b><small>' + nf(f.rows) + ' JOB</small></button>'
+      cells += f ? '<button class="' + cls + '" data-act="select" data-id="' + f.id + '" title="' + esc(fmtDate(iso) + ' · ' + nf(f.rows) + ' JOB · ' + f.name) + '" aria-label="' + esc(fmtDate(iso) + ', ' + nf(f.rows) + ' JOB') + '"><b>' + d + '</b><i aria-hidden="true"></i></button>'
         : '<span class="' + cls + '"><b>' + d + '</b></span>';
     }
     var wk = t('cal.week').split(',').map(function (x) { return '<span class="cw">' + esc(x) + '</span>'; }).join('');
     var list = monthList(), i0 = list.indexOf(m);
-    el.innerHTML = '<div class="cal"><div class="calh"><button class="btn sm" data-act="mf" data-v="' + (list[i0 + 1] || prevMonth(m)) + '" aria-label="' + esc(t('mf.prev')) + '">‹</button><b>' + esc(monthName(m)) + '</b><button class="btn sm" data-act="mf" data-v="' + nextMonth(m) + '" aria-label="' + esc(t('mf.next')) + '">›</button>' +
-      '<span class="calk"><i class="k has"></i>' + esc(t('cal.has', { n: have })) + '</span><span class="calk"><i class="k miss"></i>' + esc(t('cal.miss', { n: miss })) + '</span></div><div class="calg">' + wk + cells + '</div></div>';
+    el.innerHTML = '<div class="cal"><div class="calh"><button class="btn sm" data-act="mf" data-v="' + (list[i0 + 1] || prevMonth(m)) + '" aria-label="' + esc(t('mf.prev')) + '">‹</button><b>' + esc(monthName(m)) + '</b><button class="btn sm" data-act="mf" data-v="' + nextMonth(m) + '" aria-label="' + esc(t('mf.next')) + '">›</button></div><div class="calg">' + wk + cells + '</div>' +
+      '<div class="calf"><span class="calk"><i class="k has"></i>' + esc(t('cal.has', { n: have })) + '</span><span class="calk" title="' + esc(t('cal.miss_tip')) + '"><i class="k miss"></i>' + esc(t('cal.miss', { n: miss })) + '</span></div></div>';
   }
   function prevMonth(m) { var y = +m.slice(0, 4), mo = +m.slice(5, 7) - 1; if (!mo) { mo = 12; y--; } return y + '-' + p2(mo); }
   function nextMonth(m) { var y = +m.slice(0, 4), mo = +m.slice(5, 7) + 1; if (mo > 12) { mo = 1; y++; } return y + '-' + p2(mo); }
 
+  function fileActs(f) {
+    var inUse = usage()[f.id];
+    return (inUse ? '' : '<button class="btn sm' + (S.confirmUse === f.id ? ' confirm' : '') + '" data-act="use" data-id="' + f.id + '">' + esc(t(S.confirmUse === f.id ? 'act.use_confirm' : 'act.use_this')) + '</button>') +
+      '<button class="btn sm" data-act="download" data-id="' + f.id + '">' + esc(t('act.download')) + '</button><button class="btn sm danger' + (S.confirm === f.id ? ' confirm' : '') + '" data-act="delete" data-id="' + f.id + '">' + esc(t(S.confirm === f.id ? 'act.confirm' : 'act.delete')) + '</button>';
+  }
   // file details: facts in one row, check results as a one-line summary that opens, change summary
   function renderDetail() {
     var el = $('#detail'); if (!el) return;
@@ -445,7 +457,7 @@
       : '<div class="isum ok"><b>' + esc(t('detail.checks')) + ':</b> ' + esc(t('detail.clean')) + '</div>';
     var who = esc(f.uploadedBy ? t('detail.by', { who: f.uploadedBy, when: fmtDT(f.uploadedAt) }) : t('col.uploaded') + ': ' + fmtDT(f.uploadedAt)) + (f.activatedAt ? ' · ' + esc(t('detail.activated', { when: fmtDT(f.activatedAt) })) : '');
     el.innerHTML = '<div class="chd"><div class="chd-l"><div class="cap">' + esc(t('detail.cap')) + '</div><h2 class="dttl" title="' + esc(f.name) + '">' + esc(f.name) + '</h2><p class="sub">' + who + '</p></div>' +
-      '<span class="chip ' + (st === 'ok' ? 'ok' : st === 'warn' ? 'warn' : 'error') + '">' + esc(t('status.' + st)) + '</span></div>' + facts + checks + '<div class="chg-line">' + changeBox(f) + '</div>';
+      '<div class="dacts"><span class="chip ' + (st === 'ok' ? 'ok' : st === 'warn' ? 'warn' : 'error') + '">' + esc(t('status.' + st)) + '</span>' + (S.tab === 'daily' ? fileActs(f) : '') + '</div></div>' + facts + checks + '<div class="chg-line">' + changeBox(f) + '</div>';
     ensureRows(f, function () { renderPreview(); renderBomQ(); });
     renderRawShell(f); renderBomQ();
   }
