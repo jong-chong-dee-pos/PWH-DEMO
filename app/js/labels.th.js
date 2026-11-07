@@ -58,6 +58,8 @@
   "detail.cap": "รายละเอียดไฟล์",   // File details
   "detail.none": "ยังไม่ได้เลือกไฟล์",   // No file selected
   "upload.hint2": "หรือลากไฟล์ .xlsx มาวางบนการ์ดนี้",   // or drop .xlsx files on this card
+  "ul.title": "JOB ตาม U-line",   // JOBs per U-line
+  "ul.sum": "{n} ไลน์ · รวม {j} JOB",   // {n} lines · {j} JOB
   "cal.week": "จ,อ,พ,พฤ,ศ,ส,อา",   // Mon,Tue,Wed,Thu,Fri,Sat,Sun
   "cal.has": "อัปโหลดแล้ว {n} วัน",   // Uploaded {n} days
   "cal.miss": "ยังไม่มีแผน {n} วัน",   // Missing {n} days

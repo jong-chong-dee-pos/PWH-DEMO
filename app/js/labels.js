@@ -47,6 +47,7 @@
     'upload.btn': 'Upload file', 'upload.hint': 'You can also drop .xlsx files onto this box, several at once.',
     'detail.cap': 'File details', 'detail.none': 'No file selected',
     'upload.hint2': 'or drop .xlsx files on this card',
+    'ul.title': 'JOBs per U-line', 'ul.sum': '{n} lines · {j} JOB',
     'cal.week': 'Mon,Tue,Wed,Thu,Fri,Sat,Sun',
     'cal.has': 'Uploaded {n} days',
     'cal.miss': 'Missing {n} days',

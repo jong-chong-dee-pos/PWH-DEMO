@@ -435,6 +435,14 @@
   function prevMonth(m) { var y = +m.slice(0, 4), mo = +m.slice(5, 7) - 1; if (!mo) { mo = 12; y--; } return y + '-' + p2(mo); }
   function nextMonth(m) { var y = +m.slice(0, 4), mo = +m.slice(5, 7) + 1; if (mo > 12) { mo = 1; y++; } return y + '-' + p2(mo); }
 
+  // U-line summary "ACC (4), AP-LASER (6), ..." -> one tile per line with its JOB count
+  function ulineBox(str) {
+    if (!str) return '';
+    var items = String(str).split(/,\s*(?![^()]*\))/).map(function (x) { var m = /^(.*)\s\((\d+)\)$/.exec(x.trim()); return m ? [m[1], +m[2]] : [x.trim(), null]; }).filter(function (x) { return x[0]; });
+    var tot = items.reduce(function (a, x) { return a + (x[1] || 0); }, 0);
+    return '<div class="ulbox"><div class="ulh"><b>' + esc(t('ul.title')) + '</b><span class="sub2">' + esc(t('ul.sum', { n: items.length, j: nf(tot) })) + '</span></div><ul class="ulg">' +
+      items.map(function (x) { return '<li><span class="uln">' + esc(x[0]) + '</span>' + (x[1] != null ? '<b class="ulc">' + nf(x[1]) + '</b>' : '') + '</li>'; }).join('') + '</ul></div>';
+  }
   function fileActs(f) {
     var inUse = usage()[f.id];
     return (inUse ? '' : '<button class="btn sm' + (S.confirmUse === f.id ? ' confirm' : '') + '" data-act="use" data-id="' + f.id + '">' + esc(t(S.confirmUse === f.id ? 'act.use_confirm' : 'act.use_this')) + '</button>') +
@@ -447,7 +455,8 @@
     if (!f) { el.hidden = true; var r0 = $('#raw'); if (r0) r0.hidden = true; var b0 = $('#bomq'); if (b0) b0.hidden = true; return; }
     el.hidden = false;
     var st = fileStatus(f), iss = issuesOf(f);
-    var facts = '<dl class="facts row">' + (f.stats || []).map(function (s) { return '<div><dt>' + esc(t(s[0])) + '</dt><dd>' + (typeof s[1] === 'number' ? nf(s[1]) : esc(s[1])) + '</dd></div>'; }).join('') + '</dl>';
+    var lineStat = null;
+    var facts = '<dl class="facts row">' + (f.stats || []).filter(function (s) { if (s[0] === 'stat.lines') { lineStat = s[1]; return false; } return true; }).map(function (s) { return '<div><dt>' + esc(t(s[0])) + '</dt><dd>' + (typeof s[1] === 'number' ? nf(s[1]) : esc(s[1])) + '</dd></div>'; }).join('') + '</dl>' + ulineBox(lineStat);
     var n = { error: 0, warning: 0, info: 0 }; iss.forEach(function (i) { n[i.level] = (n[i.level] || 0) + 1; });
     var parts = []; if (n.error) parts.push(t('sum.err', { n: n.error })); if (n.warning) parts.push(t('sum.warn', { n: n.warning })); if (n.info) parts.push(t('sum.info', { n: n.info }));
     var checks = iss.length

@@ -880,3 +880,13 @@ h1 { font-size: 24px; font-weight: 600; }
 #drop { container: dcard / inline-size; }
 @container dcard (max-width: 820px) { .dgrid { grid-template-columns: minmax(0, 1fr); } .dgrid .cal { max-width: 360px; } }
 .dacts { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+
+/* v18 — U-line tiles in file details */
+.ulbox { background: var(--surface-2); border-radius: 10px; padding: 10px 12px 12px; margin: -4px 0 12px; }
+.ulh { display: flex; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+.ulh b { font-size: 14px; font-weight: 600; }
+.ulh .sub2 { font-size: 13px; }
+.ulg { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); gap: 6px; }
+.ulg li { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; min-width: 0; }
+.uln { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 13.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ulc { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 24px; text-align: right; }
