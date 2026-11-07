@@ -11,13 +11,16 @@
     names: true, q: '', qp: '', qb: '', color: 'zone', fs: false, hl: null, results: [], partNames: new Map(),
     v: { z: 1, ox: 0, oy: 0 }, canvas: null, ctx: null, hits: [], dpr: 1, root: null, confirmRemove: false, busy: ''
   };
-  try { var sm = localStorage.getItem(modeKey); if (sm === '2d' || sm === '3d') M.mode = sm; } catch (e) {}
+  M.rot = 0;   // 3D yaw in radians (turned with the rotate buttons or Shift/right-drag)
+  try { var sm = localStorage.getItem(modeKey); if (sm === '2d' || sm === '3d') M.mode = sm; M.rot = +localStorage.getItem(modeKey + '-rot') || 0; } catch (e) {}
   M.overlay = null;
   // floor / 2D-3D changes redraw in place (a rebuilt page would drop the real full screen)
   M.rerender = function () {
     if (!M.canvas || !document.body.contains(M.canvas)) { render(); return; }
     M.root.querySelectorAll('[data-m2=floor]').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-v') === String(M.floor)); });
     M.root.querySelectorAll('[data-m2=mode]').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-v') === M.mode); });
+    var ct = M.root.querySelector('#m2cnt'); if (ct && M.layout) ct.innerHTML = countTag();
+    var rc = M.root.querySelector('#m2rot'); if (rc) rc.hidden = M.mode !== '3d';
     side(); resize(); fit(); draw();
   };
 
@@ -42,24 +45,45 @@
   function P(x, y, z) {
     var v = M.v;
     if (M.mode === '2d') return [x * v.z + v.ox, y * v.z + v.oy];
+    if (M.rot) { var q = rot(x, y); x = q[0]; y = q[1]; }
     return [((x - y) * COS30) * v.z + v.ox, ((x + y) * 0.5 - (z || 0)) * v.z + v.oy];
+  }
+  // turn floor coordinates around the floor centre (3D only)
+  function rot(x, y) {
+    var f = floorObj(), b = f ? f.bbox : [0, 0, 0, 0], cx = (b[0] + b[2]) / 2, cy = (b[1] + b[3]) / 2, c = Math.cos(M.rot), s2 = Math.sin(M.rot), dx = x - cx, dy = y - cy;
+    return [cx + dx * c - dy * s2, cy + dx * s2 + dy * c];
+  }
+  function rotN(nx, ny) { var c = Math.cos(M.rot), s2 = Math.sin(M.rot); return [nx * c - ny * s2, nx * s2 + ny * c]; }
+  function setRot(a) {
+    var tau = Math.PI * 2; M.rot = ((a % tau) + tau) % tau; if (Math.abs(M.rot) < 1e-3 || Math.abs(M.rot - tau) < 1e-3) M.rot = 0;
+    try { localStorage.setItem(modeKey + '-rot', String(M.rot)); } catch (e) {}
+  }
+  // space the map must leave free: toolbar and side panel in full screen, legend, Module 3 dock
+  function insets() {
+    var o = { l: 0, t: 0, r: 0, b: 0 }; if (!M.root) return o;
+    var leg = M.root.querySelector('#m2legend'); if (leg) o.b = leg.offsetHeight + 16;
+    if (M.fs) {
+      var tool = M.root.querySelector('[data-fsbox] .m2tool, [data-fsbox] .m2bar'); if (tool) o.t = tool.offsetTop + tool.offsetHeight + 8;
+      var sd = M.root.querySelector('.m2side:not([hidden])'); if (sd) o.r = sd.offsetWidth + 20;
+      var dk = M.root.querySelector('.m3dock:not([hidden])'); if (dk) o.b = Math.max(o.b, dk.offsetHeight + 16);
+    } else o.t = 40;   // floor / rack count tag in the top-left corner
+    return o;
   }
   function floorObj() { return M.layout && M.layout.floors[M.floor]; }
   function levelPx() { return LEVEL_H * M.layout.scale; }
   function fit() {
     var f = floorObj(); if (!f || !M.canvas) return;
-    var cw = M.canvas.clientWidth, ch = M.canvas.clientHeight, b = f.bbox, maxH = 4 * levelPx();
+    var cw = M.canvas.clientWidth, ch = M.canvas.clientHeight, b = f.bbox, maxH = f.racks.reduce(function (a, r) { return Math.max(a, r.levels || 1); }, 1) * levelPx();
     M.v = { z: 1, ox: 0, oy: 0 };
     var xs = [], ys = [];
     [[b[0], b[1]], [b[2], b[1]], [b[2], b[3]], [b[0], b[3]]].forEach(function (c) {
       [0, M.mode === '3d' ? maxH : 0].forEach(function (z) { var p = P(c[0], c[1], z); xs.push(p[0]); ys.push(p[1]); });
     });
     var minx = Math.min.apply(null, xs), maxx = Math.max.apply(null, xs), miny = Math.min.apply(null, ys), maxy = Math.max.apply(null, ys);
-    // leave room for the legend inside the map and, in full screen, for the panel along the bottom
-    var dockEl = M.fs && M.root && (M.root.querySelector('.m2side:not([hidden])') || M.root.querySelector('.m3dock:not([hidden])'));
-    var bottom = (dockEl ? dockEl.offsetHeight + 10 : 0) + (M.root && M.root.querySelector('#m2legend') ? 34 : 0);
-    var z = Math.min((cw - 40) / (maxx - minx), (ch - 40 - bottom) / (maxy - miny));
-    M.v = { z: z, ox: (cw - (maxx - minx) * z) / 2 - minx * z, oy: (ch - bottom - (maxy - miny) * z) / 2 - miny * z };
+    var o = insets(), aw = cw - o.l - o.r, ah = ch - o.t - o.b;
+    var z = Math.min((aw - 32) / (maxx - minx), (ah - 24) / (maxy - miny));
+    M.v = { z: z, ox: o.l + (aw - (maxx - minx) * z) / 2 - minx * z, oy: o.t + (ah - (maxy - miny) * z) / 2 - miny * z };
+    M.fitZ = z;
   }
 
   // ---------- drawing ----------
@@ -80,6 +104,37 @@
   function occOf(r) { return M.match && M.match.occ.get(r.id); }
   function stockLevels(r) { var o = occOf(r); return o ? Object.keys(o).map(Number).filter(function (l) { return l >= 1 && l <= r.levels; }) : []; }
 
+  // side faces of a box with the light/visibility for the current turn
+  var SIDES = [[0, 1, 0, -1], [1, 2, 1, 0], [2, 3, 0, 1], [3, 0, -1, 0]];
+  function faces(o) {
+    var c = [[o.x, o.y], [o.x + o.w, o.y], [o.x + o.w, o.y + o.h], [o.x, o.y + o.h]], out = [];
+    SIDES.forEach(function (sd) {
+      var n = M.rot ? rotN(sd[2], sd[3]) : [sd[2], sd[3]];
+      if (n[0] + n[1] > 0.001) out.push({ p: c[sd[0]], q: c[sd[1]], lit: 0.88 + 0.08 * (n[1] - n[0]) });
+    });
+    return out;
+  }
+  function wall(fc, z0, z1) { return [P(fc.p[0], fc.p[1], z0), P(fc.q[0], fc.q[1], z0), P(fc.q[0], fc.q[1], z1), P(fc.p[0], fc.p[1], z1)]; }
+  // rack names: only the first two racks of each row segment (left / top end), the rest on hover or when zoomed in
+  function labelSet(f) {
+    if (f._lab) return f._lab;
+    var by = {}, set = new Set();
+    f.racks.forEach(function (r) { var k = zoneOf(r.id); (by[k] = by[k] || []).push(r); });
+    Object.keys(by).forEach(function (k) {
+      var g2 = by[k], xs = g2.map(function (r) { return r.x; }), ys = g2.map(function (r) { return r.y; });
+      var horiz = (Math.max.apply(null, xs) - Math.min.apply(null, xs)) >= (Math.max.apply(null, ys) - Math.min.apply(null, ys));
+      var A = horiz ? 'x' : 'y', B = horiz ? 'y' : 'x', LA = horiz ? 'w' : 'h', LB = horiz ? 'h' : 'w';
+      g2.sort(function (a, b2) { return Math.abs(a[B] - b2[B]) > a[LB] * 0.5 ? a[B] - b2[B] : a[A] - b2[A]; });
+      var n = 0;
+      g2.forEach(function (r, i) {
+        var pr = g2[i - 1], brk = !pr || Math.abs(r[B] - pr[B]) > r[LB] * 0.5 || r[A] - (pr[A] + pr[LA]) > Math.min(r[LA], pr[LA]) * 0.6;
+        if (brk) n = 0;
+        if (n < 2) set.add(r.id);
+        n++;
+      });
+    });
+    f._lab = set; return set;
+  }
   function draw() {
     var c = M.ctx, f = floorObj(); if (!c || !f) return;
     var cw = M.canvas.clientWidth, ch = M.canvas.clientHeight, C = pal();
@@ -98,7 +153,8 @@
     });
     // racks
     var racks = f.racks.slice();
-    if (d3) racks.sort(function (a, b2) { return (a.x + a.w / 2 + a.y + a.h / 2) - (b2.x + b2.w / 2 + b2.y + b2.h / 2); });
+    if (d3) racks.sort(function (a, b2) { var p = rot(a.x + a.w / 2, a.y + a.h / 2), q = rot(b2.x + b2.w / 2, b2.y + b2.h / 2); return (p[0] + p[1]) - (q[0] + q[1]); });
+    var labs = labelSet(f), allNames = M.fitZ && z >= M.fitZ * 2.2;
     racks.forEach(function (r) {
       var base = M.color === 'levels' ? (C.l[r.levels] || C.none) : C.rack, sl = stockLevels(r), H = r.levels * lp;
       if (M.color === 'stock') base = sl.length ? C.stock : C.none;
@@ -112,29 +168,24 @@
         }
         hit.polys.push(rp);
       } else {
-        // glass-like rack: stock cubes first (inside), then the faces on top
-        sl.forEach(function (l) {
+        // glass-like rack seen from the current turn: only the side faces that point at the viewer are drawn
+        var fb = M.color === 'stock' ? C.none : base, a = M.color === 'stock' && !sl.length ? 0.35 : 0.55;
+        sl.forEach(function (l) {   // stock cubes inside, one per level that holds stock
           var inx = r.w * 0.18, iny = r.h * 0.18, cb = { x: r.x + inx, y: r.y + iny, w: r.w - 2 * inx, h: r.h - 2 * iny }, z0 = (l - 1) * lp + 1, z1 = z0 + lp * 0.78;
-          poly([P(cb.x, cb.y + cb.h, z0), P(cb.x + cb.w, cb.y + cb.h, z0), P(cb.x + cb.w, cb.y + cb.h, z1), P(cb.x, cb.y + cb.h, z1)], shade(C.stock, 0.85));
-          poly([P(cb.x + cb.w, cb.y, z0), P(cb.x + cb.w, cb.y + cb.h, z0), P(cb.x + cb.w, cb.y + cb.h, z1), P(cb.x + cb.w, cb.y, z1)], shade(C.stock, 0.68));
-          poly([P(cb.x, cb.y, z1), P(cb.x + cb.w, cb.y, z1), P(cb.x + cb.w, cb.y + cb.h, z1), P(cb.x, cb.y + cb.h, z1)], shade(C.stock, 1.12));
+          faces(cb).forEach(function (fc) { poly(wall(fc, z0, z1), shade(C.stock, fc.lit * 0.88)); });
+          poly(rectPts(cb, z1), shade(C.stock, 1.12));
         });
         if (M.color === 'zone') { var sw3 = Math.max(1.5, 3.5 / z), fz = r.w >= r.h ? { x: r.x, y: r.y + r.h, w: r.w, h: Math.min(r.h * 0.25, sw3) } : { x: r.x + r.w, y: r.y, w: Math.min(r.w * 0.25, sw3), h: r.h }; poly(rectPts(fz, 0), zoneColor(r.id)); }
-        var a = M.color === 'stock' && !sl.length ? 0.35 : 0.55;
-        var left = [P(r.x, r.y + r.h, 0), P(r.x + r.w, r.y + r.h, 0), P(r.x + r.w, r.y + r.h, H), P(r.x, r.y + r.h, H)];
-        var right = [P(r.x + r.w, r.y, 0), P(r.x + r.w, r.y + r.h, 0), P(r.x + r.w, r.y + r.h, H), P(r.x + r.w, r.y, H)];
-        var top = [P(r.x, r.y, H), P(r.x + r.w, r.y, H), P(r.x + r.w, r.y + r.h, H), P(r.x, r.y + r.h, H)];
-        var fb = M.color === 'stock' ? C.none : base;
-        poly(left, shade(fb, 0.96, a), C.line, 0.8);
-        poly(right, shade(fb, 0.8, a), C.line, 0.8);
+        var top = rectPts(r, H);
+        faces(r).forEach(function (fc) {
+          var wp = wall(fc, 0, H); poly(wp, shade(fb, fc.lit, a), C.line, 0.8); hit.polys.push(wp);
+          for (var k = 1; k < r.levels; k++) poly([P(fc.p[0], fc.p[1], k * lp), P(fc.q[0], fc.q[1], k * lp)], null, C.line, 0.7);   // shelf boards
+        });
         poly(top, shade(fb, 1.08, Math.min(1, a + 0.2)), C.line, 0.8);
-        for (var k = 1; k < r.levels; k++) {   // shelf boards
-          poly([P(r.x, r.y + r.h, k * lp), P(r.x + r.w, r.y + r.h, k * lp), P(r.x + r.w, r.y, k * lp)], null, C.line, 0.7);
-        }
-        hit.polys.push(top, left, right);
+        hit.polys.unshift(top);
       }
       M.hits.push(hit);
-      if (M.names) {
+      if (M.names && (allNames || labs.has(r.id))) {
         var cw2 = r.w * z * (d3 ? 0.8 : 1), ch2 = r.h * z * (d3 ? 0.55 : 1), len = String(r.id).length;
         var fs = Math.min(d3 ? 12 : 13, cw2 * 0.92 / (len * 0.62), ch2 * 0.72);
         if (fs >= 6) {
@@ -280,12 +331,11 @@
     var xs = [], ys = [], lp = levelPx();
     here.forEach(function (r) { [[r.x, r.y], [r.x + r.w, r.y], [r.x + r.w, r.y + r.h], [r.x, r.y + r.h]].forEach(function (c0) { [0, M.mode === '3d' ? r.levels * lp : 0].forEach(function (h) { var p = P(c0[0], c0[1], h); xs.push(p[0]); ys.push(p[1]); }); }); });
     var minx = Math.min.apply(null, xs), maxx = Math.max.apply(null, xs), miny = Math.min.apply(null, ys), maxy = Math.max.apply(null, ys);
-    var sd = $('#m2side'), dock = M.fs && sd && !sd.hidden ? sd.offsetHeight + 10 : 0;
-    // centre in the part of the map that is on screen (the page may hide its lower part on short screens)
-    var rc = M.canvas.getBoundingClientRect(), full = M.canvas.clientHeight - dock;
-    var vTop = M.fs ? 0 : Math.max(0, -rc.top), vBot = M.fs ? full : Math.min(full, window.innerHeight - rc.top);
-    if (vBot - vTop < 160) { vTop = 0; vBot = full; }
-    var cw = M.canvas.clientWidth, ch = vBot - vTop, w = Math.max(maxx - minx, 1), h = Math.max(maxy - miny, 1);
+    // centre in the part of the map that is on screen and not under the toolbar / side panel / legend
+    var o = insets(), rc = M.canvas.getBoundingClientRect(), full = M.canvas.clientHeight - o.b;
+    var vTop = M.fs ? o.t : Math.max(o.t, -rc.top), vBot = M.fs ? full : Math.min(full, window.innerHeight - rc.top);
+    if (vBot - vTop < 160) { vTop = o.t; vBot = full; }
+    var cw = M.canvas.clientWidth - o.r, ch = vBot - vTop, w = Math.max(maxx - minx, 1), h = Math.max(maxy - miny, 1);
     var z = Math.min((cw * 0.5) / w, (ch * 0.5) / h, fz * (here.length > 1 ? 5 : 3.5)); z = Math.max(z, fz);
     M.v = { z: z, ox: cw / 2 - (minx + w / 2) * z, oy: vTop + ch / 2 - (miny + h / 2) * z };
     draw();
@@ -329,6 +379,13 @@
     var L = M.layout, n = 0; L.floors.forEach(function (f) { n += f.racks.length; });
     return t('m2.count', { n: nf(n) }) + ' (' + L.floors.map(function (f) { return t('m2.floor', { n: f.id.slice(1) }) + ': ' + nf(f.racks.length); }).join(' · ') + ')';
   }
+  function countTag() {
+    var L = M.layout, f = L.floors[M.floor], n = 0; L.floors.forEach(function (x) { n += x.racks.length; });
+    return '<b>' + esc(t('m2.cnt.here', { f: f.id.slice(1), n: nf(f.racks.length) })) + '</b>' + (L.floors.length > 1 ? '<span>' + esc(t('m2.cnt.all', { n: nf(n) })) + '</span>' : '');
+  }
+  function rotCtl() {
+    return '<div class="m2rot" id="m2rot"' + (M.mode === '3d' ? '' : ' hidden') + ' title="' + esc(t('m2.rot.tip')) + '"><button class="btn ic" data-m2="rot" data-v="-1" aria-label="' + esc(t('m2.rot.l')) + '">⟲</button><button class="btn" data-m2="rot" data-v="0">' + esc(t('m2.rot.reset')) + '</button><button class="btn ic" data-m2="rot" data-v="1" aria-label="' + esc(t('m2.rot.r')) + '">⟳</button></div>';
+  }
   function warnBar() {
     var s = M.match && M.match.stat; if (!s) return '';
     var off = s.stockBins - s.onLayout, mr = Array.from(s.missing.keys()); if (!off && !s.levelOver.length) return '';
@@ -353,13 +410,14 @@
   function mapPanel() {
     var L = M.layout;
     var floors = L.floors.map(function (f, i) { return [String(i), t('m2.floor', { n: f.id.slice(1) })]; });
-    var bar = '<div class="m2tool"><div class="m2qwrap"><input id="m2q" class="m2q1" type="search" autocomplete="off" placeholder="' + esc(t('m2.q.ph')) + '" value="' + esc(M.q) + '" aria-label="' + esc(t('m2.q.ph')) + '"></div>' +
+    var opt = function (v) { return '<option value="' + v + '"' + (M.color === v ? ' selected' : '') + '>' + esc(t('m2.color.opt', { v: t('m2.color.' + v) })) + '</option>'; };
+    var bar = '<div class="m2tool"><div class="m2qwrap"><input id="m2q" class="m2q1" type="search" autocomplete="off" placeholder="' + esc(t('m2.q.ph2')) + '" title="' + esc(t('m2.q.ph')) + '" value="' + esc(M.q) + '" aria-label="' + esc(t('m2.q.ph')) + '"></div>' +
       seg(floors, String(M.floor), 'floor') + seg([['2d', t('m2.view.2d')], ['3d', t('m2.view.3d')]], M.mode, 'mode') +
-      '<button class="btn" data-m2="names" aria-pressed="' + M.names + '">' + esc(t('m2.names')) + '</button>' +
-      '<label class="inl"><span class="inlt">' + esc(t('m2.color')) + '</span> <select id="m2color" aria-label="' + esc(t('m2.color')) + '"><option value="zone"' + (M.color === 'zone' ? ' selected' : '') + '>' + esc(t('m2.color.zone')) + '</option><option value="levels"' + (M.color === 'levels' ? ' selected' : '') + '>' + esc(t('m2.color.levels')) + '</option><option value="stock"' + (M.color === 'stock' ? ' selected' : '') + '>' + esc(t('m2.color.stock')) + '</option></select></label>' +
-      '<span class="grow"></span><div class="m2zoom"><button class="btn" data-m2="zout" aria-label="Zoom out">−</button><button class="btn" data-m2="zin" aria-label="Zoom in">+</button><button class="btn" data-m2="fit">' + esc(t('m2.fit')) + '</button></div><button class="btn primary" data-m2="fs">' + esc(fsLabel()) + '</button></div>';
+      '<button class="btn" data-m2="names" aria-pressed="' + M.names + '" title="' + esc(t('m2.names.tip')) + '">' + esc(t('m2.names')) + '</button>' +
+      '<select id="m2color" aria-label="' + esc(t('m2.color')) + '">' + opt('zone') + opt('levels') + opt('stock') + '</select>' +
+      '<span class="grow"></span><div class="m2zoom"><button class="btn ic" data-m2="zout" aria-label="' + esc(t('m2.zout')) + '" title="' + esc(t('m2.zout')) + '">−</button><button class="btn ic" data-m2="zin" aria-label="' + esc(t('m2.zin')) + '" title="' + esc(t('m2.zin')) + '">+</button><button class="btn" data-m2="fit">' + esc(t('m2.fit')) + '</button></div><button class="btn primary" data-m2="fs">' + esc(fsLabel()) + '</button></div>';
     return '<section class="panel m2mapcard' + (M.fs ? ' fs' : '') + '" data-fsbox>' + bar +
-      '<div class="m2canvas" id="m2wrap"><canvas id="m2cv" tabindex="0" aria-label="Warehouse map"></canvas><div id="m2tip" class="m2tip" hidden></div><div class="m2legend" id="m2legend">' + legendHtml() + '</div></div>' +
+      '<div class="m2canvas" id="m2wrap"><canvas id="m2cv" tabindex="0" aria-label="Warehouse map"></canvas><div id="m2tip" class="m2tip" hidden></div><div class="m2cntag" id="m2cnt">' + countTag() + '</div>' + rotCtl() + '<div class="m2legend" id="m2legend">' + legendHtml() + '</div></div>' +
       '<div class="m2side" id="m2side" hidden></div><span class="sr-only" id="m2live" role="status" aria-live="polite"></span></section>';
   }
 
@@ -369,8 +427,8 @@
       root.innerHTML = '<div class="ph"><div class="ph-l"><div class="cap">' + esc(t('mod.cap', { n: 2 })) + '</div><h1>' + esc(t('nav.m2')) + '</h1><p class="lede">' + esc(t('m2.intro')) + '</p></div></div>' + importPanel();
       wireImport(); return;
     }
-    root.innerHTML = '<div class="ph m2ph"><div class="ph-l"><div class="cap">' + esc(t('mod.cap', { n: 2 })) + '</div><h1>' + esc(t('nav.m2')) + '</h1></div><div class="ph-r m2phr"><span class="m2cnt">' + esc(rackCount()) + '</span>' + adminMenu() + '</div></div>' +
-      warnBar() + mapPanel();
+    root.innerHTML = '<div class="ph m2ph"><div class="ph-l"><div class="cap">' + esc(t('mod.cap', { n: 2 })) + '</div><h1>' + esc(t('nav.m2')) + '</h1></div><div class="ph-r m2phr">' + adminMenu() + '</div></div>' +
+      mapPanel() + warnBar();
     wireImport(); wireMap(); side();
     resize(); fit(); draw();
   }
@@ -409,12 +467,14 @@
   function wireMap() {
     M.canvas = $('#m2cv'); M.ctx = M.canvas.getContext('2d');
     var drag = null, tip = $('#m2tip');
-    M.canvas.addEventListener('pointerdown', function (e) { M.canvas.setPointerCapture(e.pointerId); drag = { x: e.clientX, y: e.clientY, ox: M.v.ox, oy: M.v.oy, moved: false }; });
+    M.canvas.addEventListener('pointerdown', function (e) { M.canvas.setPointerCapture(e.pointerId); drag = { x: e.clientX, y: e.clientY, ox: M.v.ox, oy: M.v.oy, moved: false, turn: M.mode === '3d' && (e.shiftKey || e.button === 2), r0: M.rot }; });
+    M.canvas.addEventListener('contextmenu', function (e) { if (M.mode === '3d') e.preventDefault(); });
     M.canvas.addEventListener('pointermove', function (e) {
       var rc = M.canvas.getBoundingClientRect(), px = e.clientX - rc.left, py = e.clientY - rc.top;
       if (drag) {
         var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
         if (Math.abs(dx) + Math.abs(dy) > 3) drag.moved = true;
+        if (drag.moved && drag.turn) { turnTo(drag.r0 + dx * 0.006); tip.hidden = true; return; }
         if (drag.moved) { M.v.ox = drag.ox + dx; M.v.oy = drag.oy + dy; draw(); tip.hidden = true; return; }
       }
       var id = hitAt(px, py);
@@ -429,7 +489,9 @@
     M.canvas.addEventListener('pointerup', function (e) {
       if (drag && !drag.moved) {
         var rc = M.canvas.getBoundingClientRect(), id = hitAt(e.clientX - rc.left, e.clientY - rc.top);
-        M.sel = id; side(!!id); draw();
+        M.sel = id; side(!!id);
+        if (id && M.fs) { var o = insets(), cw = M.canvas.clientWidth, px = e.clientX - rc.left; if (px > cw - o.r - 30) M.v.ox -= px - (cw - o.r) / 2; }
+        draw();
       }
       drag = null;
     });
@@ -483,6 +545,16 @@
   document.addEventListener('fullscreenchange', function () { if (!document.fullscreenElement && M.fs && M.fsBox && M.root && M.root.contains(M.fsBox)) applyFs(false, M.fsBox); });
   M.toggleFs = function () { toggleFs(null); };
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && M.fs && !document.fullscreenElement && M.root && document.body.contains(M.root)) { var a = document.activeElement; if (a && /^(INPUT|SELECT)$/.test(a.tagName) && a.value) return; toggleFs(null); } });
+  // turn the 3D view about the floor centre, keeping that centre where it is on screen
+  function turnTo(a) {
+    var f = floorObj(); if (!f) return; var b = f.bbox, cx = (b[0] + b[2]) / 2, cy = (b[1] + b[3]) / 2, p0 = P(cx, cy, 0);
+    setRot(a); var p1 = P(cx, cy, 0); M.v.ox += p0[0] - p1[0]; M.v.oy += p0[1] - p1[1]; draw();
+  }
+  function animTurn(to) {
+    var from = M.rot, t0 = performance.now(), dur = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 260;
+    if (!dur) { turnTo(to); return; }
+    (function step(now) { var k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3); turnTo(from + (to - from) * e); if (k < 1) requestAnimationFrame(step); })(t0);
+  }
   function zoomAt(mx, my, f) {
     var v = M.v; v.ox = mx - (mx - v.ox) * f; v.oy = my - (my - v.oy) * f; v.z *= f; draw();
   }
@@ -490,6 +562,9 @@
     var w = $('#m2wrap'); if (!w || !M.canvas) return;
     M.dpr = Math.min(2, g.devicePixelRatio || 1);
     M.canvas.width = Math.max(1, Math.round(w.clientWidth * M.dpr)); M.canvas.height = Math.max(1, Math.round(w.clientHeight * M.dpr));
+    // full screen: things that float on the map start below the floating toolbar
+    var box = M.root && M.root.querySelector('[data-fsbox]'), tool = box && box.querySelector('.m2tool, .m2bar');
+    if (box) box.style.setProperty('--fs-top', M.fs && tool ? (tool.offsetTop + tool.offsetHeight + 8) + 'px' : '');
   }
 
   document.addEventListener('click', function (e) {
@@ -500,6 +575,7 @@
     else if (a === 'zin') zoomAt(M.canvas.clientWidth / 2, M.canvas.clientHeight / 2, 1.25);
     else if (a === 'zout') zoomAt(M.canvas.clientWidth / 2, M.canvas.clientHeight / 2, 0.8);
     else if (a === 'fit') { fit(); draw(); }
+    else if (a === 'rot') { if (v === '0') { setRot(0); fit(); draw(); } else animTurn(M.rot + (+v) * Math.PI / 4); }
     else if (a === 'close') { if (M.sel) M.sel = null; else { var q0 = $('#m2q'); if (q0) q0.value = ''; doSearch(''); } side(); draw(); }
     else if (a === 'back') { var mc = M.root.querySelector('[data-fsbox]'); if (mc) mc.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     else if (a === 'search') M.runSearch();

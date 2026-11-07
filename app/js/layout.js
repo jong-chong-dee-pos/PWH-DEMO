@@ -134,11 +134,17 @@
     var rackById = new Map();
     layout.floors.forEach(function (f) { f.racks.forEach(function (r) { rackById.set(r.id, r); }); });
     var occ = new Map(), emptyBins = new Set(), stat = { stockBins: 0, onLayout: 0, special: [], missing: new Map(), levelOver: [] };
-    var stockBins = new Map();
+    var stockBins = new Map(), realLv = new Map();
     mlRows.forEach(function (r) {
-      var bin = r[1];
+      var bin = r[1], bi0 = binInfo(bin);
+      // real level count of a rack = highest level among its bins in Material-Location (stock or empty)
+      if (bi0 && rackById.has(bi0.rack) && bi0.level > (realLv.get(bi0.rack) || 0)) realLv.set(bi0.rack, bi0.level);
       if (!r[2]) { emptyBins.add(bin); return; }
       var list = stockBins.get(bin); if (!list) stockBins.set(bin, (list = [])); list.push({ mat: r[2], plant: r[3], stock: r[4] });
+    });
+    rackById.forEach(function (r, id) {
+      if (r.lvLayout == null) r.lvLayout = r.levels;      // what the layout sheet's colour said
+      r.levels = realLv.get(id) || r.lvLayout || 1;
     });
     stockBins.forEach(function (items, bin) {
       stat.stockBins++;
@@ -146,7 +152,6 @@
       if (!bi) { stat.special.push(bin); stat.specialCount = (stat.specialCount || 0) + 1; return; }
       var rack = rackById.get(bi.rack);
       if (!rack) { stat.missing.set(bi.rack, (stat.missing.get(bi.rack) || 0) + 1); return; }
-      if (bi.level > rack.levels) { stat.levelOver.push(bin); }
       stat.onLayout++;
       var o = occ.get(rack.id); if (!o) occ.set(rack.id, (o = {}));
       (o[bi.level] = o[bi.level] || []).push({ bin: bin, items: items });

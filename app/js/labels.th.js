@@ -313,6 +313,17 @@
   "m2.color.levels": "ระดับชั้นวาง",   // Rack levels
   "m2.color.stock": "สต็อก",   // Stock
   "m2.fit": "พอดีจอ",   // Fit
+  "m2.q.ph2": "ค้นหา Part หรือช่อง",   // Search Part or bin
+  "m2.names.tip": "แสดงชื่อ 2 ช่องแรกของแต่ละแถว (ซูมเข้าใกล้จะแสดงทุกช่อง)",   // Show the first two rack names of each row (all names when zoomed in)
+  "m2.color.opt": "สี: {v}",   // Colour: {v}
+  "m2.zin": "ซูมเข้า",   // Zoom in
+  "m2.zout": "ซูมออก",   // Zoom out
+  "m2.cnt.here": "ชั้น {f}: {n} ชั้นวาง",   // Floor {f}: {n} racks
+  "m2.cnt.all": "รวมทุกชั้น {n}",   // All floors {n}
+  "m2.rot.l": "หมุนซ้าย",   // Turn left
+  "m2.rot.r": "หมุนขวา",   // Turn right
+  "m2.rot.reset": "มุมเริ่มต้น",   // Reset turn
+  "m2.rot.tip": "หมุนมุมมอง 3D: กดปุ่มนี้ หรือลากด้วยเมาส์ขวา (หรือกด Shift ค้างแล้วลาก)",   // Turn the 3D view: these buttons, or drag with the right mouse button (or Shift + drag)
   "m2.legend.l1": "1 ระดับ",   // 1 level
   "m2.legend.l": "{n} ระดับ",   // {n} levels
   "m2.legend.ln": "{n} ระดับ",   // {n} levels

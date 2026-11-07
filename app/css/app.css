@@ -890,3 +890,59 @@ h1 { font-size: 24px; font-weight: 600; }
 .ulg li { display: flex; align-items: center; justify-content: space-between; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; min-width: 0; }
 .uln { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 13.5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ulc { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 24px; text-align: right; }
+
+/* ===== v19 — Module 2 map: compact toolbar, info inside the map, full screen as one map surface ===== */
+.m2tool { gap: 6px; padding: 6px 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.m2tool .btn, .m2tool select, .m2tool input { min-height: 32px; font-size: 13.5px; }
+.m2tool .btn { padding: 2px 11px; }
+.m2tool .btn.ic { width: 32px; padding: 0; font-size: 16px; line-height: 1; }
+.m2tool .seg { padding: 2px; border-radius: 8px; }
+.m2tool .seg button { min-height: 28px; padding: 2px 11px; font-size: 13.5px; border-radius: 6px; }
+.m2tool select { padding: 2px 8px; border-radius: 8px; max-width: 170px; }
+.m2tool .m2qwrap { flex: 1 1 200px; max-width: 300px; min-width: 150px; }
+.m2tool .m2q1 { height: 32px; padding: 4px 10px; font-size: 13.5px; }
+.m2tool .m2zoom { gap: 4px; }
+.m2tool .grow { flex: 1 1 0; min-width: 0; }
+@container mapc (max-width: 900px) { .m2tool [data-m2=names] { display: none; } .m2tool .m2qwrap { max-width: none; } }
+
+/* floor / rack count and 3D turn controls sit on the map itself */
+.m2cntag { position: absolute; left: 10px; top: 10px; z-index: 3; display: flex; align-items: baseline; gap: 10px; background: rgba(12, 23, 38, 0.82); color: #dbe5f2; border: 1px solid rgba(150, 180, 220, 0.25); border-radius: 8px; padding: 4px 10px; font-size: 13px; pointer-events: none; }
+.m2cntag b { color: #fff; font-weight: 600; }
+.m2cntag span { color: #9fb2c9; }
+.m2rot { position: absolute; right: 10px; bottom: 10px; z-index: 3; display: flex; gap: 4px; background: rgba(12, 23, 38, 0.82); border: 1px solid rgba(150, 180, 220, 0.25); border-radius: 10px; padding: 4px; }
+.m2rot[hidden] { display: none; }
+.m2rot .btn { min-height: 32px; background: rgba(255, 255, 255, 0.06); color: #dbe5f2; border-color: rgba(150, 180, 220, 0.25); font-size: 13px; padding: 2px 10px; }
+.m2rot .btn.ic { width: 34px; padding: 0; font-size: 18px; }
+.m2rot .btn:hover { background: rgba(255, 255, 255, 0.14); }
+.m2legend { right: 170px; max-width: none; }
+.m2rot[hidden] ~ .m2legend, .m3canvas .m2legend { right: auto; }
+.m2wrapnote { display: none; }
+
+/* warning about stock that is not on the layout now sits under the map */
+.m2mapcard + .m2warn { margin: 12px 0 0; }
+
+/* ---- full screen: the map fills the screen; toolbar floats over its top, details slide in on the right ---- */
+.m2mapcard.fs, .m2mapcard:fullscreen, .m3right.fs, .m3right:fullscreen { padding: 0 !important; background: #0c1726; position: fixed; }
+.m2mapcard.fs .m2canvas, .m3right.fs .m3canvas { position: absolute; inset: 0; height: auto !important; margin: 0 !important; border-radius: 0; }
+.m2mapcard.fs .m2tool, .m3right.fs .m2bar { position: absolute; top: 10px; left: 10px; right: 10px; z-index: 6; margin: 0; background: rgba(12, 23, 38, 0.88); border: 1px solid rgba(150, 180, 220, 0.25); border-radius: 12px; padding: 6px 8px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); color: #dbe5f2; }
+.m2mapcard.fs .m2tool .btn:not(.primary), .m3right.fs .m2bar .btn:not(.primary), .m2mapcard.fs .m2tool select, .m3right.fs .m2bar select { background: rgba(255, 255, 255, 0.06); color: #dbe5f2; border-color: rgba(150, 180, 220, 0.25); }
+.m2mapcard.fs .m2tool .btn[aria-pressed="true"]:not(.primary) { background: rgba(242, 183, 5, 0.18); border-color: #f2b705; color: #ffe08a; }
+.m2mapcard.fs .m2tool select option { color: #0c1726; }
+.m2mapcard.fs .m2tool .seg, .m3right.fs .m2bar .seg { background: rgba(255, 255, 255, 0.06); border-color: rgba(150, 180, 220, 0.25); }
+.m2mapcard.fs .m2tool .seg button, .m3right.fs .m2bar .seg button { color: #9fb2c9; }
+.m2mapcard.fs .m2tool .seg button[aria-pressed="true"], .m3right.fs .m2bar .seg button[aria-pressed="true"] { background: #f2f6fb; color: #0c1726; }
+.m2mapcard.fs .m2tool .m2q1, .m3right.fs .m2bar input { background: rgba(255, 255, 255, 0.08); color: #fff; border-color: rgba(150, 180, 220, 0.3); }
+.m2mapcard.fs .m2tool .m2q1::placeholder { color: #8ea3bb; }
+.m2mapcard.fs .m2cntag { top: var(--fs-top, 70px); }
+.m2mapcard.fs > .m2side { top: var(--fs-top, 70px); right: 10px; bottom: 10px; left: auto; width: min(440px, 38%); height: auto !important; border-radius: 12px; padding: 0 16px 12px; box-shadow: -10px 0 30px rgba(0, 0, 0, 0.35); }
+.m2mapcard.fs > .m2side .m2grip { display: none; }
+.m2mapcard.fs .m2dh { top: 0; padding-top: 14px; }
+.m2mapcard.fs > .m2side .m2det .m2pp { display: block; }
+@container side (max-width: 460px) { .m2det th:first-child, .m2det td.m2no { display: none; } }
+.m2legend { right: 210px; }
+.m2mapcard.fs > .m2side .m2dh { flex-direction: column-reverse; gap: 8px; }
+.m2mapcard.fs > .m2side .m2dr { justify-content: flex-start; flex-wrap: wrap; }
+.m2mapcard.fs > .m2side .m2dr [data-m2=close] { margin-left: auto; }
+.m2mapcard.fs > .m2side .m2tt { font-size: 20px; }
+.m2legend { right: auto; max-width: calc(100% - 240px); }
+.m2rot[hidden] ~ .m2legend { max-width: calc(100% - 20px); }
