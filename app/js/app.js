@@ -208,7 +208,7 @@
     var lang = PWH.getLang();
     var nav = '';
     for (var i = 1; i <= 6; i++) {
-      nav += '<button class="rb" data-act="module" data-m="' + i + '"' + (S.module === i ? ' aria-current="page"' : '') + '><svg viewBox="0 0 24 24" aria-hidden="true">' + ICON[i] + '</svg><span>' + esc(t('nav.m' + i)) + '</span>' + (i > 3 ? '<i class="soon" title="' + esc(t('nav.soon')) + '"></i>' : '') + '</button>';
+      nav += '<button class="rb" data-act="module" data-m="' + i + '"' + (S.module === i ? ' aria-current="page"' : '') + '><svg viewBox="0 0 24 24" aria-hidden="true">' + ICON[i] + '</svg><span>' + esc(t('nav.m' + i)) + '</span>' + (i > 5 ? '<i class="soon" title="' + esc(t('nav.soon')) + '"></i>' : '') + '</button>';
     }
     $('#app').innerHTML =
       '<div class="shell"><nav class="rail" aria-label="Modules"><div class="logo">' + esc(t('app.sub')) + '</div>' + nav + '</nav>' +
@@ -237,6 +237,8 @@
     v.className = S.module === 3 ? 'wide m3view' : ''; document.documentElement.classList.toggle('pwh-m3', S.module === 3);
     if (S.module === 2) { PWH.m2.mount(v); return; }
     if (S.module === 3) { PWH.m3.mount(v); return; }
+    if (S.module === 4) { PWH.m4.mount(v); return; }
+    if (S.module === 5) { PWH.m5.mount(v); return; }
     if (S.module !== 1) {
       v.innerHTML = '<div class="ph"><div class="ph-l"><div class="cap">' + esc(t('mod.cap', { n: S.module })) + '</div><h1>' + esc(t('nav.m' + S.module)) + '</h1></div></div><div class="panel soonbox"><h2>' + esc(t('soon.title')) + '</h2><p>' + esc(t('soon.body')) + '</p><p class="sub">' + esc(t('soon.m' + S.module)) + '</p></div>';
       return;

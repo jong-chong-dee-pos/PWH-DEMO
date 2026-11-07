@@ -212,12 +212,34 @@
     }
     return dist;
   }
+  // Walking distances from one place (a rack, START, DROP, a lift) to every other place, kept per layout.
+  // One shortest-path run per place; afterwards plans need no path search at all (fast enough for whole-month analysis).
+  function keyIndex(gr) {
+    if (gr.kIdx) return gr.kIdx;
+    var keys = [], sets = [];
+    gr.rackAccess.forEach(function (cells, id) { keys.push('R:' + id); sets.push(cells); });
+    keys.push('S'); sets.push([gr.start]); keys.push('D'); sets.push([gr.drop]);
+    Object.keys(gr.liftOf).forEach(function (fi) { keys.push('L' + fi); sets.push([gr.liftOf[fi]]); });
+    var m = new Map(); keys.forEach(function (k, i) { m.set(k, i); });
+    gr.kIdx = { map: m, sets: sets }; gr.rows = new Map();
+    return gr.kIdx;
+  }
+  function rowFor(gr, key, srcNodes) {
+    var ki = keyIndex(gr), r = key && gr.rows.get(key);
+    if (!r) {
+      var dist = dijkstra(gr, srcNodes); r = new Int32Array(ki.sets.length);
+      for (var i = 0; i < ki.sets.length; i++) r[i] = minTo(dist, ki.sets[i]);
+      if (key) gr.rows.set(key, r); else r.dist = dist;
+      if (!key) return function (k, nodes) { return minTo(dist, nodes); };
+    }
+    return function (k, nodes) { var i = k != null ? ki.map.get(k) : undefined; return i != null ? r[i] : minTo(dijkstra(gr, srcNodes), nodes); };
+  }
   function minTo(dist, nodes) { var m = INF; for (var i = 0; i < nodes.length; i++) if (dist[nodes[i]] < m) m = dist[nodes[i]]; return m; }
 
   /* plan(layout, parts, opts)
    *   parts: [{key, cands:[{bin, rack, level, floor(id), stock}]}]   (bins already limited to those on the layout)
    * returns { ok, order:[{key, cand, from:metres}], total:metres, legs:[{floor, pts:[[x,y]..], lift?}], unreachable:[key] } */
-  function plan(layout, parts) {
+  function plan(layout, parts, opts) {
     var gr = build(layout), cell = layout.scale / G;
     if (gr.start < 0) return { ok: false, reason: 'no_start', order: [], total: 0, legs: [], unreachable: parts.map(function (p) { return p.key; }) };
     var unreachable = [], items = [];
@@ -231,20 +253,16 @@
     if (!items.length) return { ok: true, order: [], total: 0, legs: [], unreachable: unreachable };
 
     // every candidate becomes a node; distances between all of them, START, DROP and the lift of each floor
-    var nodes = [{ nodes: [gr.start], kind: 'S' }], idx = [];
-    items.forEach(function (it, i) { idx[i] = []; it.cs.forEach(function (cc, j) { idx[i][j] = nodes.length; nodes.push({ nodes: cc.nodes, item: i, cand: j }); }); });
-    var di = nodes.length; nodes.push({ nodes: [gr.drop], kind: 'D' });
+    var nodes = [{ nodes: [gr.start], kind: 'S', key: 'S' }], idx = [];
+    items.forEach(function (it, i) { idx[i] = []; it.cs.forEach(function (cc, j) { idx[i][j] = nodes.length; nodes.push({ nodes: cc.nodes, item: i, cand: j, key: 'R:' + cc.c.rack }); }); });
+    var di = nodes.length; nodes.push({ nodes: [gr.drop], kind: 'D', key: 'D' });
     var liftIdx = {};
-    Object.keys(gr.liftOf).forEach(function (fi) { liftIdx[fi] = nodes.length; nodes.push({ nodes: [gr.liftOf[fi]], kind: 'L' }); });
-    // House rule for the way to DROP: every walk reaches DROP through the door nearest DROP
-    // (finishing on floor 1, or coming back down by lift and walking up past START to the door)
-    var doorIdx = null, dropFl = gr.floorOf[gr.drop], dd = dijkstra(gr, [gr.drop]), bestDoor = -1;
-    (gr.doors || []).forEach(function (n) { if (gr.floorOf[n] === dropFl && dd[n] < INF && (bestDoor < 0 || dd[n] < dd[bestDoor])) bestDoor = n; });
-    if (bestDoor >= 0) { doorIdx = nodes.length; nodes.push({ nodes: [bestDoor], kind: 'R' }); }
+    Object.keys(gr.liftOf).forEach(function (fi) { liftIdx[fi] = nodes.length; nodes.push({ nodes: [gr.liftOf[fi]], kind: 'L', key: 'L' + fi }); });
+    var doorIdx = null;   // the walled DROP corner sends every walk through the door; no waypoint needed
     var K = nodes.length, D = [];
     for (var a = 0; a < K; a++) {
-      var dist = dijkstra(gr, nodes[a].nodes); D[a] = new Int32Array(K);
-      for (var b = 0; b < K; b++) D[a][b] = a === b ? 0 : minTo(dist, nodes[b].nodes);
+      var row = rowFor(gr, nodes[a].key, nodes[a].nodes); D[a] = new Int32Array(K);
+      for (var b = 0; b < K; b++) D[a][b] = a === b ? 0 : row(nodes[b].key, nodes[b].nodes);
     }
     // Parts that cannot be walked to from START are left out of the tour
     var live = [];
@@ -365,6 +383,11 @@
     var via = [];
     var legs = [], total = 0, out = [], path = [0].concat(order.map(function (it) { return idx[it][choice[it]]; }), via, [di]);
     for (var s = 0; s < path.length - 1; s++) {
+      if (opts && opts.noLegs) {   // analysis: order and distance only, no drawing
+        total += D[path[s]][path[s + 1]];
+        if (s < order.length) out.push({ key: items[order[s]].key, cand: items[order[s]].cs[choice[order[s]]].c, from: D[path[s]][path[s + 1]] / cell });
+        continue;
+      }
       var A2 = path[s], B2 = path[s + 1], par = new Int32Array(gr.N).fill(-1), dist2 = dijkstra(gr, nodes[A2].nodes, par);
       var tgt = nodes[B2].nodes, end = tgt[0];
       for (var t2 = 1; t2 < tgt.length; t2++) if (dist2[tgt[t2]] < dist2[end]) end = tgt[t2];

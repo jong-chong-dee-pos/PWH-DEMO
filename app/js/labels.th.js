@@ -483,6 +483,142 @@
   "m3.bin.auto": "น้อยสุด",   // least stock
   "m3.bin.note": "มี {n} Bin · กดป้าย Bin เพื่อเปลี่ยน",   // {n} bins · click the bin to change
   "m3.bin.note_own": "มี {n} Bin · เปลี่ยน Bin แล้ว",   // {n} bins · you changed the bin
+  "m4.intro": "ความถี่การหยิบ Part ตามแผนรายวัน ตำแหน่งที่จัดเก็บ และระยะเข็นที่ลดได้ถ้าสลับตำแหน่ง Part แบบ 1:1",   // How often each Part is picked in the daily plans, where it sits, and how much cart walking 1:1 swaps would save.
+  "m4.tab.freq": "ความถี่การหยิบ",   // Pick frequency
+  "m4.tab.recs": "คำแนะนำสลับตำแหน่ง",   // Swap advice
+  "m4.tab.sim": "Simulation",   // Simulation
+  "m4.from": "จาก",   // From
+  "m4.to": "ถึง",   // To
+  "m4.q.ph": "ค้นหา Product หรือ Part",   // Search Product or Part
+  "m4.busy.load": "กำลังโหลดข้อมูล…",   // Loading data…
+  "m4.busy.analyse": "กำลังวิเคราะห์แผน…",   // Analysing the plans…
+  "m4.busy.recs": "กำลังหาคู่สลับที่ดีที่สุด…",   // Looking for the best swaps…
+  "m4.busy.sim": "กำลังจำลอง…",   // Simulating…
+  "m4.need.title": "ต้องมีข้อมูลก่อน",   // Data needed
+  "m4.need.list": "อัปโหลดหรือเพิ่ม: {list}",   // Upload or add: {list}
+  "m4.need.daily": "แผนรายวัน",   // daily plan
+  "m4.need.bom": "Product–BOM",   // Product–BOM
+  "m4.need.matloc": "Material–Location",   // Material–Location
+  "m4.need.layout": "ผังคลัง",   // warehouse layout
+  "m4.warn.monthly": "ยังไม่มีแผนรายเดือนที่ใช้งาน: ระบบจะรู้ Plant ของ JOB ได้เฉพาะ Product ที่มีใน Plant เดียว",   // No monthly plan in use: the Plant of a JOB is known only when the Product exists in one Plant.
+  "m4.k.rounds": "รอบจัด Part",   // Pick rounds
+  "m4.k.rounds_of": "จาก {n} รอบในแผน",   // of {n} in the plans
+  "m4.k.parts": "Part ที่ถูกหยิบ",   // Parts picked
+  "m4.k.picks": "รวม {n} ครั้ง",   // {n} picks in total
+  "m4.k.dist": "ระยะเข็นจำลอง",   // Simulated cart distance
+  "m4.k.per": "เฉลี่ย {m} ม./รอบ",   // {m} m per round
+  "m4.k.bad": "คำนวณไม่ได้",   // Not computable
+  "m4.k.bad_sub": "{r} รอบ · {p} Part",   // {r} rounds · {p} Parts
+  "m4.m": "{m} ม.",   // {m} m
+  "m4.floor": "ชั้น {n}",   // Floor {n}
+  "m4.times": "{n} ครั้ง",   // {n} times
+  "m4.pct": "{p}%",   // {p}%
+  "m4.parts.title": "Part ที่ถูกหยิบบ่อย",   // Parts picked most
+  "m4.parts.sub": "นับครั้งเดียวต่อรอบ ที่ Bin ที่เส้นทางหยิบใช้ กดแถวเพื่อดู Product ที่ใช้ Part นั้น",   // Counted once per round, at the bin the pick route uses. Click a row to see the Products.
+  "m4.col.part": "Part",   // Part
+  "m4.col.n": "ครั้ง",   // Times
+  "m4.col.loc": "Location",   // Location
+  "m4.col.floor": "ชั้น",   // Floor
+  "m4.col.prods": "Product",   // Products
+  "m4.det.products": "Product ที่ทำให้ต้องหยิบ {code}",   // Products that make {code} be picked
+  "m4.det.noprod": "ไม่มี Product ที่ระยะทางเปลี่ยน",   // No Product changes distance.
+  "m4.locs.title": "Location ที่ใช้บ่อย",   // Busiest locations
+  "m4.locs.sub": "จำนวนครั้งที่หยิบต่อ Bin ในช่วงที่เลือก",   // Picks per bin in the period
+  "m4.prods.title": "Product และรอบจัด Part",   // Products and their rounds
+  "m4.prods.sub": "ระยะเข็นจำลองตามเส้นทางหยิบของแต่ละ Product",   // Simulated cart distance of each Product's pick route
+  "m4.col.product": "Product",   // Product
+  "m4.col.rounds": "รอบ",   // Rounds
+  "m4.col.parts": "Part",   // Parts
+  "m4.col.per": "ม./รอบ",   // m / round
+  "m4.col.total": "รวม ม.",   // Total m
+  "m4.col.date": "วันที่",   // Date
+  "m4.col.bins": "Bin ใน Material–Location",   // Bins in Material–Location
+  "m4.more": "แสดง {n} รายการแรกจาก {t}",   // Showing the first {n} of {t}.
+  "m4.none": "ไม่พบรายการที่ตรงกัน",   // Nothing matches.
+  "m4.bad.title": "ข้อมูลที่นำมาคำนวณไม่ได้",   // Data that could not be computed
+  "m4.bad.sub": "ไม่ได้รวมในตัวเลขด้านบน พร้อมเหตุผล ไม่ได้แสดงเป็นศูนย์",   // Left out of the numbers above, with the reason. Not shown as zero.
+  "m4.why.plant": "ไม่ทราบ Plant ของ JOB (ไม่มีในแผนรายเดือน และ Product อยู่ทั้ง 2 Plant)",   // Plant of the JOB unknown (JOB not in the monthly plan and the Product is in both Plants)
+  "m4.why.nobom": "Product ไม่มีใน Product–BOM",   // Product not in the Product–BOM
+  "m4.why.noparts": "BOM ของ Plant นั้นไม่มีรายการ Part",   // No Parts in the BOM of that Plant
+  "m4.why.noloc": "ไม่มี Location (ไม่มีใน Material–Location)",   // Part has no location (not in Material–Location)
+  "m4.why.notonlayout": "Location นี้ไม่มีบนผัง",   // Location is not on the layout
+  "m4.why.special": "อยู่เฉพาะ Bin พิเศษ (PRINTER, NEW, AS CUT …) ไม่ใช่จุดเดินหยิบ",   // Only in special bins (PRINTER, NEW, AS CUT …), not a pick point
+  "m4.loc.unreach": "ไม่มีทางเดินถึง",   // No aisle to it
+  "m4.why.unreach": "Bin ไม่มีทางเดินรถเข็นติดในผัง (เช่น แถว K ด้านหลัง) จึงเดินไปหยิบไม่ได้",   // Bin has no cart aisle next to it on the layout (e.g. back row K), so it cannot be walked to
+  "m4.loc.noloc": "ไม่มี Location",   // No location
+  "m4.loc.notonlayout": "ไม่มีบนผัง",   // Not on layout
+  "m4.loc.special": "Bin พิเศษ",   // Special bin
+  "m4.recs.none": "ไม่พบคู่สลับที่ช่วยลดระยะเข็นในช่วงนี้",   // No swap shortens the walk in this period.
+  "m4.recs.head": "พบ {n} คู่สลับ ช่วง {from}–{to} รวมลดระยะเข็นประมาณ {m} ม. (คิดทีละคู่)",   // {n} swaps found for {from}–{to}: together about {m} m less cart walking (each is counted on its own).
+  "m4.recs.reason": "{a} ถูกหยิบ {na} ครั้ง แต่อยู่ไกล (เดิน START→DROP ประมาณ {ca} ม.) ส่วน {b} ถูกหยิบ {nb} ครั้ง แต่อยู่ใกล้ (ประมาณ {cb} ม.) สลับแล้ว Part ที่หยิบบ่อยจะอยู่ใกล้ขึ้น",   // {a} is picked {na} times and its bin is far (about {ca} m from START to DROP); {b} is picked {nb} times and sits close (about {cb} m). Swapping brings the busy Part near the door.
+  "m4.recs.before_after": "ก่อน {b} ม. · หลัง {a} ม.",   // Before {b} m · after {a} m
+  "m4.recs.prods": "Product หลัก:",   // Main Products:
+  "m4.rule.ok": "ผ่านกติกา",   // Rules passed
+  "m4.rule.fail": "ไม่ผ่านกติกา",   // Breaks a rule
+  "m4.rule.a_noloc": "Part A ไม่มี Bin บนผัง",   // Part A has no bin on the layout
+  "m4.rule.b_noloc": "Part B ไม่มี Bin บนผัง",   // Part B has no bin on the layout
+  "m4.rule.part_locked": "Part {v} ถูกล็อก",   // Part {v} is locked
+  "m4.rule.bin_locked": "Bin {v} ถูกล็อก",   // Bin {v} is locked
+  "m4.rule.same_bin": "ทั้งสอง Part อยู่ Bin เดียวกัน",   // Both Parts are in the same bin
+  "m4.btn.detail": "รายละเอียด",   // Details
+  "m4.btn.hide": "ซ่อนรายละเอียด",   // Hide details
+  "m4.btn.tosim": "ส่งไป Simulation",   // Try in Simulation
+  "m4.btn.insim": "อยู่ใน Simulation แล้ว",   // In Simulation
+  "m4.before": "ก่อน",   // Before
+  "m4.after": "หลัง",   // After
+  "m4.worse": "ไกลขึ้น",   // Longer after
+  "m4.diff": "ส่วนต่าง",   // Difference
+  "m4.sim.title": "ทดลองสลับก่อนย้ายจริง",   // Try swaps before moving anything
+  "m4.sim.sub": "เพิ่มคู่จากคำแนะนำ หรือพิมพ์ Part 2 ตัว ตำแหน่งจริงไม่เปลี่ยน",   // Add pairs from the advice or type two Parts. The real locations do not change.
+  "m4.sim.ph": "รหัส Part",   // Part code
+  "m4.sim.add": "เพิ่มคู่",   // Add pair
+  "m4.sim.del": "เอาออก",   // Remove
+  "m4.sim.run": "จำลอง",   // Simulate
+  "m4.sim.clear": "ล้างทั้งหมด",   // Clear all
+  "m4.sim.empty": "ยังไม่มีคู่ที่จะทดลอง",   // No pairs yet.
+  "m4.sim.err_pair": "เลือก Part 2 ตัวที่ไม่ซ้ำกัน",   // Choose two different Parts.
+  "m4.sim.err_part": "ไม่พบ {code} ใน Material–Location",   // {code} is not in Material–Location.
+  "m4.sim.err_twice": "Part หรือ Bin หนึ่งอยู่ได้คู่เดียว",   // A Part or a bin can be in one pair only.
+  "m4.sim.result": "ผลการจำลอง",   // Simulation result
+  "m4.sim.result_sub": "แผนชุดเดียวกัน ช่วงเดียวกัน ก่อนและหลังสลับ",   // Same plans, same period, before and after the swaps
+  "m4.sim.worse": "Product ที่เดินไกลขึ้น",   // Products walking further
+  "m4.sim.worse_sub": "ดูแถบสีแดงด้านล่าง",   // shown in red below
+  "m4.map.product": "เส้นทางของ Product",   // Product route
+  "m4.map.dist": "เส้นทาง {m} ม.",   // Route {m} m
+  "m5.intro": "กติกาที่ใช้ตรวจทุกการสลับ Part และ Bin ที่ล็อกจะไม่ถูกเสนอและสลับไม่ได้",   // Rules every swap is checked against. Locked Parts and bins are never suggested or swapped.
+  "m5.rules.title": "กติกาที่ใช้",   // Rules in use
+  "m5.rules.sub": "ตามที่ตกลงกับคลัง",   // Agreed with the warehouse
+  "m5.rule.swap": "สลับแบบ 1:1: Part A ไปอยู่ Bin ของ B และ Part B ไปอยู่ Bin ของ A ส่วน Part อื่นในช่องเดิมไม่ย้าย",   // Swaps are 1:1: Part A goes to B's bin and Part B to A's bin; other Parts in those bins stay.
+  "m5.rule.floor": "สลับข้ามชั้นได้",   // Swaps may cross floors.
+  "m5.rule.special": "Bin พิเศษ (PRINTER, NEW, AS CUT …) ไม่ใช่จุดหยิบ และไม่นำมาสลับ",   // Special bins (PRINTER, NEW, AS CUT …) are not pick points and are never used.
+  "m5.rule.lock": "Part และ Bin ที่ล็อกไว้ด้านล่างจะอยู่ที่เดิม",   // Locked Parts and bins below are left where they are.
+  "m5.rule.sim": "Simulation ไม่เปลี่ยนตำแหน่งจริง ผู้ดูแลคลังตัดสินใจก่อนย้าย",   // Simulation never changes the real locations; the warehouse decides before moving.
+  "m5.lock.title": "ห้ามย้าย",   // Do not move
+  "m5.lock.sub": "ล็อก Part, Bin (เช่น 1G-01-02) หรือทั้งช่อง (เช่น 1G-01)",   // Lock a Part, a bin (e.g. 1G-01-02) or a whole rack (e.g. 1G-01).
+  "m5.type.part": "Part",   // Part
+  "m5.type.bin": "Bin / ช่อง",   // Bin / rack
+  "m5.code.part": "รหัส Part",   // Part code
+  "m5.code.bin": "Bin หรือช่อง",   // Bin or rack
+  "m5.ph.part": "เช่น 5232QXXXX08122",   // e.g. 5232QXXXX08122
+  "m5.ph.bin": "เช่น 1G-01 หรือ 1G-01-02",   // e.g. 1G-01 or 1G-01-02
+  "m5.reason": "เหตุผล",   // Reason
+  "m5.ph.reason": "เหตุผลที่ต้องอยู่ที่เดิม",   // Why it must stay
+  "m5.lock": "ล็อก",   // Lock
+  "m5.unlock": "ปลดล็อก",   // Unlock
+  "m5.unlock.confirm": "กดอีกครั้งเพื่อปลดล็อก",   // Click again to unlock
+  "m5.col.type": "ประเภท",   // Type
+  "m5.col.code": "รหัส",   // Code
+  "m5.col.by": "ล็อกโดย",   // Locked by
+  "m5.none": "ยังไม่มีรายการที่ล็อก",   // Nothing is locked.
+  "m5.err.unknown": "ไม่พบ {code} ในข้อมูลที่ใช้งาน",   // {code} is not in the data in use.
+  "m5.err.dup": "{code} ถูกล็อกอยู่แล้ว",   // {code} is already locked.
+  "m5.ok.locked": "ล็อก {code} แล้ว",   // {code} locked.
+  "m5.ok.unlocked": "ปลดล็อก {code} แล้ว",   // {code} unlocked.
+  "m5.log.title": "ประวัติ",   // History
+  "m5.log.n": "{n} รายการ",   // {n} changes
+  "m5.act.lock": "ล็อก",   // Locked
+  "m5.act.unlock": "ปลดล็อก",   // Unlocked
+  "m5.who.local": "เครื่องนี้",   // this computer
   "m3.fs": "เต็มจอ",   // Full screen
   "m3.fs.exit": "ออกจากเต็มจอ",   // Exit full screen
   "m3.sug.none": "ไม่พบรายการที่ตรงกัน ตรวจรหัสหรือเลข JOB อีกครั้ง",   // Nothing matches. Check the code or the JOB number.
