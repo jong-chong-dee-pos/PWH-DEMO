@@ -112,7 +112,7 @@
     return Promise.all(jobs).then(function (res) {
       S.hasLayout = !!res[4];
       S.checks = PWH.checks.run({ bom: res[0], matloc: res[1], daily: res[2], monthly: res[3], layout: res[4] || null }, { plantOrder: S.settings.plantOrder });
-      S.checking = false; renderReadiness(); if (PWH.lookup) PWH.lookup.refresh(); if (PWH.m3) PWH.m3.refresh();
+      S.checking = false; renderReadiness(); if (PWH.lookup) PWH.lookup.refresh(); if (PWH.m3) PWH.m3.refresh(); if (PWH.m4) PWH.m4.refresh();
     }).catch(function (e) { S.checking = false; S.checks = null; console.error(e); renderReadiness(); });
   }
 

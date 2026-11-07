@@ -219,13 +219,15 @@
     if (d3) racks.forEach(function (r) { poly(rectPts({ x: r.x - 1, y: r.y - 1, w: r.w + 2, h: r.h + 2 }, 0), 'rgba(0,0,0,0.38)'); });   // contact shadows
     // a clicked rack stands out: every other rack turns grey and fades back
     var selHere = M.sel && f.racks.some(function (r) { return r.id === M.sel; });
-    var fset = selHere ? new Set([M.sel]) : (M.focus && M.focus.size ? M.focus : null), focus = !!fset, GREY = '#56647a';
+    var fset = selHere && !M.noDim ? new Set([M.sel]) : (M.focus && M.focus.size ? M.focus : null), focus = !!fset, GREY = '#56647a';
     racks.forEach(function (r) {
       var dim = focus && !fset.has(r.id);
       if (dim) { c.save(); c.globalAlpha = d3 ? 0.3 : 0.38; }
       var zc = dim ? GREY : zoneColor(r.id), sl = stockLevels(r), H = r.levels * lp, has = sl.length > 0, stc = dim ? GREY : C.stock;
-      var tint = dim ? GREY : M.color === 'levels' ? (C.l[r.levels] || C.l[1]) : M.color === 'stock' ? (has ? C.stock : '#33455f') : zc;
-      var k = M.color === 'stock' ? (has ? 0.55 : 0.12) : M.color === 'levels' ? 0.6 : 0.16;
+      // a host page (e.g. the Module 4 heatmap) may colour each rack itself
+      var own = M.rackTint ? M.rackTint(r) : null;
+      var tint = dim ? GREY : own || (M.color === 'levels' ? (C.l[r.levels] || C.l[1]) : M.color === 'stock' ? (has ? C.stock : '#33455f') : zc);
+      var k = own ? 0.82 : M.color === 'stock' ? (has ? 0.55 : 0.12) : M.color === 'levels' ? 0.6 : 0.16;
       var hit = { id: r.id, polys: [] };
       if (!d3) {
         var gap = Math.min(1.2 / z, Math.min(r.w, r.h) * 0.08), rp = rectPts({ x: r.x + gap, y: r.y + gap, w: r.w - 2 * gap, h: r.h - 2 * gap }, 0);
@@ -233,16 +235,16 @@
         var gr = c.createLinearGradient(0, tl[1], 0, br[1]); gr.addColorStop(0, mix(tint, '#1a2a43', k + 0.08)); gr.addColorStop(1, mix(tint, '#122036', k));
         c.fillStyle = gr; rr(tl[0], tl[1], br[0] - tl[0], br[1] - tl[1], Math.max(0, rad)); c.fill();
         c.strokeStyle = shade(tint, 1, M.color === 'zone' ? 0.42 : 0.55); c.lineWidth = 1; c.stroke();
-        if (M.color === 'zone') {   // bright zone edge along the long side
+        if (M.color === 'zone' && !own) {   // bright zone edge along the long side
           var sw = Math.max(1.5, 2.5 / z), sx = r.w >= r.h ? { x: r.x + gap, y: r.y + gap, w: r.w - 2 * gap, h: Math.min(r.h * 0.22, sw) } : { x: r.x + gap, y: r.y + gap, w: Math.min(r.w * 0.22, sw), h: r.h - 2 * gap };
           poly(rectPts(sx, 0), zc);
         }
-        if (has && M.color !== 'stock') {   // stock pips: one dot per level that holds stock
+        if (has && M.color !== 'stock' && !own) {   // stock pips: one dot per level that holds stock
           var cx2 = (tl[0] + br[0]) / 2, cy2 = br[1] - Math.min(6, (br[1] - tl[1]) * 0.28), dr = Math.min(2.2, (br[1] - tl[1]) * 0.12);
           if (dr >= 1) sl.forEach(function (l, i) { c.beginPath(); c.arc(cx2 + (i - (sl.length - 1) / 2) * dr * 3, cy2, dr, 0, 7); c.fillStyle = 'rgba(160,205,255,0.85)'; c.fill(); });
         }
         hit.polys.push(rp);
-        if (M.names && allNums) {
+        if (M.names && allNums && !M.noNums) {
           var fs = Math.min(12, (br[0] - tl[0]) * 0.45, (br[1] - tl[1]) * 0.5);
           if (fs >= 7) { c.font = '500 ' + fs.toFixed(1) + 'px "IBM Plex Mono", monospace'; c.fillStyle = 'rgba(232,238,247,0.72)'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(numOf(r.id), (tl[0] + br[0]) / 2, (tl[1] + br[1]) / 2); }
         }
@@ -600,7 +602,7 @@
     M.canvas.addEventListener('pointerup', function (e) {
       if (drag && !drag.moved) {
         var rc = M.canvas.getBoundingClientRect(), id = hitAt(e.clientX - rc.left, e.clientY - rc.top);
-        M.sel = id; side(!!id); draw();
+        M.sel = id; if (M.onSelect) M.onSelect(id); else side(!!id); draw();
       }
       drag = null;
     });

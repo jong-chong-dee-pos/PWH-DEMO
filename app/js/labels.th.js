@@ -502,9 +502,9 @@
   "m4.need.matloc": "Material–Location",   // Material–Location
   "m4.need.layout": "ผังคลัง",   // warehouse layout
   "m4.warn.monthly": "ยังไม่มีแผนรายเดือนที่ใช้งาน: ระบบจะรู้ Plant ของ JOB ได้เฉพาะ Product ที่มีใน Plant เดียว",   // No monthly plan in use: the Plant of a JOB is known only when the Product exists in one Plant.
-  "m4.k.rounds": "รอบจัด Part",   // Pick rounds
+  "m4.k.rounds": "รอบจัด Part ตามแผน",   // Pick rounds planned
   "m4.k.rounds_of": "จาก {n} รอบในแผน",   // of {n} in the plans
-  "m4.k.parts": "Part ที่ถูกหยิบ",   // Parts picked
+  "m4.k.parts": "Part ไม่ซ้ำ",   // Different Parts
   "m4.k.picks": "รวม {n} ครั้ง",   // {n} picks in total
   "m4.k.dist": "ระยะเข็นจำลอง",   // Simulated cart distance
   "m4.k.per": "เฉลี่ย {m} ม./รอบ",   // {m} m per round
@@ -586,6 +586,166 @@
   "m4.sim.worse_sub": "ดูแถบสีแดงด้านล่าง",   // shown in red below
   "m4.map.product": "เส้นทางของ Product",   // Product route
   "m4.map.dist": "เส้นทาง {m} ม.",   // Route {m} m
+  "m4.intro2": "ความถี่การหยิบตามแผนรายวัน ตำแหน่งที่รถเข็นหยิบ และคู่สลับ 1:1 ที่ช่วยลดระยะเข็นจำลอง ผลเป็นความถี่ตามแผน ไม่ใช่บันทึกการหยิบจริง",   // Planned pick frequency from the daily plans, where the cart picks it, and which 1:1 swaps shorten the simulated cart distance. Results are planned frequency, not picking records.
+  "m4.f.product": "Product",   // Product
+  "m4.f.product_ph": "ทุก Product (พิมพ์รหัสเพื่อจำกัดรอบ)",   // All Products (type a code to limit the rounds)
+  "m4.f.clear": "ล้างตัวกรอง",   // Clear filters
+  "m4.f.recalc": "คำนวณใหม่",   // Recalculate
+  "m4.retry": "ลองใหม่",   // Try again
+  "m4.scope.range": "ช่วง {from}–{to}",   // Range {from}–{to}
+  "m4.scope.days": "มีแผน {n} จาก {of} วัน",   // {n} of {of} days have a plan
+  "m4.scope.gap": "ไม่มีแผน: {list}",   // no plan: {list}
+  "m4.scope.upto": "ข้อมูลถึงวันที่ {d}",   // data up to {d}
+  "m4.scope.product": "เฉพาะ Product {p}",   // Product {p} only
+  "m4.scope.note": "วิเคราะห์แผนย้อนหลังโดยใช้ตำแหน่งจัดเก็บปัจจุบัน ระยะเป็นเมตรจำลองตามผัง (ไม่คิดระยะลิฟต์) ไม่แสดงเวลา",   // Past plans are analysed with today's storage locations. Distances are simulated metres along the layout (lift ride not counted); no times are shown.
+  "m4.scope.at": "คำนวณเมื่อ {t}",   // calculated at {t}
+  "m4.scope.files": "ชุดข้อมูลที่ใช้",   // Data used
+  "m4.scope.dailyf": "แผนรายวัน {d}",   // Daily plan {d}
+  "m4.scope.monthlyf": "แผนรายเดือน",   // Monthly plan
+  "m4.scope.layout": "ผังคลังที่ใช้งาน",   // Warehouse layout in use
+  "m4.scope.rules": "กติกาการย้าย: {n} ข้อ",   // Relocation rules: {n}
+  "m4.step.load": "กำลังเชื่อมข้อมูล…",   // Connecting the data…
+  "m4.step.rounds": "กำลังสร้างรอบจัด Part…",   // Building pick rounds…
+  "m4.step.route": "กำลังคำนวณเส้นทาง",   // Calculating routes
+  "m4.step.recs": "กำลังทดลองคู่สลับ",   // Trying swap pairs
+  "m4.step.sim": "กำลังจำลองการสลับ",   // Simulating the swap
+  "m4.busy.old": "ผลด้านล่างเป็นผลเดิม กำลังคำนวณใหม่",   // the result below is from the previous calculation
+  "m4.stale": "ข้อมูลต้นทางเปลี่ยนแล้ว กรุณาคำนวณใหม่ ผลด้านล่างล้าสมัย",   // The source data changed after this result was calculated. Recalculate before using it.
+  "m4.err.run": "คำนวณไม่สำเร็จ: {e} ผลที่แสดงไม่ใช่ผลใหม่",   // The calculation failed: {e}. The result shown is not new.
+  "m4.err.heatsum": "ต้องตรวจสอบ: ผลรวม Heatmap ({h}) ไม่เท่าความถี่ที่จัดเส้นทางได้ ({r})",   // Check needed: the heatmap total ({h}) differs from the routed frequency ({r}).
+  "m4.err.freq": "ต้องตรวจสอบ: ความถี่รวมเปลี่ยนหลังสลับ",   // Check needed: the total frequency changed after the swap.
+  "m4.empty.range": "ไม่มีแผนรายวันในช่วงวันที่เลือก",   // There are no daily plans in the chosen dates.
+  "m4.empty.product": "Product นี้ไม่มีรอบในช่วงวันที่เลือก",   // This Product has no rounds in the chosen dates.
+  "m4.k.rounds_sub": "วันที่ + U-line + JOB",   // date + U-line + JOB
+  "m4.k.ident": "รอบที่ระบุ Product/BOM ได้",   // Rounds with Product and BOM
+  "m4.k.of": "จาก {n} รอบ",   // of {n} rounds
+  "m4.k.complete": "รอบที่จัดเส้นทางครบ",   // Rounds fully routed
+  "m4.k.partial": "ไม่ครบ {n} รอบ แยกไว้",   // {n} rounds incomplete, kept apart
+  "m4.k.parts_sub": "BOM ชั้นแรก",   // first level of the BOM
+  "m4.k.plan": "ความถี่ตามแผน",   // Planned picks
+  "m4.k.plan_sub": "นับ 1 ครั้งต่อ Part ต่อรอบ",   // one per Part per round
+  "m4.k.route": "ความถี่ที่จัดเส้นทางได้",   // Picks that can be routed
+  "m4.k.route_sub": "{n} ครั้งไม่มีจุดหยิบที่เข้าถึงได้",   // {n} have no reachable pick point
+  "m4.k.dist_sub": "เฉพาะรอบที่ครบ · เฉลี่ย {m} ม./รอบ",   // complete rounds only · {m} m per round
+  "m4.k.issues": "รายการมีปัญหาข้อมูล",   // Data problems
+  "m4.k.issues_sub": "ดูรายการด้านล่าง",   // see the list at the bottom
+  "m4.h.title": "Heatmap ความถี่การหยิบ",   // Pick frequency heatmap
+  "m4.h.sub": "ตัวเลขของช่อง = จำนวนครั้งที่ Part ถูกเลือกหยิบจากช่องนั้น (รวม {n} ครั้ง) ไม่ใช่จำนวนครั้งที่รถผ่านหรือจำนวนชิ้น",   // A rack's number is how often a Part was picked from it ({n} picks in all). It is not how often the cart passes or how many pieces.
+  "m4.h.q": "ค้นหา Part หรือช่อง",   // Find a Part or bin
+  "m4.h.zin": "ซูมเข้า",   // Zoom in
+  "m4.h.zout": "ซูมออก",   // Zoom out
+  "m4.h.fit": "พอดีจอ",   // Fit
+  "m4.h.fs": "เต็มจอ",   // Full screen
+  "m4.h.nodata": "ไม่มีข้อมูล",   // No data
+  "m4.h.zero": "0 ครั้ง",   // 0 picks
+  "m4.h.unit": "ครั้งในช่วงที่เลือก",   // picks in the range
+  "m4.h.hint": "คลิกช่องบนผังเพื่อดู Part รหัส Bin เต็ม และชั้นเก็บ",   // Click a rack on the map to see its Parts, full bin codes and levels.
+  "m4.h.rack": "ช่อง {r}",   // Rack {r}
+  "m4.h.levels": "{n} ชั้นเก็บ",   // {n} levels
+  "m4.h.times": "ครั้ง",   // picks
+  "m4.h.prods": "Product:",   // Products:
+  "m4.h.idle": "Part ในช่องนี้ที่ไม่ถูกหยิบ ({n})",   // Parts here with 0 picks ({n})
+  "m4.h.empty": "ไม่มี Part ในช่องนี้ใน Material–Location",   // No Part is stored in this rack in Material–Location.
+  "m4.level": "ชั้นเก็บ {n}",   // level {n}
+  "m4.stock": "สต็อก {n}",   // stock {n}
+  "m4.parts.sub2": "ตามแผน = จำนวนรอบที่มี Part · จัดเส้นทางได้ = รอบที่มีจุดหยิบที่เข้าถึงได้ · คลิกแถวเพื่อดู Product และ Bin",   // Planned = rounds that list the Part. Routed = rounds where it has a reachable pick point. Click a row for its Products and bins.
+  "m4.q.part": "ค้นหา Part ด้วยรหัสหรือชื่อ",   // Find a Part by code or name
+  "m4.q.note": "กรองเฉพาะตารางนี้ เส้นทางยังคิดครบทุก Part",   // only narrows this table; routes still use every Part
+  "m4.sort": "เรียงตาม",   // Sort by
+  "m4.col.plan": "ตามแผน",   // Planned
+  "m4.col.route": "จัดเส้นทางได้",   // Routed
+  "m4.col.chosen": "Location ที่ถูกเลือก",   // Bin used
+  "m4.col.status": "สถานะ",   // Status
+  "m4.col.complete": "รอบครบ",   // Complete
+  "m4.col.file": "ไฟล์ต้นทาง",   // Source file
+  "m4.col.change": "ลดลง/เพิ่มขึ้น",   // Change
+  "m4.bins.n": "{n} Bin · บนผัง {on}",   // {n} bins · {on} on layout
+  "m4.st.ok": "ปกติ",   // Normal
+  "m4.act.map": "ดูบน Heatmap",   // On map
+  "m4.act.sim": "จำลอง",   // Simulate
+  "m4.act.part": "ดู Part",   // Part details
+  "m4.act.recs": "ดูคำแนะนำ",   // Suggestions
+  "m4.det.bins": "Bin ของ Part นี้",   // Bins of this Part
+  "m4.det.chosen": "เส้นทางเลือก",   // used by the route
+  "m4.binkind.special": "Bin พิเศษ",   // special bin
+  "m4.binkind.norack": "ไม่มีบนผัง",   // not on the layout
+  "m4.binkind.nolayout": "ไม่มีผัง",   // no layout
+  "m4.more.btn": "แสดงเพิ่มอีก 60",   // Show 60 more
+  "m4.none.q": "ไม่พบ Part ที่ค้นหา",   // No Part matches the search.
+  "m4.prods.sub2": "ระยะจำลองของรอบที่ครบ คลิก Product เพื่อดู Part และเส้นทางตัวอย่าง",   // Simulated metres of complete rounds. Click a Product to see its Parts and a sample route.
+  "m4.close": "ปิด",   // Close
+  "m4.pv.title": "Product {p}",   // Product {p}
+  "m4.pv.rounds": "รอบในช่วงที่เลือก",   // Rounds in range
+  "m4.pv.parts": "Part ชั้นแรก",   // Parts (first level)
+  "m4.pv.off": "จัดเส้นทางไม่ได้ {n}",   // {n} cannot be routed
+  "m4.pv.per": "ระยะต่อรอบ",   // Distance per round
+  "m4.pv.per_sub": "รอบที่ครบ",   // complete rounds
+  "m4.pv.total": "ระยะรวม",   // Total distance
+  "m4.pv.total_sub": "{n} รอบที่ครบ",   // {n} complete rounds
+  "m4.pv.round": "รอบตัวอย่าง",   // Sample round
+  "m4.pv.route": "เส้นทางรอบนี้ {m} ม.",   // Route of this round: {m} m
+  "m4.partial_route": "เส้นทางไม่ครบรายการ",   // route does not include every Part
+  "m4.bad.sub2": "ไม่ได้รวมในตัวเลขด้านบน พร้อมเหตุผล เปิดแต่ละกลุ่มเพื่อดู JOB, Product, Part และไฟล์ต้นทาง",   // Kept out of the numbers above, with the reason. Open a group to see the JOB, Product, Part and source file.
+  "m4.iss.nojob": "แถวในแผนที่ไม่มี JOB (ข้อมูลไม่ครบ)",   // Plan rows without a JOB
+  "m4.iss.noproduct": "ไม่พบข้อมูลเชื่อม Order–Product",   // Plan rows without a Product (no Order–Product link)
+  "m4.iss.plant": "ข้อมูล Order เชื่อมได้หลายรายการ กรุณาตรวจสอบ",   // Order links to more than one Plant; please check
+  "m4.iss.nobom": "ไม่พบรายการ Part ของ Product (ไม่มี BOM)",   // No BOM for the Product
+  "m4.iss.noparts": "ไม่พบรายการ Part ของ Product ใน Plant นี้",   // BOM has no Parts for this Plant
+  "m4.iss.loc_noloc": "ไม่มี Location",   // No location (not in Material–Location)
+  "m4.iss.loc_notonlayout": "Location นี้ไม่มีบนผัง",   // Location is not on the layout
+  "m4.iss.loc_unreach": "ไม่พบเส้นทางรถเข็นเข้าถึง Location",   // No cart route reaches the location
+  "m4.iss.loc_special": "ตำแหน่งพักในระบบ ไม่ใช้เป็นจุดหยิบ",   // Holding bin in the system, not a pick point
+  "m4.row": "แถว {n}",   // row {n}
+  "m4.rule.nosize": "ยังไม่ตรวจขนาด/น้ำหนัก (ไม่มีข้อมูล)",   // size and weight not checked yet (no data)
+  "m4.recs.scope": "ประเมินจากรอบที่จัดเส้นทางครบ {c} จาก {n} รอบ (ตัดรอบไม่ครบ {x} รอบ)",   // Measured on {c} fully routed rounds of {n} ({x} incomplete rounds left out).
+  "m4.recs.only": "ผลเฉพาะ Product {p} ไม่ใช่ผลรวมของคลัง",   // Result for Product {p} only, not the whole warehouse.
+  "m4.recs.all": "ทุก Product ในช่วงที่เลือก",   // All Products in the range.
+  "m4.recs.head2": "พบ {n} คู่ที่ผ่านกติกา รวมลดระยะประมาณ {m} ม. (คิดทีละคู่)",   // {n} swaps that pass the rules, together about {m} m shorter (each counted alone).
+  "m4.recs.reason2": "{a} ถูกหยิบ {na} ครั้ง (ส่วนใหญ่ใช้กับ {prods}) แต่อยู่ไกล (ประมาณ {ca} ม. START→DROP) ส่วน {b} ถูกหยิบ {nb} ครั้งและอยู่ใกล้ (ประมาณ {cb} ม.)",   // {a} is picked {na} times (mostly for {prods}) but is far away (about {ca} m START→DROP). {b} is picked {nb} times and is close (about {cb} m).
+  "m4.recs.used": "รอบที่ใช้",   // Rounds used
+  "m4.recs.used_v": "ใช้ {u} รอบ · ตัดออก {x} รอบ",   // {u} used · {x} left out
+  "m4.recs.better": "Product ที่ระยะลดลง ({n})",   // Products with shorter routes ({n})
+  "m4.recs.worse": "Product ที่ระยะเพิ่มขึ้น ({n})",   // Products with longer routes ({n})
+  "m4.andmore": "และอีก {n}",   // and {n} more
+  "m4.btn.tosim2": "เปิดใน Simulation",   // Open in Simulation
+  "m4.btn.opensim": "เปิดใน Simulation",   // Open in Simulation
+  "m4.norec.title": "ยังไม่มีคู่สลับที่แนะนำ",   // No swap to suggest
+  "m4.norec.nocomplete": "ไม่มีรอบที่จัดเส้นทางครบในช่วงที่เลือก จึงประเมินระยะไม่ได้",   // No round in the range is fully routed, so savings cannot be measured.
+  "m4.norec.nocand": "ข้อมูลไม่พอประเมิน (ไม่พบ Part ที่ถูกหยิบบ่อยแต่อยู่ไกล คู่กับ Part ที่หยิบน้อยแต่อยู่ใกล้)",   // Not enough data to look for pairs (no busy Part far away with a quiet Part close by).
+  "m4.norec.rules": "คู่ที่พบทั้ง {c} คู่ไม่ผ่านกติกาการย้าย",   // All {c} possible pairs break a relocation rule.
+  "m4.norec.nogain": "ทดลอง {n} คู่ ไม่พบคู่ที่ช่วยลดระยะทาง",   // {n} pairs were tried, none makes the routes shorter.
+  "m4.norec.data": "ยังไม่มีผังคลัง จึงคำนวณระยะไม่ได้",   // The layout is missing, so distances cannot be calculated.
+  "m4.cmp.title": "ก่อน–หลัง แยกตาม Product",   // Before and after, per Product
+  "m4.unit": "ม.",   // m
+  "m4.same": "เท่าเดิม",   // no change
+  "m4.down": "ลดลง {m} ม.",   // {m} m shorter
+  "m4.up": "เพิ่มขึ้น {m} ม.",   // {m} m longer
+  "m4.map.scope": "แผนที่แสดงเส้นทาง 1 รอบของ Product ที่เลือก ส่วนตัวเลขด้านบนรวมทุก Product",   // The map shows one round of the chosen Product; the numbers above add up every Product.
+  "m4.map.dist2": "{p}: {m} ม./รอบ",   // {p}: {m} m per round
+  "m4.map.aria": "แผนที่เส้นทาง",   // Route map
+  "m4.sim.sub2": "เลือก Part A กับช่องที่ย้ายออก และ Part B กับช่องของมัน ย้ายเฉพาะสองรายการนี้ Part อื่นในช่องและ Location อื่นของ A/B คงเดิม ไม่แก้ตำแหน่งจริง",   // Choose Part A and the bin it leaves, and Part B and its bin. Only these two move; other Parts in the bins and other bins of A and B stay. Real locations are never changed.
+  "m4.sim.bin": "Location",   // Bin
+  "m4.sim.pickfirst": "เลือก Part ก่อน",   // Choose the Part first
+  "m4.sim.nobin": "ไม่มี Bin บนผัง",   // No bin on the layout
+  "m4.sim.used": "ใช้อยู่",   // used now
+  "m4.sim.err_bin": "เลือก Location ของทั้งสอง Part",   // Choose a bin for both Parts.
+  "m4.sim.run2": "จำลองการสลับ",   // Simulate the swap
+  "m4.sim.reset": "คืนค่าการทดลอง",   // Reset the trial
+  "m4.sim.blocked": "มีคู่ที่ไม่ผ่านกติกา เอาออกก่อนจึงจำลองได้",   // A pair breaks a rule; remove it to simulate.
+  "m4.sim.result_sub2": "ใช้รอบและข้อมูลชุดเดียวกันทั้งก่อน–หลัง: รอบที่ครบ {u} รอบ (ตัดออก {x} รอบ)",   // Same rounds and data before and after: {u} complete rounds ({x} left out).
+  "m4.k.down": "ระยะที่ลดลง",   // Shorter by
+  "m4.k.up": "ระยะที่เพิ่มขึ้น",   // Longer by
+  "m4.k.used": "รอบที่นำมาคำนวณ",   // Rounds calculated
+  "m4.k.out": "ตัดออก {n} รอบ",   // {n} left out
+  "m4.k.affected": "Product ที่ได้รับผลกระทบ",   // Products affected
+  "m4.k.updown": "ลดลง {a} · เพิ่มขึ้น {b}",   // {a} shorter · {b} longer
+  "m4.sim.lost": "หลังสลับมี {n} รอบที่จัดเส้นทางไม่ครบ ตรวจสอบก่อนย้าย",   // {n} rounds could not be fully routed after the swap; check them before moving.
+  "m4.sim.byprod": "ผลแยกตาม Product",   // Result per Product
+  "m4.sim.route": "เส้นทางของ {p}",   // Route of {p}
+  "m4.sim.nochange": "ไม่มี Product ใดที่เส้นทางเปลี่ยน",   // No Product route changes with these swaps.
+  "m4.sim.heat": "Heatmap ก่อน–หลัง",   // Heatmap before and after
+  "m4.sim.heat_sub": "ใช้เกณฑ์สีเดียวกัน ความถี่รวมก่อน {b} หลัง {a} สิ่งที่เปลี่ยนคือตำแหน่งที่หยิบ",   // Same colour scale on both. Total picks before {b}, after {a}: only where they are picked changes.
+  "m4.h.fsexit": "ออกจากเต็มจอ",   // Exit full screen
   "m5.intro": "กติกาที่ใช้ตรวจทุกการสลับ Part และ Bin ที่ล็อกจะไม่ถูกเสนอและสลับไม่ได้",   // Rules every swap is checked against. Locked Parts and bins are never suggested or swapped.
   "m5.rules.title": "กติกาที่ใช้",   // Rules in use
   "m5.rules.sub": "ตามที่ตกลงกับคลัง",   // Agreed with the warehouse

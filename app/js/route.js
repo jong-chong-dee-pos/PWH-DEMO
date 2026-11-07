@@ -5,7 +5,7 @@
  * Grid      : cells of G sheet pixels; walkable = cart aisles + START / DROP / door / lift / exit areas.
  *             A rack is reached from any walkable cell touching it.
  * Distance  : shortest walk along walkable cells (up and down / left and right only, like a cart).
- * Floors    : the lifts of different floors are linked by one fixed extra distance (LIFT_M).
+ * Floors    : the lifts of different floors are linked by one fixed extra distance (LIFT_M, 0 m: the ride is not counted).
  * Ordering  : nearest-neighbour tour improved by 2-opt, with START and DROP fixed. When a Part is in several
  *             bins the planner uses the bin that adds the least walking, and still lists every bin.
  * Distances are in metres only as far as the layout scale (sheet px per metre) is right.
@@ -13,7 +13,7 @@
 (function (g) {
   var PWH = (g.PWH = g.PWH || {});
   var G = 4;               // sheet px per grid cell
-  var LIFT_M = 25;         // walking-equivalent metres for going up or down the lift (assumed)
+  var LIFT_M = 0;          // the lift ride adds no distance (agreed 07/11/2026: count floor walking only)
   var INF = 1 << 29;
   var CAND_MAX = 6;        // bins per Part considered when choosing the route
 
