@@ -1250,3 +1250,43 @@ html.pwh-m3 .main { height: 100vh; }
 .m5f.grow { flex: 1 1 260px; } .m5f.grow input { width: 100%; }
 .m5tbl td, .m5tbl th { padding: 8px 10px; font-size: 13.5px; }
 .m5sum { cursor: pointer; } .m5log { margin: 10px 0 0; padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; }
+
+/* ---------- v33 Module 5 rule builder ---------- */
+.m5cols { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.m5cols > div { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.m5cols > div > .panel { margin: 0; }
+@media (max-width: 1100px) { .m5cols { grid-template-columns: minmax(0, 1fr); } }
+.m5step { display: flex; flex-direction: column; gap: 8px; padding: 12px 0; border-top: 1px solid var(--line); }
+.m5step:first-of-type { border-top: 0; padding-top: 4px; }
+.m5step > b { font-size: 14px; font-weight: 600; color: var(--ink); }
+.m5step .seg { flex-wrap: wrap; align-self: flex-start; }
+.m5step .sub { margin: 0; font-size: 13px; }
+.m5grid { display: flex; flex-wrap: wrap; gap: 6px; }
+.m5pick { min-width: 46px; min-height: 34px; padding: 4px 10px; border: 1px solid var(--line-2, var(--line)); border-radius: 8px; background: var(--surface); color: var(--ink); font: 500 13px var(--font-code); cursor: pointer; }
+.m5grid.wide .m5pick { font-family: var(--font-ui); }
+.m5pick small { color: var(--muted); font-weight: 400; }
+.m5pick:hover { border-color: var(--accent); }
+.m5pick[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.m5pick[aria-pressed="true"] small { color: inherit; opacity: .8; }
+.m5pick:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.m5add { display: flex; gap: 8px; flex-wrap: wrap; }
+.m5add input { flex: 1 1 220px; min-height: 36px; min-width: 0; }
+.m5chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.m5chips:empty { display: none; }
+.m5chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 4px 2px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--ink); font-size: 13px; }
+.m5chip button { border: 0; background: none; width: 26px; height: 26px; border-radius: 50%; cursor: pointer; color: var(--muted); font-size: 16px; line-height: 1; }
+.m5chip button:hover { background: rgba(0,0,0,.08); color: var(--ink); }
+.m5name { display: flex; flex-wrap: wrap; gap: 10px; }
+.m5name .m5f input { min-width: 0; }
+.m5sum { cursor: default; margin: 4px 0 0; padding: 10px 12px; border-radius: 8px; background: var(--surface-2); font-size: 14px; }
+.m5sum2 { cursor: pointer; }
+.m5zones { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.m5zone { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+.m5zone .grow { flex: 1; }
+.m5res { margin-top: 10px; padding: 10px 12px; border-radius: 8px; font-size: 14px; }
+.m5res.ok { background: var(--ok-soft); color: var(--ok); }
+.m5res.bad { background: var(--err-soft); color: var(--err); }
+.m5res ul { margin: 6px 0 0; padding-left: 18px; color: var(--ink); }
+.m5tbl td:first-child { white-space: nowrap; }
+.btn.danger.confirm { background: var(--err); color: #fff; border-color: var(--err); }
+.m5name .m5f input, .m5add input, #m5test input { padding: 6px 10px; border-radius: 8px; }

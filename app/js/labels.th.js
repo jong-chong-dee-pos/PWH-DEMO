@@ -608,7 +608,7 @@
   "m5.unlock.confirm": "กดอีกครั้งเพื่อปลดล็อก",   // Click again to unlock
   "m5.col.type": "ประเภท",   // Type
   "m5.col.code": "รหัส",   // Code
-  "m5.col.by": "ล็อกโดย",   // Locked by
+  "m5.col.by": "ตั้งโดย",   // Set by
   "m5.none": "ยังไม่มีรายการที่ล็อก",   // Nothing is locked.
   "m5.err.unknown": "ไม่พบ {code} ในข้อมูลที่ใช้งาน",   // {code} is not in the data in use.
   "m5.err.dup": "{code} ถูกล็อกอยู่แล้ว",   // {code} is already locked.
@@ -619,6 +619,93 @@
   "m5.act.lock": "ล็อก",   // Locked
   "m5.act.unlock": "ปลดล็อก",   // Unlocked
   "m5.who.local": "เครื่องนี้",   // this computer
+  "m5.intro2": "กำหนดว่า Part ใด จากตรงไหน ย้ายไปที่ใดได้หรือไม่ได้ คำแนะนำและ Simulation ในโมดูล 4 จะใช้เฉพาะคู่ที่ผ่านทุกกติกาในหน้านี้",   // Set which Parts may move from where to where. Module 4 suggests and simulates only swaps that pass every rule here.
+  "m5.new.title": "สร้างกติกาใหม่",   // New rule
+  "m5.new.sub": "เลือกประเภท Part และพื้นที่ ไม่ต้องพิมพ์เงื่อนไข",   // Pick the type, the Parts and the areas. No conditions to type.
+  "m5.new.btn": "สร้างกติกา",   // New rule
+  "m5.edit.title": "แก้ไขกติกา",   // Edit rule
+  "m5.step.kind": "ประเภทกติกา",   // Rule type
+  "m5.step.parts": "Part ที่ห้ามย้าย",   // Parts to lock
+  "m5.step.who": "ใช้กับ",   // Applies to
+  "m5.step.from": "ต้นทาง (ที่อยู่ปัจจุบันของ Part)",   // Source (where the Part is now)
+  "m5.step.to": "ปลายทาง",   // Destination
+  "m5.step.floors": "ชั้นที่จัดเก็บได้",   // Floors it may be stored on
+  "m5.step.name": "ชื่อและเหตุผล",   // Name and reason
+  "m5.kind.lock": "ห้ามย้าย Part",   // Lock Part
+  "m5.kind.lockarea": "ห้ามย้ายออกจากพื้นที่",   // Nothing leaves area
+  "m5.kind.allow": "อนุญาตปลายทาง",   // Allowed destinations
+  "m5.kind.deny": "ห้ามปลายทาง",   // Forbidden destinations
+  "m5.kind.floor": "ชั้นที่จัดเก็บได้",   // Storage floors
+  "m5.kind.lock.help": "Part เหล่านี้อยู่ที่เดิม ไม่ถูกเสนอและสลับไม่ได้",   // These Parts stay in their bins and are never suggested or swapped.
+  "m5.kind.lockarea.help": "ไม่มี Part ใดในพื้นที่นี้ย้ายออกได้",   // No Part in this area may be moved out of it.
+  "m5.kind.allow.help": "Part ที่อยู่ต้นทางนี้ย้ายได้เฉพาะปลายทางที่ระบุ ที่อื่นไม่ได้ทั้งหมด",   // Parts in the source may go only to the listed destinations. Anywhere else is refused.
+  "m5.kind.deny.help": "Part ที่อยู่ต้นทางนี้ห้ามย้ายไปปลายทางที่ระบุ ถ้าขัดกับกติกาอนุญาต ข้อห้ามชนะเสมอ",   // Parts in the source may not go to the listed destinations. "Not allowed" always wins over "allowed".
+  "m5.kind.floor.help": "Part เหล่านี้จัดเก็บได้เฉพาะชั้นที่เลือก",   // These Parts may be stored only on the chosen floors.
+  "m5.subj.all": "ทุก Part",   // All Parts
+  "m5.subj.some": "เลือก Part",   // Chosen Parts
+  "m5.subj.parts": "Part {v}",   // Parts {v}
+  "m5.at.any": "ทุกที่",   // Anywhere
+  "m5.at.row": "แถวแร็ค",   // Rack rows
+  "m5.at.zone": "โซน",   // Zones
+  "m5.at.bin": "ช่อง / แร็ค",   // Bin / rack
+  "m5.at.floor": "ชั้น",   // Floors
+  "m5.area.any": "ทุกที่",   // anywhere
+  "m5.area.row": "แถว {v}",   // row {v}
+  "m5.area.zone": "โซน {v}",   // zone {v}
+  "m5.area.bin": "ช่อง {v}",   // bin {v}
+  "m5.area.floor": "{v}",   // {v}
+  "m5.auto.lock": "ห้ามย้าย {v}",   // Do not move {v}
+  "m5.auto.lockarea": "ห้ามย้ายออกจาก{from}",   // Nothing leaves {from}
+  "m5.auto.move": "{from} → {to}: {what}",   // {from} → {to}: {what}
+  "m5.auto.floor": "{who} จัดเก็บได้เฉพาะ{to}",   // {who} stored only on {to}
+  "m5.verdict.allow": "อนุญาต",   // allowed
+  "m5.verdict.deny": "ห้าม",   // not allowed
+  "m5.add": "เพิ่ม",   // Add
+  "m5.name": "ชื่อกติกา",   // Rule name
+  "m5.preview": "กติกา:",   // Rule:
+  "m5.save": "บันทึกกติกา",   // Save rule
+  "m5.save.edit": "บันทึกการแก้ไข",   // Save changes
+  "m5.cancel": "ยกเลิก",   // Cancel
+  "m5.edit": "แก้ไข",   // Edit
+  "m5.del": "ลบ",   // Delete
+  "m5.del.confirm": "กดอีกครั้งเพื่อลบ",   // Click again to delete
+  "m5.from": "จาก{v}",   // from {v}
+  "m5.err.parts": "เพิ่ม Part อย่างน้อย 1 รายการ",   // Add at least one Part.
+  "m5.err.from": "เลือกพื้นที่ต้นทาง",   // Choose the source area.
+  "m5.err.to": "เลือกปลายทาง",   // Choose the destination.
+  "m5.ok.saved": "บันทึกกติกา “{name}” แล้ว โมดูล 4 จะใช้ตั้งแต่การคำนวณครั้งถัดไป",   // Rule “{name}” saved. Module 4 uses it from the next calculation.
+  "m5.ok.edited": "แก้ไขกติกา “{name}” แล้ว",   // Rule “{name}” changed.
+  "m5.ok.deleted": "ลบกติกา “{name}” แล้ว",   // Rule “{name}” deleted.
+  "m5.list.title": "รายการกติกา",   // Rules
+  "m5.list.sub": "ทุกคำแนะนำและ Simulation ในโมดูล 4 ตรวจกับรายการนี้",   // Every suggestion and simulation in Module 4 is checked against these.
+  "m5.zone.title": "โซน",   // Zones
+  "m5.zone.sub": "โซนคือกลุ่มแถวแร็คที่ใช้เป็นต้นทางหรือปลายทางได้",   // A zone is a group of rack rows you can use as a source or destination.
+  "m5.zone.new": "สร้างโซน",   // New zone
+  "m5.zone.name": "ชื่อโซน",   // Zone name
+  "m5.zone.ph": "เช่น ชั้น 3 ของหนัก",   // e.g. Floor 3 heavy parts
+  "m5.zone.rows": "แถวในโซนนี้",   // Rows in this zone
+  "m5.zone.save": "บันทึกโซน",   // Save zone
+  "m5.zone.err": "ตั้งชื่อโซนและเลือกอย่างน้อย 1 แถว",   // Give the zone a name and pick at least one row.
+  "m5.zone.none": "ยังไม่มีโซน สร้างได้ที่การ์ดโซน",   // No zones yet. Create one in Zones.
+  "m5.zone.used": "โซนนี้ถูกใช้ในกติกา ให้แก้หรือลบกติกานั้นก่อน",   // This zone is used by a rule. Change or delete that rule first.
+  "m5.test.title": "ทดสอบการสลับ",   // Check a swap
+  "m5.test.sub": "ตรวจทั้งสองฝั่ง: A ไปช่องของ B และ B ไปช่องของ A",   // Both sides are checked: A to B's bin and B to A's bin.
+  "m5.test.btn": "ตรวจ",   // Check
+  "m5.test.ok": "คู่นี้ผ่านทุกกติกา",   // This swap passes every rule.
+  "m5.test.info": "{a} อยู่ที่ {x} · {b} อยู่ที่ {y}",   // {a} is in {x}, {b} is in {y}.
+  "m5.why.lock": "{p}: ถูกล็อกโดย “{name}”",   // {p}: locked by “{name}”
+  "m5.why.deny": "{p}: ปลายทางถูกห้ามโดย “{name}”",   // {p}: destination forbidden by “{name}”
+  "m5.why.notallowed": "{p}: ปลายทางไม่อยู่ในรายการที่อนุญาตของ {names}",   // {p}: destination is not in the allowed list of {names}
+  "m5.why.floor": "{p}: ชั้นปลายทางไม่อยู่ในชั้นที่จัดเก็บได้ตาม {names}",   // {p}: destination floor is not allowed by {names}
+  "m5.rule.floor2": "สลับข้ามชั้นได้ เว้นแต่มีกติกาชั้นที่จัดเก็บได้",   // Swaps may cross floors unless a storage-floor rule says otherwise.
+  "m5.rule.deny": "ถ้ากติกาขัดกัน ข้อห้ามชนะเสมอ",   // When rules disagree, "not allowed" always wins.
+  "m5.rule.size": "ข้อจำกัดขนาดและน้ำหนัก: ยังไม่ใช้ เพราะยังไม่มีข้อมูล ระบบไม่ถือว่าผ่าน",   // Size and weight limits: not used yet, there is no size or weight data. They are never treated as passed.
+  "m5.act.add": "เพิ่ม",   // Added
+  "m5.act.edit": "แก้ไข",   // Changed
+  "m5.act.del": "ลบ",   // Deleted
+  "m5.act.zadd": "เพิ่มโซน",   // Zone added
+  "m5.act.zedit": "แก้โซน",   // Zone changed
+  "m5.act.zdel": "ลบโซน",   // Zone deleted
   "m3.fs": "เต็มจอ",   // Full screen
   "m3.fs.exit": "ออกจากเต็มจอ",   // Exit full screen
   "m3.sug.none": "ไม่พบรายการที่ตรงกัน ตรวจรหัสหรือเลข JOB อีกครั้ง",   // Nothing matches. Check the code or the JOB number.

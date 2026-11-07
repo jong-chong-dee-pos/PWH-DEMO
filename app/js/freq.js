@@ -22,10 +22,10 @@
       Promise.all(daily.map(function (f) { return PWH.db.getRows(f.id).then(function (r) { return { date: f.planDate, rows: r }; }); })),
       Promise.all(monthly.map(function (f) { return PWH.db.getRows(f.id); })),
       PWH.db.getMeta('layout').catch(function () { return null; }),
-      PWH.db.getMeta('locks').catch(function () { return null; })
+      PWH.rules.load()
     ]).then(function (r) {
       var d = { have: { bom: !!r[0], matloc: !!r[1], daily: r[2].length > 0, monthly: r[3].length > 0, layout: !!r[4] },
-        L: r[4] || null, bins: new Map(), text: new Map(), desc: new Map(), orderPlant: new Map(), days: [], locks: r[5] || { items: [], log: [] } };
+        L: r[4] || null, bins: new Map(), text: new Map(), desc: new Map(), orderPlant: new Map(), days: [], rules: r[5] || { rules: [], zones: [], log: [] } };
       if (r[0]) {
         d.index = PWH.checks.buildIndex(r[0]);
         r[0].forEach(function (row) { if (row[3] && !d.text.has(row[2])) d.text.set(row[2], row[3]); });
@@ -153,19 +153,18 @@
     };
   }
 
-  // ---------- locks (Module 5) ----------
-  function lockedPart(d, code) { return d.locks.items.some(function (l) { return l.type === 'part' && l.code === code; }); }
-  function lockedBin(d, bin) { return d.locks.items.some(function (l) { return l.type === 'bin' && (l.code === bin || PWH.layout.binInfo(bin) && l.code === PWH.layout.binInfo(bin).rack); }); }
+  // ---------- rules (Module 5) ----------
   function checkSwap(d, a, b) {
     var why = [];
     if (!a.pick || a.pick.status !== 'ok') why.push({ code: 'a_noloc' });
     if (!b.pick || b.pick.status !== 'ok') why.push({ code: 'b_noloc' });
-    if (lockedPart(d, a.code)) why.push({ code: 'part_locked', v: a.code });
-    if (lockedPart(d, b.code)) why.push({ code: 'part_locked', v: b.code });
-    if (a.pick && a.pick.bin && lockedBin(d, a.pick.bin)) why.push({ code: 'bin_locked', v: a.pick.bin });
-    if (b.pick && b.pick.bin && lockedBin(d, b.pick.bin)) why.push({ code: 'bin_locked', v: b.pick.bin });
-    if (a.pick && b.pick && a.pick.bin && a.pick.bin === b.pick.bin) why.push({ code: 'same_bin' });
-    return why;
+    // a side that cannot be placed still reports its own lock, so the person sees every reason at once
+    if (why.length) {
+      [['a', a], ['b', b]].forEach(function (s) { var x = s[1]; if (x.pick && x.pick.status === 'ok' && PWH.rules.frozen(d.rules, x.code, x.pick)) PWH.rules.checkMove(d.rules, x.code, x.pick, null).filter(function (w) { return w.code === 'lock'; }).forEach(function (w) { w.side = s[0]; w.part = x.code; why.push(w); }); });
+      return why;
+    }
+    if (a.pick.bin === b.pick.bin) return [{ code: 'same_bin' }];
+    return PWH.rules.checkSwap(d.rules, a, b);
   }
   function swapMapOf(pairs) {
     var m = new Map(), sig = [];
@@ -202,7 +201,7 @@
     var pool = [];
     d.bins.forEach(function (_, code) {
       var f = freq.get(code), pk = f ? f.pick : pickOf(d, code);
-      if (pk.status !== 'ok' || lockedPart(d, code) || lockedBin(d, pk.bin) || !isFinite(cost(pk.rack))) return;
+      if (pk.status !== 'ok' || PWH.rules.frozen(d.rules, code, pk) || !isFinite(cost(pk.rack))) return;
       pool.push({ code: code, n: f ? f.n : 0, pick: pk, c: cost(pk.rack), products: f ? f.products : new Map(), name: d.text.get(code) || '' });
     });
     var busy = pool.filter(function (p) { return p.n > 0; }).sort(function (a, b) { return b.n * b.c - a.n * a.c; }).slice(0, 40);
@@ -211,6 +210,7 @@
     busy.forEach(function (a) {
       near.forEach(function (b) {
         if (a.code === b.code || a.pick.bin === b.pick.bin || b.n >= a.n || b.c >= a.c) return;
+        if (checkSwap(d, a, b).length) return;   // only pairs that pass the Module 5 rules are suggested
         est.push({ a: a, b: b, e: (a.n - b.n) * (a.c - b.c) });
       });
     });
@@ -239,5 +239,5 @@
     return res;
   }
 
-  PWH.freq = { load: load, analyze: analyze, simulate: simulate, recommend: recommend, checkSwap: checkSwap, pickOf: pickOf, lockedPart: lockedPart, lockedBin: lockedBin };
+  PWH.freq = { load: load, analyze: analyze, simulate: simulate, recommend: recommend, checkSwap: checkSwap, pickOf: pickOf };
 })(window);

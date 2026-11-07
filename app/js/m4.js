@@ -138,7 +138,7 @@
       (S.simMsg ? '<div class="msg bad" role="status"><span>' + esc(S.simMsg) + '</span></div>' : '');
     if (S.sim.length) {
       form += '<div class="m4pairs">' + S.sim.map(function (s, i) {
-        return '<div class="m4pr">' + swapHead(s.a, s.b) + ruleChip(s.rules) + (s.rules.length ? '<span class="sub2">' + s.rules.map(function (x) { return esc(t('m4.rule.' + x.code, { v: x.v || '' })); }).join(' · ') + '</span>' : '') + '<button class="btn sm danger" data-m4="simdel" data-v="' + i + '">' + esc(t('m4.sim.del')) + '</button></div>';
+        return '<div class="m4pr">' + swapHead(s.a, s.b) + ruleChip(s.rules) + (s.rules.length ? '<span class="sub2">' + s.rules.map(function (x) { return esc(PWH.rules.reasonText(x)); }).join(' · ') + '</span>' : '') + '<button class="btn sm danger" data-m4="simdel" data-v="' + i + '">' + esc(t('m4.sim.del')) + '</button></div>';
       }).join('') + '</div><div class="m4acts"><button class="btn primary" data-m4="simrun"' + (S.sim.some(function (s) { return s.rules.length; }) ? ' disabled' : '') + '>' + esc(t('m4.sim.run')) + '</button><button class="btn" data-m4="simclear">' + esc(t('m4.sim.clear')) + '</button></div>';
     } else form += '<p class="empty-note">' + esc(t('m4.sim.empty')) + '</p>';
     form += '</section>';
