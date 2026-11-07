@@ -357,21 +357,28 @@
   function binName(r, l) { return r.levels > 1 ? r.id + '-' + (l < 10 ? '0' : '') + l : r.id; }
   function plantTxt(p) { return esc(String(p || '')); }
   function partCell(mat, plant) { var nm = M.partNames.get(mat); return '<span class="code">' + esc(mat) + '</span>' + (nm ? '<small class="m2pn" title="' + esc(nm) + '">' + esc(nm) + '</small>' : '') + (plant ? '<small class="m2pp">Plant ' + esc(plant) + '</small>' : ''); }
+  function partCard(mat, plant, right, extra) {
+    var nm = M.partNames.get(mat);
+    return '<li class="m2pc"><div class="m2pc1"><span class="code m2pcode">' + esc(mat) + '</span><button class="m2cp" data-m2="copy" data-v="' + esc(mat) + '" aria-label="' + esc(t('m2.copy')) + '" title="' + esc(t('m2.copy')) + '"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" fill="none" stroke="currentColor" stroke-width="2"/></svg></button>' + (right || '') + '</div>' +
+      (nm ? '<div class="m2pc2">' + esc(nm) + '</div>' : '') + '<div class="m2pc3">' + (plant ? '<span>Plant ' + esc(plant) + '</span>' : '') + (extra || '') + '</div></li>';
+  }
   function dHead(cap, title, sub, chips, closeBtn) {
     return '<div class="m2dh"><div class="m2dt"><div class="m2cap">' + esc(cap) + '</div><h2 class="m2tt">' + esc(title) + '</h2><p class="m2st">' + esc(sub) + '</p></div>' +
-      '<div class="m2dr">' + (chips || '') + (closeBtn ? '<button class="btn sm m2back" data-m2="back">' + esc(t('m2.back')) + '</button><button class="btn sm" data-m2="close">' + esc(t('m2.sel.close')) + '</button>' : '') + '</div></div>';
+      '<div class="m2dr">' + (chips || '') + (closeBtn ? '<button class="btn sm m2back" data-m2="back">' + esc(t('m2.back')) + '</button>' : '') + '</div>' + (closeBtn ? '<button class="btn sm m2x" data-m2="close">' + esc(t('m2.sel.close')) + '</button>' : '') + '</div>';
   }
   function levelOf(bin) { var bi = PWH.layout.binInfo(bin); return bi ? bi.level : '–'; }
   function rackPanel(id) {
     var r = M.match ? M.match.rackById.get(id) : null;
     if (!r) M.layout.floors.forEach(function (f) { f.racks.forEach(function (x) { if (x.id === id) r = x; }); });
     if (!r) return summary();
-    var occ = occOf(r) || {}, used = 0, parts = new Set(), n = 0, emptyLv = [], rows = '';
+    var occ = occOf(r) || {}, used = 0, parts = new Set(), n = 0, emptyLv = [], rows = '', cards = '';
     for (var l = r.levels; l >= 1; l--) {
       var bins = occ[l] || [];
       if (!bins.length) { emptyLv.push(binName(r, l)); continue; }
       used++;
       bins.forEach(function (b) {
+        cards += '<li class="m2lvh"><span class="loc">' + esc(b.bin) + '</span><span>' + esc(t('m2.sel.level', { n: l })) + ' · ' + esc(t('m2.sel.parts', { n: b.items.length })) + '</span></li>';
+        b.items.forEach(function (it) { cards += partCard(it.mat, it.plant, '<b class="m2pq">' + nf(it.stock) + '</b>'); });
         b.items.forEach(function (it) {
           parts.add(it.mat); n++;
           rows += '<tr><td class="num m2no">' + n + '</td><td>' + partCell(it.mat, it.plant) + '</td><td><span class="loc">' + esc(b.bin) + '</span></td><td class="m2lv">' + esc(String(l)) + '</td><td class="m2pl">' + plantTxt(it.plant) + '</td><td class="num">' + nf(it.stock) + '</td></tr>';
@@ -379,9 +386,10 @@
       });
     }
     var chips = '<span class="chip info">' + esc(t('m2.sel.parts', { n: parts.size })) + '</span>';
-    var html = dHead(t('m2.sel.caption'), t('m2.sel.title2', { id: r.id }), t('m2.sel.note') + ' • ' + t('m2.sel.sub', { floor: r.floor.slice(1), levels: r.levels }), chips + '<span class="chip ' + (emptyLv.length ? 'ok' : 'warn') + '">' + esc(t('m2.sel.free', { n: emptyLv.length, t: r.levels })) + '</span>', true);
+    var html = dHead(t('m2.sel.caption'), t('m2.sel.title2', { id: r.id }), t('m2.sel.sub', { floor: r.floor.slice(1), levels: r.levels }) + (M.fs ? '' : ' • ' + t('m2.sel.note')), chips + '<span class="chip ' + (emptyLv.length ? 'ok' : 'warn') + '">' + esc(t('m2.sel.free', { n: emptyLv.length, t: r.levels })) + '</span>', true);
     html += '<div class="m2dbody">';
-    if (n) {
+    if (n && M.fs) html += '<ul class="m2cards">' + cards + '</ul>';
+    else if (n) {
       html += '<table class="m2tbl m2det"><thead><tr><th class="num">' + esc(t('m2.col.no')) + '</th><th>' + esc(t('m2.col.part')) + '</th><th>' + esc(t('m2.col.bin')) + '</th><th>' + esc(t('m2.col.level')) + '</th><th>' + esc(t('m2.col.plant')) + '</th><th class="num">' + esc(t('m2.col.qty')) + '</th></tr></thead><tbody>' + rows + '</tbody></table>';
     } else html += '<p class="m2none">' + esc(t('m2.sel.empty')) + '</p>';
     if (emptyLv.length) html += '<div class="m2fr"><b>' + esc(t('m2.sel.freelist')) + '</b> ' + emptyLv.map(function (x) { return '<span class="code m2fb">' + esc(x) + '</span>'; }).join('') + '</div>';
@@ -409,7 +417,7 @@
     var here = racks.filter(function (r) { return r.floor === cur; });
     if (!here.length) { var fi = fids.indexOf(racks[0].floor); if (fi >= 0) { M.floor = fi; M.rerender(); } here = racks.filter(function (r) { return r.floor === fids[M.floor]; }); }
     if (!M.canvas || !here.length) return;
-    fit(); var fz = M.v.z;
+    M.glide = 0; fit(); var fz = M.v.z;
     M.v = { z: 1, ox: 0, oy: 0 };
     var xs = [], ys = [], lp = levelPx();
     here.forEach(function (r) { [[r.x, r.y], [r.x + r.w, r.y], [r.x + r.w, r.y + r.h], [r.x, r.y + r.h]].forEach(function (c0) { [0, M.mode === '3d' ? r.levels * lp : 0].forEach(function (h) { var p = P(c0[0], c0[1], h); xs.push(p[0]); ys.push(p[1]); }); }); });
@@ -427,6 +435,15 @@
     var R = M.results, MAX = 150;
     var html = dHead(t('m2.res.caption'), t('m2.res.head') + ' “' + M.q + '”', R.length ? t('m2.res.sub', { r: M.hl.size }) : t('m2.res.none'), '<span class="chip info">' + esc(t('m2.res.count', { n: R.length })) + '</span>', true);
     if (!R.length) return html;
+    if (M.fs) {
+      html += '<div class="m2dbody"><ul class="m2cards">' + R.slice(0, MAX).map(function (x, i) {
+        var right = x.mat ? '<b class="m2pq">' + nf(x.stock) + '</b>' : '';
+        var extra = '<span class="loc">' + esc(x.bin) + '</span>' + (x.floor ? '<span>' + esc(t('m2.floor', { n: x.floor.slice(1) })) + '</span>' : '');
+        return x.mat ? partCard(x.mat, x.plant, right, extra).replace('<li class="m2pc"', '<li class="m2pc m2go' + (x.rack ? '' : ' m2off') + '" data-m2="goto" data-i="' + i + '" tabindex="0"')
+          : '<li class="m2pc m2go" data-m2="goto" data-i="' + i + '"><div class="m2pc3">' + extra + '<span class="m2none">' + esc(t('m2.sel.free_bin')) + '</span></div></li>';
+      }).join('') + '</ul>' + (R.length > MAX ? '<p class="sub" style="margin:8px 0 0">' + esc(t('m2.res.more', { n: MAX, t: R.length })) + '</p>' : '') + '</div>';
+      return html;
+    }
     html += '<div class="m2dbody"><table class="m2tbl m2det search"><thead><tr><th class="num">' + esc(t('m2.col.no')) + '</th><th>' + esc(t('m2.col.part')) + '</th><th>' + esc(t('m2.col.bin')) + '</th><th>' + esc(t('m2.col.floor')) + '</th><th class="num">' + esc(t('m2.col.qty')) + '</th></tr></thead><tbody>';
     R.slice(0, MAX).forEach(function (x, i) {
       html += '<tr class="m2go' + (x.rack ? '' : ' m2off') + '" data-m2="goto" data-i="' + i + '"><td class="num m2no">' + (i + 1) + '</td><td>' + (x.mat ? partCell(x.mat) : '<span class="m2none">' + esc(t('m2.sel.free_bin')) + '</span>') + '</td><td><span class="loc">' + esc(x.bin) + '</span></td><td class="m2lv">' + (x.floor ? esc(x.floor.slice(1)) : '–') + '</td><td class="num">' + (x.mat ? nf(x.stock) : '') + '</td></tr>';
@@ -437,8 +454,9 @@
   }
   function side(scroll) {
     var el = $('#m2side'); if (!el) return;
-    var show = !!(M.sel || M.q);
+    var show = !!(M.sel || M.q), was = !el.hidden;
     el.hidden = !show;
+    if (M.fs && was !== show) setTimeout(glideFit, 0);   // full screen: the map slides left of the panel (or back) and shows the whole floor
     if (!show) { el.innerHTML = ''; return; }
     el.innerHTML = '<div class="m2grip" data-m2grip title="' + esc(t('m2.dock.drag')) + '"></div>' + (M.sel ? rackPanel(M.sel) : searchPanel());
     if (scroll && !M.fs) setTimeout(function () { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 30);
@@ -577,8 +595,7 @@
     M.canvas.addEventListener('pointerup', function (e) {
       if (drag && !drag.moved) {
         var rc = M.canvas.getBoundingClientRect(), id = hitAt(e.clientX - rc.left, e.clientY - rc.top);
-        var wasOpen = !!(M.sel || M.q); M.sel = id; side(!!id);
-        if (M.fs && wasOpen !== !!(M.sel || M.q)) glideFit(); else draw();   // full screen: map slides left of the panel and shows whole
+        M.sel = id; side(!!id); draw();
       }
       drag = null;
     });
@@ -614,6 +631,7 @@
     M.fs = on; box.classList.toggle('fs', on); document.documentElement.classList.toggle('pwh-fs', on);
     box.querySelectorAll('[data-m2=fs]').forEach(function (b) { b.textContent = fsLabel(); });
     var sd = box.querySelector('#m2side'); if (sd && !on) sd.style.height = '';
+    if (sd && !sd.hidden) side();
     if (M.onFs) M.onFs(on);
     setTimeout(function () { resize(); fit(); draw(); }, 60);
   }
@@ -643,6 +661,7 @@
     if (!dur) { turnTo(to); return; }
     (function step(now) { var k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3); turnTo(from + (to - from) * e); if (k < 1) requestAnimationFrame(step); })(t0);
   }
+  function selectText(node) { try { var rg = document.createRange(); rg.selectNodeContents(node); var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(rg); } catch (x) {} }
   function zoomAt(mx, my, f) {
     M.glide = 0;
     var v = M.v; v.ox = mx - (mx - v.ox) * f; v.oy = my - (my - v.oy) * f; v.z *= f; draw();
@@ -666,9 +685,14 @@
     else if (a === 'fit') { fit(); draw(); }
     else if (a === 'rot') { if (v === '0') { setRot(0); setTilt(TILT0); glideFit(); } else animTurn(M.rot + (+v) * Math.PI / 4); }
     else if (a === 'tilt') orbit(M.rot, M.tilt + (+v) * 0.2);
-    else if (a === 'close') { if (M.sel) M.sel = null; else { var q0 = $('#m2q'); if (q0) q0.value = ''; doSearch(''); } side(); if (M.fs && !(M.sel || M.q)) glideFit(); else draw(); }
+    else if (a === 'close') { if (M.sel) M.sel = null; else { var q0 = $('#m2q'); if (q0) q0.value = ''; doSearch(''); } side(); draw(); }
     else if (a === 'back') { var mc = M.root.querySelector('[data-fsbox]'); if (mc) mc.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     else if (a === 'search') M.runSearch();
+    else if (a === 'copy') {
+      e.stopPropagation(); var txt = v;
+      var done = function () { el.classList.add('ok'); setTimeout(function () { el.classList.remove('ok'); }, 1200); var lv = $('#m2live'); if (lv) lv.textContent = t('m2.copied', { v: txt }); };
+      try { navigator.clipboard.writeText(txt).then(done, function () { selectText(el.parentNode.querySelector('.m2pcode')); }); } catch (x) { selectText(el.parentNode.querySelector('.m2pcode')); }
+    }
     else if (a === 'clear') M.clearSearch();
     else if (a === 'fs') toggleFs(el);
     else if (a === 'names') { M.names = !M.names; el.setAttribute('aria-pressed', M.names); draw(); }

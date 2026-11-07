@@ -247,6 +247,7 @@
     'm2.view.2d': '2D', 'm2.view.3d': '3D',
     'm2.color': 'Colour by', 'm2.color.levels': 'Rack levels', 'm2.color.stock': 'Stock',
     'm2.fit': 'Fit',
+    'm2.copy': 'Copy Part code', 'm2.copied': 'Copied {v}',
     'm2.q.ph2': 'Search Part or bin', 'm2.names.tip': 'Show a zone sign at the start of each rack row (rack numbers appear when zoomed in)',
     'm2.color.opt': 'Colour: {v}', 'm2.zin': 'Zoom in', 'm2.zout': 'Zoom out',
     'm2.cnt.here': 'Floor {f}: {n} racks', 'm2.cnt.all': 'All floors {n}',

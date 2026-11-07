@@ -313,6 +313,8 @@
   "m2.color.levels": "ระดับชั้นวาง",   // Rack levels
   "m2.color.stock": "สต็อก",   // Stock
   "m2.fit": "พอดีจอ",   // Fit
+  "m2.copy": "คัดลอกรหัส Part",   // Copy Part code
+  "m2.copied": "คัดลอก {v} แล้ว",   // Copied {v}
   "m2.q.ph2": "ค้นหา Part หรือช่อง",   // Search Part or bin
   "m2.names.tip": "แสดงป้ายโซนที่หัวแถวของชั้นวาง (ซูมเข้าใกล้จะเห็นเลขช่อง)",   // Show a zone sign at the start of each rack row (rack numbers appear when zoomed in)
   "m2.color.opt": "สี: {v}",   // Colour: {v}

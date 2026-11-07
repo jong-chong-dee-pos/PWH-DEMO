@@ -971,3 +971,33 @@ h1 { font-size: 24px; font-weight: 600; }
 .m2rsep { width: 1px; align-self: stretch; background: rgba(150, 185, 230, 0.25); margin: 2px 2px; }
 .m2legend { background: rgba(9, 18, 33, 0.82); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
 @media (prefers-reduced-motion: reduce) { .m2rot #m2cmp { transition: none; } }
+
+/* ===== v21 — full-screen side panel: complete Part information as cards ===== */
+.m2mapcard.fs > .m2side { width: min(460px, 40%); padding: 0 14px 14px; }
+.m2mapcard.fs > .m2side .m2dh { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "t x" "r r"; gap: 8px 10px; flex-direction: initial; padding: 14px 2px 12px; }
+.m2mapcard.fs > .m2side .m2dt { grid-area: t; min-width: 0; }
+.m2mapcard.fs > .m2side .m2x { grid-area: x; align-self: start; }
+.m2mapcard.fs > .m2side .m2dr { grid-area: r; justify-content: flex-start; }
+.m2mapcard.fs > .m2side .m2st { margin: 2px 0 0; }
+.m2x { flex-shrink: 0; }
+.m2cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.m2lvh { display: flex; align-items: center; gap: 10px; margin: 8px 0 0; font-size: 13px; color: var(--muted); font-weight: 600; }
+.m2lvh:first-child { margin-top: 2px; }
+.m2pc { border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; background: var(--surface); display: flex; flex-direction: column; gap: 2px; }
+.m2pc.m2go { cursor: pointer; }
+.m2pc.m2go:hover { border-color: var(--accent); background: var(--accent-soft); }
+.m2pc.m2off { opacity: 0.6; cursor: default; }
+.m2pc1 { display: flex; align-items: center; gap: 6px; }
+.m2pcode { font-size: 15px; font-weight: 600; overflow-wrap: anywhere; letter-spacing: 0.01em; user-select: all; }
+.m2pq { margin-left: auto; font-size: 17px; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; padding-left: 8px; }
+.m2pc2 { font-size: 13.5px; color: var(--ink-2, #33415a); line-height: 1.4; overflow-wrap: anywhere; }
+.m2pc3 { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; font-size: 12.5px; color: var(--muted); }
+.m2pc3:empty { display: none; }
+.m2cp { flex: none; display: inline-grid; place-items: center; width: 28px; height: 28px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--muted); cursor: pointer; }
+.m2cp:hover { border-color: var(--line); color: var(--ink); background: var(--surface-2); }
+.m2cp:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.m2cp.ok { color: var(--ok); border-color: var(--ok); }
+.m2mapcard.fs > .m2side .m2fr { margin-top: 12px; }
+.m2lvh .loc { flex: none; width: auto; display: inline-block; }
+.m2lvh span:last-child { white-space: nowrap; }
+.m2pc3 .loc { width: auto; display: inline-block; }
