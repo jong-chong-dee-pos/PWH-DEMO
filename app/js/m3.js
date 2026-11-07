@@ -96,7 +96,7 @@
   function choose(s) {
     P.sel = { kind: s.kind, product: s.product, job: s.job || null, label: s.code };
     P.q = s.code; var inp = $('#m3q'); if (inp) inp.value = s.code;
-    P.sug = []; P.act = -1; P.stop = null; renderSug(); solve();
+    P.sug = []; P.act = -1; P.stop = null; P.binPick = {}; renderSug(); solve();
   }
 
   // ---------- result ----------
@@ -152,7 +152,14 @@
     P.calc = true; renderResult();
     setTimeout(function () {
       if (P.result !== R) return;
-      routable.forEach(function (p) { p.pick = pickBin(p.bins, true); });
+      routable.forEach(function (p) {
+        // bins the picker may switch to: on the layout, with stock (all of them if every one is empty), least stock first
+        var rk = p.bins.filter(function (b) { return b.loc.kind === 'rack'; }), ws = rk.filter(function (b) { return b.stock > 0; });
+        p.alts = (ws.length ? ws : rk).slice().sort(function (a, b) { return ((a.stock || 0) - (b.stock || 0)) || natural(a.bin, b.bin); });
+        p.auto = pickBin(p.bins, true);
+        var own = P.binPick && P.binPick[p.code], hit = own && p.alts.filter(function (b) { return b.bin === own; })[0];
+        p.pick = hit || p.auto;
+      });
       var res = PWH.route.plan(D.L, routable.map(function (p) {
         var b = p.pick;
         return { key: p.code, cands: [{ bin: b.bin, rack: b.loc.rack, level: b.loc.level, floor: b.loc.floor.id, stock: b.stock }] };
@@ -193,7 +200,29 @@
   function liftShort(from, to) { return t(+fnum(to) > +fnum(from) ? 'm3.flow.up' : 'm3.flow.down'); }
   function liftText(from, to) { return t(+fnum(to) > +fnum(from) ? 'm3.lift.up' : 'm3.lift.down', { n: fnum(to) }); }
 
-  function binHtml(b) { return '<span class="m3bin big">' + esc(b.bin) + '</span>'; }
+  function binHtml(b, p) {
+    // a Part with more than one usable bin: the bin tag opens a short list to pick another one (same size as the plain tag)
+    if (p && p.alts && p.alts.length > 1) return '<button class="m3bin big m3binsel' + (p.pick !== p.auto ? ' own' : '') + '" data-m3="binmenu" data-code="' + esc(p.code) + '" aria-haspopup="listbox" title="' + esc(t('m3.bin.more', { n: p.alts.length })) + '">' + esc(b.bin) + '<span class="m3caret" aria-hidden="true">▾</span></button>';
+    return '<span class="m3bin big">' + esc(b.bin) + '</span>';
+  }
+  function binMenu(code, anchor) {
+    var R = P.result, p = R && R.parts.filter(function (x) { return x.code === code; })[0]; if (!p || !p.alts) return;
+    var dock = $('#m3dock'), pop = $('#m3binpop');
+    if (!pop) { pop = document.createElement('div'); pop.id = 'm3binpop'; pop.className = 'm3binpop'; pop.setAttribute('role', 'listbox'); dock.appendChild(pop); }
+    if (pop.getAttribute('data-code') === code && !pop.hidden) { pop.hidden = true; return; }
+    pop.setAttribute('data-code', code);
+    pop.innerHTML = '<div class="m3bph">' + esc(t('m3.bin.pick', { code: code })) + '</div>' + p.alts.map(function (b) {
+      var cur = b.bin === p.pick.bin;
+      return '<button role="option" aria-selected="' + cur + '" data-m3="binset" data-code="' + esc(code) + '" data-bin="' + esc(b.bin) + '"><span class="m3bpb">' + esc(b.bin) + '</span><span class="m3bpf">' + esc(t('m3.floor', { n: fnum(b.loc.floor.id) })) + '</span><span class="m3bps">' + nf(b.stock) + '</span>' +
+        (b === p.auto ? '<span class="m3bpa">' + esc(t('m3.bin.auto')) + '</span>' : '<span class="m3bpa"></span>') + '<span class="m3bpk" aria-hidden="true">' + (cur ? '✓' : '') + '</span></button>';
+    }).join('');
+    pop.hidden = false;
+    var dr = dock.getBoundingClientRect(), ar = anchor.getBoundingClientRect();
+    var top = ar.bottom - dr.top + dock.scrollTop + 4, w = Math.min(320, dock.clientWidth - 16);
+    if (ar.bottom + 8 + Math.min(pop.offsetHeight, 300) > window.innerHeight) top = ar.top - dr.top + dock.scrollTop - 4 - Math.min(pop.offsetHeight, 300);
+    pop.style.width = w + 'px'; pop.style.top = top + 'px'; pop.style.left = Math.max(8, ar.right - dr.left - w) + 'px';
+    var f = pop.querySelector('[aria-selected="true"]') || pop.querySelector('button'); if (f) f.focus();
+  }
   function partRow(item, withSeq) {
     var p = item.part || item, b = item.bin || p.bins[0];
     var warn = '';   // no stock check on the pick list (agreed: navigation only)
@@ -201,7 +230,7 @@
       (withSeq ? '<span class="m3n">' + item.seq + '</span>' : '<span class="m3n off">–</span>') +
       '<div class="m3code code">' + esc(p.code) + warn + '</div>' +
       '<div class="m3name">' + esc(p.name) + '</div>' +
-      (b ? binHtml(b) : '') + '</div>';
+      (b ? binHtml(b, withSeq ? p : null) : '') + '</div>';
   }
   function offRow(p) {
     return '<div class="m3row" data-m3="stop" data-code="' + esc(p.code) + '"><span class="m3n off">–</span><div class="m3code code">' + esc(p.code) + '</div><div class="m3name">' + esc(p.name) + '</div>' +
@@ -418,6 +447,13 @@
       else if (a === 'replant') { P.result.replant = true; P.result.ask = P.result.ask || 'both'; renderResult(); }
       else if (a === 'reload') { var keep = P.sel; load().then(function () { P.sel = keep; solve(); }); }
       else if (a === 'flt') { var v = el.getAttribute('data-v'); P.flt = v; if (v !== 'all') K.M.floor = +v; K.M.sel = null; renderResult(); drawMap(true); }
+      else if (a === 'binmenu') { e.stopPropagation(); binMenu(el.getAttribute('data-code'), el); return; }
+      else if (a === 'binset') {
+        var dk = $('#m3dock'), keep = dk ? dk.scrollTop : 0;
+        P.binPick = P.binPick || {}; P.binPick[el.getAttribute('data-code')] = el.getAttribute('data-bin');
+        var pp = $('#m3binpop'); if (pp) pp.hidden = true;
+        solve(); setTimeout(function () { var d2 = $('#m3dock'); if (d2) d2.scrollTop = keep; }, 60);
+      }
       else if (a === 'stop') {
         var code = el.getAttribute('data-code'); P.stop = P.stop === code ? null : code; focusStop(code); renderResult(); drawMap();
         var it = P.stop && P.result && P.result.routed ? P.result.routed.filter(function (x) { return x.part.code === code; })[0] : null;
@@ -425,6 +461,8 @@
       }
     });
     if (!P.keyHook) { P.keyHook = true; document.addEventListener('keydown', function (e) { if (e.key === '/' && P.root && document.body.contains(P.root) && !/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '')) { e.preventDefault(); var i = $('#m3q'); if (i) i.focus(); } }); }
+    document.addEventListener('pointerdown', function (e) { var pp = $('#m3binpop'); if (pp && !pp.hidden && !e.target.closest('#m3binpop') && !e.target.closest('[data-m3=binmenu]')) pp.hidden = true; });
+    root.addEventListener('keydown', function (e) { var pp = $('#m3binpop'); if (e.key === 'Escape' && pp && !pp.hidden) { pp.hidden = true; e.stopPropagation(); } });
     renderResult(); renderMap();
     load().then(function () { renderResult(); renderMap(); if (P.sel) solve(); }).catch(function (e) { console.error(e); });
     setTimeout(function () { var i = $('#m3q'); if (i) i.focus(); }, 30);
