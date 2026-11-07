@@ -1130,3 +1130,8 @@ html.pwh-m3 .main { height: 100vh; }
 .m3stage.m2mapcard .m3hud { align-items: stretch; flex-wrap: nowrap; }
 .m3srch input, .m3srch input:focus, .m3srch input:focus-visible { border: 0 !important; outline: none !important; box-shadow: none !important; background: transparent !important; padding: 0 !important; }
 .m3r1 .m3kpi { grid-column: 1; } .m3r1 .m3bar { grid-column: 2; grid-row: 1; } .m3r1 .m3r1r { grid-column: 3; grid-row: 1; }
+/* v26: distance and time side by side at the top left */
+.m3r1 .m3kpis { grid-column: 1; grid-row: 1; justify-self: start; display: flex; align-items: center; gap: 4px; min-width: 0; }
+.m3r1 .m3kpi { background: transparent; border: 0; box-shadow: none; padding: 0 8px; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.m3r1 .m3kpi.time:not([hidden]) { border-left: 1px solid rgba(150, 185, 230, 0.25); padding-left: 12px; }
+@container mapc (max-width: 1250px) { .m3r1 .m3kpi .b { display: none; } }

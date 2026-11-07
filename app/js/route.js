@@ -184,9 +184,8 @@
     var di = nodes.length; nodes.push({ nodes: [gr.drop], kind: 'D' });
     var liftIdx = {};
     Object.keys(gr.liftOf).forEach(function (fi) { liftIdx[fi] = nodes.length; nodes.push({ nodes: [gr.liftOf[fi]], kind: 'L' }); });
-    // House rules for the way to DROP:
-    //  - finishing on the DROP floor: always leave through the door nearest DROP, then go to DROP
-    //  - coming back down by lift: walk past START, then to DROP
+    // House rule for the way to DROP: every walk reaches DROP through the door nearest DROP
+    // (finishing on floor 1, or coming back down by lift and walking up past START to the door)
     var doorIdx = null, dropFl = gr.floorOf[gr.drop], dd = dijkstra(gr, [gr.drop]), bestDoor = -1;
     (gr.doors || []).forEach(function (n) { if (gr.floorOf[n] === dropFl && dd[n] < INF && (bestDoor < 0 || dd[n] < dd[bestDoor])) bestDoor = n; });
     if (bestDoor >= 0) { doorIdx = nodes.length; nodes.push({ nodes: [bestDoor], kind: 'R' }); }
@@ -294,7 +293,7 @@
         cost += r.cost; ord = ord.concat(r.order); cur = exit;
       });
       if (!okp) return;
-      if (floorOfNode(cur) !== dropFloor) cost += D[cur][0] + D[0][di];   // down by lift, past START
+      if (floorOfNode(cur) !== dropFloor && doorIdx != null) cost += D[cur][doorIdx] + D[doorIdx][di];   // down by lift, then through the door
       else cost += D[cur][di];
       if (!best || cost < best.cost) best = { cost: cost, order: ord };
     });
@@ -302,7 +301,7 @@
 
     // walk the final tour again to draw it
     var lastN = order.length ? idx[order[order.length - 1]][choice[order[order.length - 1]]] : 0;
-    var via = !order.length ? [] : floorOfNode(lastN) === dropFloor ? (doorIdx != null ? [doorIdx] : []) : [0];
+    var via = order.length && doorIdx != null ? [doorIdx] : [];
     var legs = [], total = 0, out = [], path = [0].concat(order.map(function (it) { return idx[it][choice[it]]; }), via, [di]);
     for (var s = 0; s < path.length - 1; s++) {
       var A2 = path[s], B2 = path[s + 1], par = new Int32Array(gr.N).fill(-1), dist2 = dijkstra(gr, nodes[A2].nodes, par);
