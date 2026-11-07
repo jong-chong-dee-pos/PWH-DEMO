@@ -88,7 +88,7 @@
     M.v = keep;
     var minx = Math.min.apply(null, xs), maxx = Math.max.apply(null, xs), miny = Math.min.apply(null, ys), maxy = Math.max.apply(null, ys);
     var o = insets(), aw = cw - o.l - o.r, ah = ch - o.t - o.b;
-    var z = Math.min((aw - 32) / (maxx - minx), (ah - 16) / (maxy - miny));
+    var z = Math.min((aw - (M.names ? 90 : 32)) / (maxx - minx), (ah - 16) / (maxy - miny));   // room for the zone signs at row starts
     return { z: z, ox: o.l + (aw - (maxx - minx) * z) / 2 - minx * z, oy: o.t + (ah - (maxy - miny) * z) / 2 - miny * z };
   }
   function fit() { var v = fitView(); if (v) { M.v = v; M.fitZ = v.z; } }
@@ -219,9 +219,13 @@
     var racks = f.racks.slice();
     if (d3) racks.sort(function (a, b2) { var p = rot(a.x + a.w / 2, a.y + a.h / 2), q = rot(b2.x + b2.w / 2, b2.y + b2.h / 2); return (p[0] + p[1]) - (q[0] + q[1]); });
     if (d3) racks.forEach(function (r) { poly(rectPts({ x: r.x - 1, y: r.y - 1, w: r.w + 2, h: r.h + 2 }, 0), 'rgba(0,0,0,0.38)'); });   // contact shadows
+    // a clicked rack stands out: every other rack turns grey and fades back
+    var focus = M.sel && f.racks.some(function (r) { return r.id === M.sel; }), GREY = '#56647a';
     racks.forEach(function (r) {
-      var zc = zoneColor(r.id), sl = stockLevels(r), H = r.levels * lp, has = sl.length > 0;
-      var tint = M.color === 'levels' ? (C.l[r.levels] || C.l[1]) : M.color === 'stock' ? (has ? C.stock : '#33455f') : zc;
+      var dim = focus && r.id !== M.sel;
+      if (dim) { c.save(); c.globalAlpha = d3 ? 0.3 : 0.38; }
+      var zc = dim ? GREY : zoneColor(r.id), sl = stockLevels(r), H = r.levels * lp, has = sl.length > 0, stc = dim ? GREY : C.stock;
+      var tint = dim ? GREY : M.color === 'levels' ? (C.l[r.levels] || C.l[1]) : M.color === 'stock' ? (has ? C.stock : '#33455f') : zc;
       var k = M.color === 'stock' ? (has ? 0.55 : 0.12) : M.color === 'levels' ? 0.6 : 0.16;
       var hit = { id: r.id, polys: [] };
       if (!d3) {
@@ -248,8 +252,8 @@
         var gh = rgbHex(mix(tint, '#1b2c47', k + 0.22)), ga = M.color === 'stock' && !has ? 0.28 : 0.42, glass = shade(gh, 1.05, ga);
         sl.forEach(function (l) {
           var inx = r.w * 0.16, iny = r.h * 0.16, cb = { x: r.x + inx, y: r.y + iny, w: r.w - 2 * inx, h: r.h - 2 * iny }, z0 = (l - 1) * lp + lp * 0.06, z1 = z0 + lp * 0.74;
-          faces(cb).forEach(function (fc) { poly(wall(fc, z0, z1), shade(C.stock, fc.lit * 0.9, 0.95)); });
-          poly(rectPts(cb, z1), shade(C.stock, 1.18, 0.98));
+          faces(cb).forEach(function (fc) { poly(wall(fc, z0, z1), shade(stc, fc.lit * 0.9, 0.95)); });
+          poly(rectPts(cb, z1), shade(stc, 1.18, 0.98));
         });
         var top = rectPts(r, H), edge = shade(M.color === 'zone' ? zc : tint, 1.1, 0.75);
         faces(r).forEach(function (fc) {
@@ -261,10 +265,11 @@
         hit.polys.unshift(top);
       }
       M.hits.push(hit);
+      if (dim) c.restore();
     });
     // zone signs: one per row run, at its start (left / top end), floating above the racks in 3D
     if (M.names) {
-      var placed = [];
+      var placed = []; if (focus) { c.save(); c.globalAlpha = 0.35; }
       rows.forEach(function (w) {
         if (!w.sign) return;
         var bx = w.box, size = Math.max(10, Math.min(14, (w.horiz ? bx.h : bx.w) * z * 0.7));
@@ -275,13 +280,14 @@
         if (placed.some(function (q) { return est[0] < q[0] + q[2] && est[0] + est[2] > q[0] && est[1] < q[1] + q[3] && est[1] + est[3] > q[1]; })) { if (w.horiz) p = [p[0] - size * 2.2, p[1]]; }
         placed.push(zoneSign(w.zone, p, w.col, size, d3 ? lead : null));
       });
+      if (focus) c.restore();
     }
     // racks found by the search
     if (M.hl && M.hl.size) {
       f.racks.forEach(function (r) {
         if (!M.hl.has(r.id)) return;
         var H3 = d3 ? r.levels * lp : 0;
-        c.save(); c.shadowColor = C.hit; c.shadowBlur = 14; poly(rectPts(r, H3), 'rgba(47,134,255,0.85)', C.hitLine, 2); c.restore();
+        c.save(); if (focus && r.id !== M.sel) c.globalAlpha = 0.45; c.shadowColor = C.hit; c.shadowBlur = 14; poly(rectPts(r, H3), 'rgba(47,134,255,0.85)', C.hitLine, 2); c.restore();
         if (r.id === M.sel) return;
         var tq = P(r.x + r.w / 2, r.y + r.h / 2, H3), fq = Math.max(9, Math.min(13, r.w * z / (String(r.id).length * 0.62))); c.font = '600 ' + fq + 'px "IBM Plex Mono", monospace'; c.fillStyle = '#ffffff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(r.id, tq[0], tq[1]);
       });
