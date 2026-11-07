@@ -80,7 +80,7 @@
     var el = $('#m3sug'), res = $('#m3res'); if (!el) return;
     var lv = $('#m3live'); if (lv) lv.textContent = P.q.trim() && !(P.sel && P.sel.label === P.q) ? t('m3.sug.found', { n: P.sug.length }) : '';
     var show = P.q.trim() && !(P.sel && P.sel.label === P.q);
-    if (res) res.hidden = !!show && !P.sel;
+    var inp0 = $('#m3q'); if (inp0) inp0.setAttribute('aria-expanded', show ? 'true' : 'false');
     if (!show) { el.hidden = true; el.innerHTML = ''; return; }
     el.hidden = false;
     if (!P.sug.length) { el.innerHTML = '<div class="m3none">' + esc(t('m3.sug.none')) + '</div>'; return; }
@@ -207,18 +207,18 @@
     return '<div class="m3row" data-m3="stop" data-code="' + esc(p.code) + '"><span class="m3n off">–</span><div class="m3code code">' + esc(p.code) + '</div><div class="m3name">' + esc(p.name) + '</div>' +
       (p.bins.length ? '<span class="m3bin">' + p.bins.map(function (b) { return esc(b.bin); }).join(', ') + '</span>' : '') + '</div>';
   }
+  // the walk as one straight line: START — floor 1 · 19 stops — lift up — floor 2 · 2 stops — lift down — DROP
   function flowHtml(R) {
     var sf = R.start.floor, df = R.drop.floor, cur = sf, h = [];
-    function chip(c, tx) { return '<span class="m3fs ' + c + '">' + tx + '</span>'; }
-    var ar = '<span class="m3ar" aria-hidden="true">›</span>';
-    h.push(chip('', esc(t('m2.mk.start'))));
-    R.runs.forEach(function (r, k) {
-      if (r.floor !== cur) h.push(chip('lift', esc(liftShort(cur, r.floor)))); cur = r.floor;
-      h.push(chip('floor', esc(t('m3.flow.step', { k: k + 1, n: fnum(r.floor), c: r.items.length }))));
+    function st(c, tx) { return '<span class="m3st ' + c + '"><i aria-hidden="true"></i>' + tx + '</span>'; }
+    h.push(st('end', esc(t('m2.mk.start'))));
+    R.runs.forEach(function (r) {
+      if (r.floor !== cur) h.push(st('lift', esc(liftShort(cur, r.floor)))); cur = r.floor;
+      h.push(st('floor', esc(t('m3.flow.step2', { n: fnum(r.floor), c: r.items.length }))));
     });
-    if (cur !== df) h.push(chip('lift', esc(liftShort(cur, df))));
-    h.push(chip('', esc(t('m2.mk.drop'))));
-    return '<div class="m3flow" role="list" aria-label="' + esc(t('m3.flow.title')) + '">' + h.join(ar) + '</div>';
+    if (cur !== df) h.push(st('lift', esc(liftShort(cur, df))));
+    h.push(st('end', esc(t('m2.mk.drop'))));
+    return '<div class="m3flow" role="list" aria-label="' + esc(t('m3.flow.title')) + '">' + h.join('<span class="m3ln" aria-hidden="true"></span>') + '</div>';
   }
   function routeHtml(R) {
     var all = P.flt === 'all' || !R.multiFloor, cur = R.start ? R.start.floor : '', html = '';
@@ -234,47 +234,75 @@
     return '<div class="m3list">' + html + '</div>';
   }
 
+  // ---------- simulation: distance and time of one pick trip (estimates, the factors are in SIM) ----------
+  // walk speed pushing a pick cart, time to find + pick one Part, one lift ride (wait + travel + unload)
+  var SIM = { walk: 0.8, pick: 25, lift: 90 };
+  function simOf(R) {
+    if (!R || !R.routed || !R.routed.length || R.noLayout) return null;
+    var lifts = 0;
+    if (R.runs) { var cur = R.start ? R.start.floor : null; R.runs.forEach(function (r) { if (cur && r.floor !== cur) lifts++; cur = r.floor; }); if (R.drop && cur !== R.drop.floor) lifts++; }
+    var walk = (R.total || 0) / SIM.walk, pick = R.routed.length * SIM.pick, lift = lifts * SIM.lift;
+    return { m: R.total || 0, walk: walk, pick: pick, lift: lift, lifts: lifts, sec: walk + pick + lift };
+  }
+  function mins(sec) { return Math.max(1, Math.round(sec / 60)); }
+  function kpis() {
+    var s = simOf(P.result), d = $('#m3dist'), tm = $('#m3time');
+    if (d) { d.hidden = !s; if (s) d.innerHTML = '<span class="k">' + esc(t('m3.kpi.dist')) + '</span><span class="v">' + esc(t('m3.kpi.m', { m: nf(Math.round(s.m / 5) * 5) })) + '</span>'; }
+    if (tm) {
+      tm.hidden = !s;
+      if (s) {
+        tm.title = t('m3.kpi.time_tip', { w: mins(s.walk), n: P.result.routed.length, p: SIM.pick, l: s.lifts, ls: SIM.lift, v: SIM.walk });
+        tm.innerHTML = '<span class="k">' + esc(t('m3.kpi.time')) + '</span><span class="v">' + esc(t('m3.kpi.min', { n: mins(s.sec) })) + '</span><span class="b">' + esc(t('m3.kpi.split', { w: mins(s.walk), p: mins(s.pick + s.lift) })) + '</span>';
+      }
+    }
+    var fl = $('#m3flow'), R = P.result;
+    if (fl) { var on = !!(R && R.runs && R.runs.length && !P.calc); fl.hidden = !on; fl.innerHTML = on ? flowHtml(R) : ''; }
+  }
+
+  // ---------- panel on the right: result, plant question, messages ----------
   function renderResult() {
-    var el = $('#m3res'); if (!el) return;
+    var el = $('#m3dock'); if (!el) return;
     var R = P.result, html = '';
-    if (P.stale) html += '<div class="m3banner" role="status"><span>' + esc(t('m3.banner.new')) + '</span><button class="btn primary" data-m3="reload">' + esc(t('m3.banner.reload')) + '</button></div>';
+    kpis();
+    if (P.stale) html += '<div class="m3banner" role="status"><span>' + esc(t('m3.banner.new')) + '</span><button class="btn sm primary" data-m3="reload">' + esc(t('m3.banner.reload')) + '</button></div>';
     if (!D || !D.have.bom || !D.have.matloc) {
       var miss = []; if (!D || !D.have.bom) miss.push(t('need.bom')); if (!D || !D.have.matloc) miss.push(t('need.matloc'));
-      el.innerHTML = html + '<div class="panel"><h2>' + esc(t('m3.need.title')) + '</h2><p class="sub">' + esc(t('m3.need.missing', { list: miss.join(', ') })) + '</p></div>'; return;
+      return show(el, html + '<div class="m3msg"><b>' + esc(t('m3.need.title')) + '</b><p>' + esc(t('m3.need.missing', { list: miss.join(', ') })) + '</p></div>');
     }
-    if (!D.L) html += '<div class="banner" style="margin:0 0 12px">' + esc(t('m3.warn.nolayout')) + '</div>';
-    if (!R) { el.innerHTML = html + '<div class="m3empty"><h2>' + esc(t('m3.empty.title')) + '</h2><p class="sub">' + esc(t('m3.empty.help')) + '</p></div>'; return; }
+    if (!D.L) html += '<div class="m3msg warn"><p>' + esc(t('m3.warn.nolayout')) + '</p></div>';
+    if (!R) return show(el, html ? html : '', !html);
     var sel = R.sel, pp = R.pp;
-    var head = '<div class="m3head"><div class="m3prod code">' + esc(sel.product) + '</div>' + (D.desc.get(sel.product) ? '<div class="m3pname" title="' + esc(D.desc.get(sel.product)) + '">' + esc(D.desc.get(sel.product)) + '</div>' : '');
+    var head = '<div class="m3head"><div class="m3prod code">' + esc(sel.product) + '</div>' + (D.desc.get(sel.product) ? '<div class="m3pname">' + esc(D.desc.get(sel.product)) + '</div>' : '');
     if (sel.job) head += '<div class="m3pname">' + esc(t('m3.res.job', { job: sel.job.job, date: fmtDate(sel.job.date), qty: nf(sel.job.qty) })) + '</div>';
     if (pp.plant) {
       head += '<div class="m3plant"><span class="chip info">' + esc(pp.how === 'job' ? t('m3.plant.from_job', { plant: pp.plant }) : t('m3.plant.only', { plant: pp.plant })) + '</span>' +
-        (pp.plants.length > 1 ? '<button class="btn" data-m3="replant">' + esc(t('m3.plant.change')) + '</button>' : '') + '<span class="m3statsin" id="m3statsin"></span></div>';
+        (pp.plants.length > 1 ? '<button class="btn sm" data-m3="replant">' + esc(t('m3.plant.change')) + '</button>' : '') +
+        (R.parts.length ? '<span class="m3stats">' + esc(t('m3.res.parts', { n: R.parts.length })) + (R.routed.length && !R.noLayout ? ' · ' + esc(t('m3.res.stops', { n: R.routed.length })) : '') + '</span>' : '') + '</div>';
     }
-    head += '</div>';
-    html += head;
-    if (R.nobom) { el.innerHTML = html + '<p class="empty-note">' + esc(t('m3.res.nobom', { plant: '–' })) + '</p>'; return; }
+    html += head + '</div>';
+    if (R.nobom) return show(el, html + '<p class="empty-note">' + esc(t('m3.res.nobom', { plant: '–' })) + '</p>');
     if (R.ask || R.replant) {
-      el.innerHTML = html + '<div class="m3ask"><b>' + esc(t('m3.plant.ask')) + '</b><div class="sub" style="margin:0">' + esc(R.ask === 'job' ? t('m3.plant.why_job', { job: sel.job.job }) : t('m3.plant.why_both')) + '</div><div class="m3plants">' + pp.plants.map(function (p) { return '<button class="btn m3pbtn" data-m3="plant" data-p="' + esc(p) + '">' + esc(p) + '</button>'; }).join('') + '</div></div>';
-      return;
+      return show(el, html + '<div class="m3ask"><b>' + esc(t('m3.plant.ask')) + '</b><div class="sub" style="margin:0">' + esc(R.ask === 'job' ? t('m3.plant.why_job', { job: sel.job.job }) : t('m3.plant.why_both')) + '</div><div class="m3plants">' + pp.plants.map(function (p) { return '<button class="btn m3pbtn" data-m3="plant" data-p="' + esc(p) + '">' + esc(p) + '</button>'; }).join('') + '</div></div>');
     }
-    if (R.noparts) { el.innerHTML = html + '<p class="empty-note">' + esc(t('m3.res.noparts')) + '</p>'; return; }
-    var stats = '<span class="m3stats"><span>' + esc(t('m3.res.parts', { n: R.parts.length })) + '</span>' + (R.routed.length && !R.noLayout ? '<span>' + esc(t('m3.res.stops', { n: R.routed.length })) + '</span>' : '') +
-      (R.total ? '<span>' + esc(t('m3.res.route', { m: Math.round(R.total / 5) * 5 })) + '</span>' : '') + '</span>';
-    html = html.replace('<span class="m3statsin" id="m3statsin"></span>', stats);
-    if (P.calc) { el.innerHTML = html + '<p class="empty-note">' + esc(t('m3.res.calc')) + '</p>'; return; }
-    if (R.runs && R.multiFloor) html += flowHtml(R);
+    if (R.noparts) return show(el, html + '<p class="empty-note">' + esc(t('m3.res.noparts')) + '</p>');
+    if (P.calc) return show(el, html + '<p class="empty-note">' + esc(t('m3.res.calc')) + '</p>');
     html += '<div class="m3scroll">';
     if (R.runs) html += routeHtml(R);
     else html += '<div class="m3list">' + R.routed.map(function (it) { return partRow(it, true); }).join('') + '</div>';
     if (R.off.length) html += '<h3 class="m3h">' + esc(t('m3.group.off')) + '</h3><p class="sub">' + esc(t('m3.group.off_help')) + '</p><div class="m3list">' + R.off.map(offRow).join('') + '</div>';
     if (R.nobin.length) html += '<h3 class="m3h">' + esc(t('m3.group.nobin')) + '</h3><p class="sub">' + esc(t('m3.group.nobin_help')) + '</p><div class="m3list">' + R.nobin.map(offRow).join('') + '</div>';
     html += '</div>';
-    el.innerHTML = html;
-    fillDock();
+    show(el, html);
+  }
+  // the panel only takes room on the map while it has something to say
+  function show(el, html, hide) {
+    var was = !el.hidden;
+    el.innerHTML = html || ''; el.hidden = !!hide || !html;
+    var st = $('#m3map'); if (st) st.style.setProperty('--m3panel', el.hidden ? '0px' : (el.offsetWidth + 20) + 'px');
+    if (K && K.M.canvas && was !== !el.hidden) setTimeout(function () { K.glideFit(); }, 0);
   }
 
-  // ---------- map ----------
+  // ---------- map stage ----------
   function barHtml() {
     if (!D || !D.L) return '';
     var R = P.result, M = K.M, routed = R && R.routed ? R.routed : [];
@@ -284,18 +312,16 @@
     });
     var multi = R && R.multiFloor, items = multi ? [['all', t('m3.floor.all') + ' (' + routed.length + ')']].concat(floors) : floors;
     var cur = multi && P.flt === 'all' ? 'all' : String(M.floor);
-    var seg = '<div class="seg" role="group">' + items.map(function (i) { return '<button data-m3="flt" data-v="' + i[0] + '" aria-pressed="' + (cur === i[0]) + '">' + esc(i[1]) + '</button>'; }).join('') + '</div>';
-    return seg + K.seg([['2d', t('m2.view.2d')], ['3d', t('m2.view.3d')]], M.mode, 'mode') +
-      (multi && P.flt === 'all' ? '<span class="m3mapnote">' + esc(t('m3.map.showing', { n: fnum(D.L.floors[M.floor].id) })) + '</span>' : '') +
-      '<span class="grow"></span><div class="m2zoom"><button class="btn ic" data-m2="zout" aria-label="' + esc(t('m2.zout')) + '" title="' + esc(t('m2.zout')) + '">−</button><button class="btn ic" data-m2="zin" aria-label="' + esc(t('m2.zin')) + '" title="' + esc(t('m2.zin')) + '">+</button><button class="btn" data-m2="fit">' + esc(t('m2.fit')) + '</button></div><button class="btn primary" data-m2="fs">' + esc(t(M.fs ? 'm3.fs.exit' : 'm3.fs')) + '</button>';
+    return '<div class="seg" role="group">' + items.map(function (i) { return '<button data-m3="flt" data-v="' + i[0] + '" aria-pressed="' + (cur === i[0]) + '">' + esc(i[1]) + '</button>'; }).join('') + '</div>' +
+      K.seg([['2d', t('m2.view.2d')], ['3d', t('m2.view.3d')]], M.mode, 'mode');
   }
   function renderMap() {
-    var el = $('#m3map'); if (!el) return;
+    var el = $('#m3mapbox'); if (!el) return;
     if (!D || !D.L) { el.innerHTML = '<div class="m3nomap">' + esc(t('m3.map.none')) + '</div>'; return; }
     var C = K.pal();
     el.innerHTML = '<div class="m2canvas m3canvas" id="m2wrap"><canvas id="m2cv" tabindex="0" aria-label="Warehouse map"></canvas><div id="m2tip" class="m2tip" hidden></div>' + K.rotCtl() +
-      '<div class="m2legend m3legend" id="m2legend" title="' + esc(t('m3.scale', { px: D.L.scale })) + '"><span class="lg"><i class="m3sw"></i>' + esc(t('m3.legend.route')) + '</span><span class="lg"><i class="m3dot"></i>' + esc(t('m3.legend.stop')) + '</span><span class="lg"><i style="background:' + C.start + '"></i>' + esc(t('m2.mk.start')) + '</span><span class="lg"><i style="background:' + C.drop + '"></i>' + esc(t('m2.mk.drop')) + '</span><span class="m3note" id="m3note"></span></div></div>' +
-      '<div class="m2tool m3tool" id="m3bar">' + barHtml() + '</div><div class="m3dock" id="m3dock"></div>';
+      '<div class="m2legend m3legend" id="m2legend" title="' + esc(t('m3.scale', { px: D.L.scale })) + '"><span class="lg"><i class="m3sw"></i>' + esc(t('m3.legend.route')) + '</span><span class="lg"><i class="m3dot"></i>' + esc(t('m3.legend.stop')) + '</span><span class="lg"><i style="background:' + C.start + '"></i>' + esc(t('m2.mk.start')) + '</span><span class="lg"><i style="background:' + C.drop + '"></i>' + esc(t('m2.mk.drop')) + '</span><span class="m3note" id="m3note"></span></div></div>';
+    var bar = $('#m3bar'); if (bar) bar.innerHTML = barHtml();
     K.wireMap(); K.resize(); K.fit(); K.draw();
   }
   function drawMap(refit, initial) {
@@ -309,6 +335,7 @@
     var rc = $('#m2rot'); if (rc) rc.hidden = K.M.mode !== '3d';
     // racks on the route stay bright, the rest of the warehouse fades back
     K.M.focus = R && R.routed ? new Set(R.routed.filter(function (it) { return it.bin.loc.kind === 'rack'; }).map(function (it) { return it.bin.loc.rack; })) : null;
+    kpis();
     var nt = $('#m3note'); if (nt) nt.textContent = R && R.bridges ? t('m3.warn.bridges', { n: R.bridges }) : '';
     if (refit) K.fit();
     K.draw();
@@ -359,15 +386,19 @@
 
   // ---------- mount ----------
   function skeleton() {
-    return '<div class="m3page"><section class="m3left"><label class="m3lbl" for="m3q">' + esc(t('m3.search.label')) + '</label>' +
-      '<div class="m3srch"><input id="m3q" type="search" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="m3sug" placeholder="' + esc(t('m3.search.placeholder')) + '" value="' + esc(P.q) + '"><div id="m3sug" class="m3sug" role="listbox" hidden></div></div>' +
-      '<div id="m3res"></div><span class="sr-only" id="m3live" role="status" aria-live="polite"></span></section><section class="m3right m2mapcard' + (K && K.M.fs ? ' fs' : '') + '" id="m3map" data-fsbox></section></div>';
+    return '<section class="m3stage m2mapcard" id="m3map" data-fsbox><div class="m3mapbox" id="m3mapbox"></div>' +
+      '<div class="m2tool m3hud"><div class="m3r1"><div class="m3kpi" id="m3dist" hidden></div><div class="m3bar" id="m3bar"></div>' +
+      '<div class="m3r1r"><div class="m2zoom"><button class="btn ic" data-m2="zout" aria-label="' + esc(t('m2.zout')) + '" title="' + esc(t('m2.zout')) + '">−</button><button class="btn ic" data-m2="zin" aria-label="' + esc(t('m2.zin')) + '" title="' + esc(t('m2.zin')) + '">+</button><button class="btn" data-m2="fit">' + esc(t('m2.fit')) + '</button></div><button class="btn primary" data-m2="fs">' + esc(t(K && K.M.fs ? 'm2.fs.exit' : 'm2.fs')) + '</button></div></div>' +
+      '<div class="m3r2"><div class="m3flowbox" id="m3flow" hidden></div><div class="m3srch"><svg class="m3si" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="m3q" type="search" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="m3sug" aria-label="' + esc(t('m3.search.label')) + '" placeholder="' + esc(t('m3.search.placeholder')) + '" value="' + esc(P.q) + '"><kbd class="m3kbd" aria-hidden="true">/</kbd><div id="m3sug" class="m3sug" role="listbox" hidden></div></div><div class="m3kpi time" id="m3time" hidden></div></div></div>' +
+      '<aside class="m3dock" id="m3dock" hidden></aside><span class="sr-only" id="m3live" role="status" aria-live="polite"></span></section>';
   }
   function mount(root) {
     P.root = root;
-    if (!K) { K = PWH.mapKit('pwh-m3mode'); K.M.overlay = overlay; K.M.rerender = function () { drawMap(true); }; K.M.onFs = function () { fillDock(); drawMap(); }; }
+    if (!K) { K = PWH.mapKit('pwh-m3mode'); K.M.overlay = overlay; K.M.rerender = function () { drawMap(true); }; K.M.onFs = function () { drawMap(true); }; }
     K.M.root = root; K.M.canvas = null; K.M.fs = false; document.documentElement.classList.remove('pwh-fs');
     root.innerHTML = skeleton();
+    // opened from the menu: go straight to full screen (the browser allows it only right after a click)
+    var ua = navigator.userActivation; if (!ua || ua.isActive) K.toggleFs();
     var inp = $('#m3q');
     inp.addEventListener('input', function () { P.q = inp.value; P.sel = null; P.result = null; P.stop = null; P.act = -1; P.sug = suggest(P.q); renderSug(); renderResult(); drawMap(); });
     inp.addEventListener('keydown', function (e) {
@@ -387,19 +418,16 @@
       else if (a === 'replant') { P.result.replant = true; P.result.ask = P.result.ask || 'both'; renderResult(); }
       else if (a === 'reload') { var keep = P.sel; load().then(function () { P.sel = keep; solve(); }); }
       else if (a === 'flt') { var v = el.getAttribute('data-v'); P.flt = v; if (v !== 'all') K.M.floor = +v; K.M.sel = null; renderResult(); drawMap(true); }
-      else if (a === 'stop') { var code = el.getAttribute('data-code'); P.stop = P.stop === code ? null : code; focusStop(code); renderResult(); drawMap(); }
+      else if (a === 'stop') {
+        var code = el.getAttribute('data-code'); P.stop = P.stop === code ? null : code; focusStop(code); renderResult(); drawMap();
+        var it = P.stop && P.result && P.result.routed ? P.result.routed.filter(function (x) { return x.part.code === code; })[0] : null;
+        if (it && it.bin.loc.kind === 'rack') K.zoomToRacks([it.bin.loc.rack]); else if (!P.stop) K.glideFit();
+      }
     });
+    if (!P.keyHook) { P.keyHook = true; document.addEventListener('keydown', function (e) { if (e.key === '/' && P.root && document.body.contains(P.root) && !/^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement || {}).tagName || '')) { e.preventDefault(); var i = $('#m3q'); if (i) i.focus(); } }); }
     renderResult(); renderMap();
     load().then(function () { renderResult(); renderMap(); if (P.sel) solve(); }).catch(function (e) { console.error(e); });
     setTimeout(function () { var i = $('#m3q'); if (i) i.focus(); }, 30);
-  }
-  // full screen: the ordered pick list sits in a panel along the bottom of the map
-  function fillDock() {
-    var d = $('#m3dock'); if (!d) return;
-    var R = P.result;
-    if (!K.M.fs || !R || !R.runs) { d.innerHTML = ''; d.hidden = true; return; }
-    d.hidden = false;
-    d.innerHTML = '<div class="m3dh"><b class="code">' + esc(R.sel.product) + '</b><span class="sub2">' + esc(t('m3.res.parts', { n: R.parts.length })) + ' · ' + esc(t('m3.res.stops', { n: R.routed.length })) + '</span></div>' + (R.multiFloor ? flowHtml(R) : '') + '<div class="m3dl">' + routeHtml(R) + '</div>';
   }
   function focusStop(code) {
     var R = P.result; if (!R || !R.routed || !D.L) return;

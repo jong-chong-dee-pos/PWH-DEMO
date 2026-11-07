@@ -69,10 +69,8 @@
     var box = M.root.querySelector('[data-fsbox]'), tool = box && box.querySelector('.m2tool');
     if (tool) o.t = tool.offsetTop + tool.offsetHeight + (box.querySelector('#m2cnt') ? 40 : 10);   // toolbar (+ floor tag under it)
     else if (M.fs && box && box.querySelector('.m2bar')) { var b2 = box.querySelector('.m2bar'); o.t = b2.offsetTop + b2.offsetHeight + 8; }
-    if (M.fs) {
-      var sd = M.root.querySelector('.m2side:not([hidden])'); if (sd) o.r = sd.offsetWidth + 20;
-      var dk = M.root.querySelector('.m3dock:not([hidden])'); if (dk) o.r = Math.max(o.r, dk.offsetWidth + 20);
-    }
+    if (M.fs) { var sd = M.root.querySelector('.m2side:not([hidden])'); if (sd) o.r = sd.offsetWidth + 20; }
+    var dk = M.root.querySelector('.m3dock:not([hidden])'); if (dk) o.r = Math.max(o.r, dk.offsetWidth + 20);   // Module 3 list panel (always on the map)
     return o;
   }
   function floorObj() { return M.layout && M.layout.floors[M.floor]; }
@@ -718,7 +716,7 @@
 
   // ---------- mount ----------
   var api = {
-    M: M, draw: draw, fit: fit, glideFit: glideFit, rotCtl: rotCtl, insets: insets, resize: resize, wireMap: wireMap, zoomAt: zoomAt, pal: pal, seg: seg, P: P, side: side, toggleFs: toggleFs,
+    M: M, draw: draw, fit: fit, glideFit: glideFit, zoomToRacks: zoomToRacks, rotCtl: rotCtl, insets: insets, resize: resize, wireMap: wireMap, zoomAt: zoomAt, pal: pal, seg: seg, P: P, side: side, toggleFs: toggleFs,
     mount: function (root) {
       M.root = root; M.canvas = null; M.fs = false; document.documentElement.classList.remove('pwh-fs');
       root.innerHTML = '<h1>' + esc(t('nav.m2')) + '</h1>';

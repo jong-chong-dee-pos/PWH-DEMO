@@ -234,7 +234,7 @@
   }
   function renderView() {
     var v = $('#view');
-    v.className = S.module === 3 ? 'wide' : '';
+    v.className = S.module === 3 ? 'wide m3view' : ''; document.documentElement.classList.toggle('pwh-m3', S.module === 3);
     if (S.module === 2) { PWH.m2.mount(v); return; }
     if (S.module === 3) { PWH.m3.mount(v); return; }
     if (S.module !== 1) {

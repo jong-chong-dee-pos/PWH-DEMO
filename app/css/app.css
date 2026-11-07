@@ -1051,3 +1051,82 @@ h1 { font-size: 24px; font-weight: 600; }
 .m3sh span { font-size: 13px; }
 @media (min-width: 1100px) { .m3right.m2mapcard:not(.fs) { position: sticky; top: 64px; } .m3right.m2mapcard .m3canvas { height: max(520px, calc(100vh - 84px)); } }
 @media (max-width: 1099px) { .m3right.m2mapcard:not(.fs) { position: relative; top: 0; } .m3right.m2mapcard .m3canvas { height: 70vh; } }
+
+/* ===== v24 — Module 3 as one map stage: HUD on top, list panel on the right ===== */
+html.pwh-m3 .main { height: 100vh; }
+#view.m3view { padding: 0; flex: 1; min-height: 0; display: flex; }
+.m3stage { position: relative; flex: 1; min-height: 520px; background: #060d19; overflow: hidden; border-radius: 0; }
+.m3stage .m3mapbox, .m3stage .m3canvas { position: absolute; inset: 0; height: auto !important; margin: 0 !important; border-radius: 0; box-shadow: none; }
+.m3stage.fs, .m3stage:fullscreen { position: fixed !important; inset: 0; z-index: 60; }
+.m3nomap { position: absolute; inset: 0; display: grid; place-items: center; color: #9fb2c9; }
+
+/* HUD: two rows floating over the map */
+.m3stage .m3hud { position: absolute; top: 10px; left: 10px; right: 10px; z-index: 6; display: flex; flex-direction: column; gap: 8px; background: transparent; border: 0; box-shadow: none; padding: 0; -webkit-backdrop-filter: none; backdrop-filter: none; pointer-events: none; }
+.m3hud > * > * { pointer-events: auto; }
+.m3glass, .m3r1, .m3kpi, .m3flowbox, .m3srch { background: rgba(9, 18, 33, 0.84); border: 1px solid rgba(150, 185, 230, 0.22); border-radius: 12px; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3); }
+.m3r1 { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 8px; padding: 6px 8px; }
+.m3r1 .m3kpi { justify-self: start; background: transparent; border: 0; box-shadow: none; padding: 0 6px; -webkit-backdrop-filter: none; backdrop-filter: none; }
+.m3bar { display: flex; gap: 6px; align-items: center; justify-self: center; }
+.m3r1r { display: flex; gap: 6px; align-items: center; justify-self: end; }
+.m3r2 { display: flex; align-items: flex-start; gap: 8px; flex-wrap: wrap; margin-right: var(--m3panel, 0px); }
+.m3r2 .m3kpi.time { margin-left: auto; }
+
+/* KPI: distance and time from the simulation */
+.m3kpi { display: flex; align-items: baseline; gap: 8px; padding: 6px 12px; color: #dbe5f2; white-space: nowrap; }
+.m3kpi[hidden] { display: none; }
+.m3kpi .k { font-size: 12.5px; color: #9fb2c9; }
+.m3kpi .v { font-size: 18px; font-weight: 600; color: #fff; font-variant-numeric: tabular-nums; }
+.m3kpi .b { font-size: 12px; color: #8ea3bb; }
+
+/* flow: one straight line */
+.m3flowbox { padding: 7px 12px; max-width: 100%; overflow-x: auto; }
+.m3flowbox[hidden] { display: none; }
+.m3flow { display: flex; align-items: center; gap: 0; margin: 0; padding: 0; background: transparent; border: 0; white-space: nowrap; font-size: 13px; font-weight: 400; color: #dbe5f2; }
+.m3st { display: inline-flex; align-items: center; gap: 6px; }
+.m3st i { width: 9px; height: 9px; border-radius: 50%; background: #9fb2c9; flex: none; }
+.m3st.floor i { background: #38a3ff; box-shadow: 0 0 0 3px rgba(56, 163, 255, 0.25); }
+.m3st.floor { color: #fff; }
+.m3st.lift i { background: #f2b705; border-radius: 2px; }
+.m3st.lift { color: #ffe08a; }
+.m3ln { width: 26px; height: 2px; background: rgba(150, 185, 230, 0.45); margin: 0 8px; flex: none; }
+
+/* search in the middle of the second row */
+.m3srch { position: relative; display: flex; align-items: center; gap: 8px; padding: 0 10px; flex: 0 1 380px; min-width: 240px; margin: 0 auto; }
+.m3r2 .m3flowbox:not([hidden]) + .m3srch { margin: 0; }
+.m3si { color: #9fb2c9; flex: none; }
+.m3srch input { flex: 1; min-width: 0; height: 40px; background: transparent; border: 0; color: #fff; font-size: 15px; outline: none; }
+.m3srch input::placeholder { color: #8ea3bb; }
+.m3srch:focus-within { border-color: #f2b705; box-shadow: 0 0 0 3px rgba(242, 183, 5, 0.22), 0 8px 24px rgba(0, 0, 0, 0.3); }
+.m3kbd { font: 500 12px var(--font-code, monospace); color: #8ea3bb; border: 1px solid rgba(150, 185, 230, 0.3); border-radius: 5px; padding: 0 6px; }
+.m3srch .m3sug { position: absolute; top: calc(100% + 6px); left: 0; right: 0; z-index: 8; max-height: min(60vh, 520px); overflow: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 8px; box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45); color: var(--ink); }
+.m3srch .m3sug[hidden] { display: none; }
+
+/* list panel on the right */
+.m3stage .m3dock { position: absolute; z-index: 5; right: 10px; top: 66px; bottom: 10px; width: min(420px, 36%); overflow: auto; background: var(--surface); border-radius: 12px; padding: 12px 14px; box-shadow: -10px 0 30px rgba(0, 0, 0, 0.35); display: block; left: auto; height: auto; }
+.m3stage .m3dock[hidden] { display: none; }
+.m3stage .m3legend { max-width: calc(100% - 240px - var(--m3panel, 0px)); }
+.m3stage .m2rot { right: calc(10px + var(--m3panel, 0px)); }
+.m3stage .m2rot[hidden] ~ .m3legend { max-width: calc(100% - 20px - var(--m3panel, 0px)); }
+.m3msg { border-radius: 10px; padding: 10px 12px; background: var(--surface-2); font-size: 13.5px; margin-bottom: 10px; }
+.m3msg.warn { background: var(--warn-soft); }
+.m3msg p { margin: 4px 0 0; }
+.m3dock .m3head { margin: 0 0 10px; }
+.m3dock .m3prod { font-size: 16px; }
+.m3dock .m3pname { font-size: 13px; }
+.m3dock .m3plant { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.m3dock .m3stats { font-size: 12.5px; color: var(--muted); }
+.m3dock .m3banner { margin-bottom: 10px; }
+
+/* smaller, calmer list text */
+.m3dock .m3list { margin: 0 0 10px; }
+.m3dock .m3gh { font-size: 13px; padding: 5px 10px; }
+.m3dock .m3gh small { font-size: 12px; }
+.m3dock .m3row { grid-template-columns: 24px minmax(0, 1fr) auto; gap: 0 10px; padding: 6px 10px; }
+.m3dock .m3n { width: 22px; height: 22px; font-size: 12px; }
+.m3dock .m3code { font-size: 13px; }
+.m3dock .m3name { font-size: 12.5px; line-height: 1.35; }
+.m3dock .m3row .m3bin.big { font-size: 13.5px; padding: 1px 7px 1px 6px; border-left-width: 3px; }
+.m3stage.m2mapcard .m3hud, .m3stage.m2mapcard.fs .m3hud { position: absolute; top: 10px; left: 10px; right: 10px; background: transparent; border: 0; box-shadow: none; padding: 0; -webkit-backdrop-filter: none; backdrop-filter: none; margin: 0; }
+.m3stage.m2mapcard .m3hud { align-items: stretch; flex-wrap: nowrap; }
+.m3srch input, .m3srch input:focus, .m3srch input:focus-visible { border: 0 !important; outline: none !important; box-shadow: none !important; background: transparent !important; padding: 0 !important; }
+.m3r1 .m3kpi { grid-column: 1; } .m3r1 .m3bar { grid-column: 2; grid-row: 1; } .m3r1 .m3r1r { grid-column: 3; grid-row: 1; }

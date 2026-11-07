@@ -471,6 +471,13 @@
   "m3.sug.hint": "เลือกหนึ่งรายการเพื่อดูเส้นทางหยิบ",   // Choose one to see the pick route
   "m3.sug.product": "Product",   // Product
   "m3.sug.parts": "{n} Part (BOM ชั้นแรก)",   // {n} Part (BOM level 1)
+  "m3.flow.step2": "ชั้น {n} · {c} จุด",   // Floor {n} · {c} stops
+  "m3.kpi.dist": "ระยะทาง",   // Distance
+  "m3.kpi.m": "{m} ม.",   // {m} m
+  "m3.kpi.time": "เวลาโดยประมาณ",   // Estimated time
+  "m3.kpi.min": "{n} นาที",   // {n} min
+  "m3.kpi.split": "เดิน {w} · หยิบ {p} นาที",   // walk {w} · pick {p} min
+  "m3.kpi.time_tip": "จำลอง: เดิน {w} นาที (ความเร็ว {v} ม./วินาที) + หยิบ {n} จุด × {p} วินาที + ลิฟต์ {l} ครั้ง × {ls} วินาที",   // Simulation: walk {w} min at {v} m/s, {n} picks x {p} s, {l} lift rides x {ls} s
   "m3.fs": "เต็มจอ",   // Full screen
   "m3.fs.exit": "ออกจากเต็มจอ",   // Exit full screen
   "m3.sug.none": "ไม่พบรายการที่ตรงกัน ตรวจรหัสหรือเลข JOB อีกครั้ง",   // Nothing matches. Check the code or the JOB number.
