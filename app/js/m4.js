@@ -44,12 +44,15 @@
       k(t('m4.k.dist'), esc(t('m4.m', { m: m(B.totalM) })), esc(t('m4.k.per', { m: m(ok ? B.totalM / ok : 0) }))) +
       k(t('m4.k.bad'), nf(B.bad.length + B.noLoc.length), esc(t('m4.k.bad_sub', { r: nf(B.bad.length), p: nf(B.noLoc.length) }))) + '</div>';
   }
+  // a number with a thin bar behind it, scaled to the largest value in the table
+  function nbar(v, max, txt) { return '<span class="nbar"><i style="width:' + (v > 0 ? Math.max(3, v / (max || 1) * 100) : 0).toFixed(1) + '%"></i><b>' + (txt || nf(v)) + '</b></span>'; }
   function match(code) { var q = S.q.trim().toUpperCase(); return !q || String(code).toUpperCase().indexOf(q) >= 0; }
   function partsTable() {
     var rows = S.base.parts.filter(function (p) { return match(p.code) || Array.from(p.products.keys()).some(match); }), MAX = 60;
+    var top = rows.length ? rows[0].n : 1;
     var body = rows.slice(0, MAX).map(function (p, i) {
       var open = S.open === 'p:' + p.code, prods = Array.from(p.products.entries()).sort(function (a, b) { return b[1] - a[1]; });
-      var tr = '<tr class="m4r' + (open ? ' open' : '') + '" data-m4="open" data-v="p:' + esc(p.code) + '" tabindex="0"><td class="num m4rank">' + (i + 1) + '</td><td><span class="code">' + esc(p.code) + '</span><div class="sub2">' + esc(p.name) + '</div></td><td class="num"><b>' + nf(p.n) + '</b></td><td>' + locTxt(p.pick) + '</td><td>' + (p.pick.floor ? esc(t('m4.floor', { n: fnum(p.pick.floor) })) : '–') + '</td><td class="num">' + nf(prods.length) + '</td></tr>';
+      var tr = '<tr class="m4r' + (open ? ' open' : '') + '" data-m4="open" data-v="p:' + esc(p.code) + '" tabindex="0"><td class="num m4rank">' + (i + 1) + '</td><td><span class="code">' + esc(p.code) + '</span><div class="sub2">' + esc(p.name) + '</div></td><td class="num">' + nbar(p.n, top) + '</td><td>' + locTxt(p.pick) + '</td><td>' + (p.pick.floor ? esc(t('m4.floor', { n: fnum(p.pick.floor) })) : '–') + '</td><td class="num">' + nf(prods.length) + '</td></tr>';
       if (open) tr += '<tr class="m4det"><td></td><td colspan="5"><div class="m4dh">' + esc(t('m4.det.products', { code: p.code })) + '</div><div class="m4bars">' +
         prods.map(function (e) { return '<div class="m4bar"><span class="code">' + esc(e[0]) + '</span><span class="m4bt"><i style="width:' + Math.max(4, e[1] / p.n * 100) + '%"></i></span><b>' + nf(e[1]) + '</b></div>'; }).join('') + '</div></td></tr>';
       return tr;
@@ -59,16 +62,16 @@
         : '<p class="empty-note">' + esc(t('m4.none')) + '</p>') + '</section>';
   }
   function locsTable() {
-    var rows = S.base.locs.slice(0, 30);
+    var rows = S.base.locs.slice(0, 30), top = rows.length ? rows[0].n : 1;
     return '<section class="panel m4card"><div class="chd"><div class="chd-l"><h2>' + esc(t('m4.locs.title')) + '</h2><p class="sub">' + esc(t('m4.locs.sub')) + '</p></div></div>' +
       '<div class="tablebox m4tb"><table><thead><tr><th>' + esc(t('m4.col.loc')) + '</th><th>' + esc(t('m4.col.floor')) + '</th><th class="num">' + esc(t('m4.col.n')) + '</th></tr></thead><tbody>' +
-      rows.map(function (l) { return '<tr><td><span class="loc">' + esc(l.bin) + '</span></td><td>' + (l.floor ? esc(t('m4.floor', { n: fnum(l.floor) })) : '–') + '</td><td class="num"><b>' + nf(l.n) + '</b></td></tr>'; }).join('') + '</tbody></table></div></section>';
+      rows.map(function (l) { return '<tr><td><span class="loc">' + esc(l.bin) + '</span></td><td>' + (l.floor ? esc(t('m4.floor', { n: fnum(l.floor) })) : '–') + '</td><td class="num">' + nbar(l.n, top) + '</td></tr>'; }).join('') + '</tbody></table></div></section>';
   }
   function prodsTable() {
-    var rows = S.base.products.filter(function (p) { return match(p.product); }), MAX = 40;
+    var rows = S.base.products.filter(function (p) { return match(p.product); }), MAX = 40, top = Math.max.apply(null, rows.map(function (p) { return p.m; }).concat([1]));
     return '<section class="panel m4card"><div class="chd"><div class="chd-l"><h2>' + esc(t('m4.prods.title')) + '</h2><p class="sub">' + esc(t('m4.prods.sub')) + '</p></div><span class="chip info">' + nf(rows.length) + '</span></div>' +
       '<div class="tablebox m4tb"><table><thead><tr><th>' + esc(t('m4.col.product')) + '</th><th class="num">' + esc(t('m4.col.rounds')) + '</th><th class="num">' + esc(t('m4.col.parts')) + '</th><th class="num">' + esc(t('m4.col.per')) + '</th><th class="num">' + esc(t('m4.col.total')) + '</th></tr></thead><tbody>' +
-      rows.slice(0, MAX).map(function (p) { return '<tr><td><span class="code">' + esc(p.product) + '</span>' + (S.d.desc.get(p.product) ? '<div class="sub2">' + esc(S.d.desc.get(p.product)) + '</div>' : '') + '</td><td class="num"><b>' + nf(p.rounds) + '</b></td><td class="num">' + nf(p.parts) + '</td><td class="num">' + m(p.m / p.rounds) + '</td><td class="num">' + m(p.m) + '</td></tr>'; }).join('') + '</tbody></table></div>' +
+      rows.slice(0, MAX).map(function (p) { return '<tr><td><span class="code">' + esc(p.product) + '</span>' + (S.d.desc.get(p.product) ? '<div class="sub2">' + esc(S.d.desc.get(p.product)) + '</div>' : '') + '</td><td class="num"><b>' + nf(p.rounds) + '</b></td><td class="num">' + nf(p.parts) + '</td><td class="num">' + m(p.m / p.rounds) + '</td><td class="num">' + nbar(p.m, top, m(p.m)) + '</td></tr>'; }).join('') + '</tbody></table></div>' +
       (rows.length > MAX ? '<p class="sub">' + esc(t('m4.more', { n: MAX, t: rows.length })) + '</p>' : '') + '</section>';
   }
   function badCard() {
@@ -226,7 +229,7 @@
     var miss = []; ['daily', 'bom', 'matloc', 'layout'].forEach(function (k) { if (!d.have[k]) miss.push(t('m4.need.' + k)); });
     if (miss.length) { R.innerHTML = head + '<section class="panel"><h2>' + esc(t('m4.need.title')) + '</h2><p class="sub">' + esc(t('m4.need.list', { list: miss.join(', ') })) + '</p></section>'; return; }
     var dates = d.dates, opt = function (v) { return dates.map(function (x) { return '<option value="' + x + '"' + (x === v ? ' selected' : '') + '>' + esc(fmtDate(x)) + '</option>'; }).join(''); };
-    var bar = '<div class="m4bar"><div class="m4tabs">' + seg([['freq', t('m4.tab.freq')], ['recs', t('m4.tab.recs')], ['sim', t('m4.tab.sim') + (S.sim.length ? ' (' + S.sim.length + ')' : '')]], S.tab, 'tab') + '</div>' +
+    var bar = '<div class="m4tool"><div class="m4tabs">' + seg([['freq', t('m4.tab.freq')], ['recs', t('m4.tab.recs')], ['sim', t('m4.tab.sim') + (S.sim.length ? ' (' + S.sim.length + ')' : '')]], S.tab, 'tab') + '</div>' +
       '<label class="inl"><span>' + esc(t('m4.from')) + '</span> <select id="m4from">' + opt(S.from) + '</select></label><label class="inl"><span>' + esc(t('m4.to')) + '</span> <select id="m4to">' + opt(S.to) + '</select></label>' +
       (S.tab === 'freq' ? '<input id="m4q" type="search" placeholder="' + esc(t('m4.q.ph')) + '" value="' + esc(S.q) + '" aria-label="' + esc(t('m4.q.ph')) + '">' : '') +
       (S.busy ? '<span class="m4busy" role="status">' + esc(S.busy) + '</span>' : '') + '</div>';

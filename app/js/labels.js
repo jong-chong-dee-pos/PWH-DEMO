@@ -39,6 +39,7 @@
     'fatal.type': 'Unknown file type.',
 
     'files.title': 'Files',
+    'files.of': '{t} files',
     'mod.cap': 'Module {n}',
     'm1.cap': 'Module 1', 'm1.intro2': 'Upload the SAP files here. Each file is checked when it is uploaded, and the newest one is used.',
     'v1.files': 'Data files', 'v1.checks': 'Check all data together', 'v1.lookup': 'Look up a Product',
@@ -470,7 +471,7 @@
     'm5.col.type': 'Type',
     'm5.col.code': 'Code',
     'm5.col.by': 'Set by',
-    'm5.none': 'Nothing is locked.',
+    'm5.none': 'No rules yet. Choose New rule to add the first one.',
     'm5.err.unknown': '{code} is not in the data in use.',
     'm5.err.dup': '{code} is already locked.',
     'm5.ok.locked': '{code} locked.',

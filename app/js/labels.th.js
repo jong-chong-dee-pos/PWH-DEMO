@@ -41,6 +41,7 @@
   "fatal.no_date": "ไม่พบวันที่ในไฟล์",   // No date was found in the file.
   "fatal.type": "ไม่รู้จักประเภทไฟล์",   // Unknown file type.
   "files.title": "ไฟล์",   // Files
+  "files.of": "ไฟล์{t}",   // {t} files
   "mod.cap": "โมดูล {n}",   // Module {n}
   "m1.cap": "โมดูล 1",   // Module 1
   "m1.intro2": "อัปโหลดไฟล์จาก SAP ที่นี่ ระบบตรวจไฟล์ทุกครั้งที่อัปโหลด และใช้ไฟล์ล่าสุดเสมอ",   // Upload the SAP files here. Each file is checked when it is uploaded, and the newest one is used.
@@ -609,7 +610,7 @@
   "m5.col.type": "ประเภท",   // Type
   "m5.col.code": "รหัส",   // Code
   "m5.col.by": "ตั้งโดย",   // Set by
-  "m5.none": "ยังไม่มีรายการที่ล็อก",   // Nothing is locked.
+  "m5.none": "ยังไม่มีกติกา กด สร้างกติกา เพื่อเพิ่มข้อแรก",   // No rules yet. Choose New rule to add the first one.
   "m5.err.unknown": "ไม่พบ {code} ในข้อมูลที่ใช้งาน",   // {code} is not in the data in use.
   "m5.err.dup": "{code} ถูกล็อกอยู่แล้ว",   // {code} is already locked.
   "m5.ok.locked": "ล็อก {code} แล้ว",   // {code} locked.

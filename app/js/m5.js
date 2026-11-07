@@ -126,7 +126,7 @@
     var T = S.test || {}, res = '';
     if (T.res) res = T.res.length ? '<div class="m5res bad"><b>' + esc(t('m4.rule.fail')) + '</b><ul>' + T.res.map(function (w) { return '<li>' + esc(PWH.rules.reasonText(w)) + '</li>'; }).join('') + '</ul></div>' : '<div class="m5res ok"><b>&#10003; ' + esc(t('m5.test.ok')) + '</b></div>';
     return '<section class="panel"><div class="chd"><div class="chd-l"><h2>' + esc(t('m5.test.title')) + '</h2><p class="sub">' + esc(t('m5.test.sub')) + '</p></div></div>' +
-      '<form class="m4add" id="m5test" autocomplete="off"><label><span>Part A</span><input id="m5ta" list="m5parts" value="' + esc(T.a || '') + '" required></label><span class="m4x">⇄</span><label><span>Part B</span><input id="m5tb" list="m5parts" value="' + esc(T.b || '') + '" required></label><button class="btn" type="submit">' + esc(t('m5.test.btn')) + '</button></form>' + (T.info || '') + res + '</section>';
+      '<form class="m5testf" id="m5test" autocomplete="off"><label><span>Part A</span><input id="m5ta" list="m5parts" value="' + esc(T.a || '') + '" required></label><span class="m4x">⇄</span><label><span>Part B</span><input id="m5tb" list="m5parts" value="' + esc(T.b || '') + '" required></label><button class="btn" type="submit">' + esc(t('m5.test.btn')) + '</button></form>' + (T.info || '') + res + '</section>';
   }
   function logCard() {
     var log = S.data.log.slice(-200).reverse(); if (!log.length) return '';

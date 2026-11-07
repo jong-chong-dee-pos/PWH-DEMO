@@ -399,7 +399,7 @@
     var head = ty === 'daily' ? '<th>' + esc(keyCol) + '</th><th>' + esc(t('col.uploaded')) + '</th><th class="num">' + esc(t('col.rows')) + '</th><th>' + esc(t('col.status')) + '</th>' : (keyCol ? '<th>' + esc(keyCol) + '</th>' : '') + '<th>' + esc(t('col.name')) + '</th><th>' + esc(t('col.uploaded')) + '</th><th class="num">' + esc(t('col.rows')) + '</th><th>' + esc(t('col.status')) + '</th><th>' + esc(t('col.use')) + '</th><th></th>';
     var list = fl.length ? '<div class="tablebox ftable"><table><thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table></div>'
       : '<div class="fempty"><p>' + esc(S.mf && filesOf(ty).length ? t('mf.empty', { m: monthName(S.mf) }) : t('files.empty2')) + '</p>' + (S.mf ? curNote(ty, use) : '') + '</div>';
-    var files = '<section class="panel fcard" id="drop"><div class="chd"><div class="chd-l"><div class="cap">' + esc(t('tab.' + ty)) + '</div><h2>' + esc(t('files.title')) + (S.mf ? ' <span class="chip info">' + esc(monthName(S.mf)) + '</span>' : '') + '</h2><p class="sub">' + esc(t('help.' + ty)) + '</p></div>' +
+    var files = '<section class="panel fcard" id="drop"><div class="chd"><div class="chd-l"><h2>' + esc(t('files.of', { t: t('tab.' + ty) })) + (S.mf ? ' <span class="chip info">' + esc(monthName(S.mf)) + '</span>' : '') + '</h2><p class="sub">' + esc(t('help.' + ty)) + '</p></div>' +
       '<div class="chd-r"><label class="btn primary upl">' + esc(t('upload.btn')) + '<input type="file" id="fileIn" accept=".xlsx,.xls" multiple hidden></label><span class="sub2">' + esc(t('upload.hint2')) + '</span></div></div>' +
       (ty === 'daily' ? '<div class="dgrid"><div id="cal"></div><div class="dlist">' + list + '</div></div>' : list) + '</section>';
     el.innerHTML = files + '<section class="panel" id="detail"></section>' + (ty === 'bom' ? '<section class="panel" id="bomq"></section>' : '') + '<section class="panel" id="raw"></section>';
@@ -467,7 +467,7 @@
       }).join('') + '<p class="sub">' + esc(t('detail.legend')) + '</p></div></details>'
       : '<div class="isum ok"><b>' + esc(t('detail.checks')) + ':</b> ' + esc(t('detail.clean')) + '</div>';
     var who = esc(f.uploadedBy ? t('detail.by', { who: f.uploadedBy, when: fmtDT(f.uploadedAt) }) : t('col.uploaded') + ': ' + fmtDT(f.uploadedAt)) + (f.activatedAt ? ' · ' + esc(t('detail.activated', { when: fmtDT(f.activatedAt) })) : '');
-    el.innerHTML = '<div class="chd"><div class="chd-l"><div class="cap">' + esc(t('detail.cap')) + '</div><h2 class="dttl" title="' + esc(f.name) + '">' + esc(f.name) + '</h2><p class="sub">' + who + '</p></div>' +
+    el.innerHTML = '<div class="chd"><div class="chd-l"><h2 class="dttl" title="' + esc(f.name) + '">' + esc(f.name) + '</h2><p class="sub">' + who + '</p></div>' +
       '<div class="dacts"><span class="chip ' + (st === 'ok' ? 'ok' : st === 'warn' ? 'warn' : 'error') + '">' + esc(t('status.' + st)) + '</span>' + (S.tab === 'daily' ? fileActs(f) : '') + '</div></div>' + facts + checks + '<div class="chg-line">' + changeBox(f) + '</div>';
     ensureRows(f, function () { renderPreview(); renderBomQ(); });
     renderRawShell(f); renderBomQ();
@@ -499,7 +499,7 @@
     var el = $('#bomq'); if (!el) return;
     var f = selFile(); if (!f) { el.hidden = true; return; } el.hidden = false;
     if (!$('#bq')) {
-      el.innerHTML = '<div class="chd"><div class="chd-l"><div class="cap">' + esc(t('bq.cap')) + '</div><h2>' + esc(t('bq.title')) + '</h2><p class="sub">' + esc(t('bq.help')) + '</p></div></div>' +
+      el.innerHTML = '<div class="chd"><div class="chd-l"><h2>' + esc(t('bq.title')) + '</h2><p class="sub">' + esc(t('bq.help')) + '</p></div></div>' +
         '<div class="bqbar"><input type="search" id="bq" autocomplete="off" placeholder="' + esc(t('bq.ph')) + '" value="' + esc(S.bq || '') + '"></div><div id="bqres"></div>';
     }
     var res = $('#bqres'), bi = bomIndex(), q = String(S.bq || '').trim().toUpperCase();
@@ -572,7 +572,7 @@
     var el = $('#raw'); if (!el) return; el.hidden = false;
     var dc = rowDateCols(f.type);
     var ph = t('raw.ph.' + f.type);
-    el.innerHTML = '<div class="chd"><div class="chd-l"><div class="cap">' + esc(t('raw.cap')) + '</div><h2>' + esc(t('raw.title')) + '</h2><p class="sub">' + esc(t('raw.help')) + '</p></div></div>' +
+    el.innerHTML = '<div class="chd"><div class="chd-l"><h2>' + esc(t('raw.title')) + '</h2><p class="sub">' + esc(t('raw.help')) + '</p></div></div>' +
       '<div class="rawbar"><input type="search" id="pvFilter" placeholder="' + esc(ph) + '" aria-label="' + esc(ph) + '" value="' + esc(S.pv.id === f.id ? S.pv.filter : '') + '">' +
       (S.mf && dc ? '<label class="tgl"><input type="checkbox" data-act="mrows"' + (S.mrows ? ' checked' : '') + '> ' + esc(t('mf.rows.' + f.type, { m: monthName(S.mf) })) + '</label>' : '') +
       (issuesOf(f).some(function (i) { return i.level === 'warning' || i.code === 'bin_special'; }) ? '<label class="tgl"><input type="checkbox" data-act="onlybad"' + (S.onlyBad ? ' checked' : '') + '> ' + esc(t('raw.onlybad')) + '</label>' : '') +

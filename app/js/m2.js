@@ -368,7 +368,7 @@
       (nm ? '<div class="m2pc2">' + esc(nm) + '</div>' : '') + '<div class="m2pc3">' + (plant ? '<span>Plant ' + esc(plant) + '</span>' : '') + (extra || '') + '</div></li>';
   }
   function dHead(cap, title, sub, chips, closeBtn) {
-    return '<div class="m2dh"><div class="m2dt"><div class="m2cap">' + esc(cap) + '</div><h2 class="m2tt">' + esc(title) + '</h2><p class="m2st">' + esc(sub) + '</p></div>' +
+    return '<div class="m2dh"><div class="m2dt"><h2 class="m2tt">' + esc(title) + '</h2><p class="m2st">' + esc(sub) + '</p></div>' +
       '<div class="m2dr">' + (chips || '') + (closeBtn ? '<button class="btn sm m2back" data-m2="back">' + esc(t('m2.back')) + '</button>' : '') + '</div>' + (closeBtn ? '<button class="btn sm m2x" data-m2="close">' + esc(t('m2.sel.close')) + '</button>' : '') + '</div>';
   }
   function levelOf(bin) { var bi = PWH.layout.binInfo(bin); return bi ? bi.level : '–'; }
@@ -383,7 +383,7 @@
       used++;
       bins.forEach(function (b) {
         cards += '<li class="m2lvh"><span class="loc">' + esc(b.bin) + '</span><span>' + esc(t('m2.sel.level', { n: l })) + ' · ' + esc(t('m2.sel.parts', { n: b.items.length })) + '</span></li>';
-        b.items.forEach(function (it) { cards += partCard(it.mat, it.plant, '<b class="m2pq">' + nf(it.stock) + '</b>'); });
+        b.items.forEach(function (it) { cards += partCard(it.mat, it.plant, '<span class="m2pq"><b>' + nf(it.stock) + '</b><small>' + esc(t('c.stock')) + '</small></span>'); });
         b.items.forEach(function (it) {
           parts.add(it.mat); n++;
           rows += '<tr><td class="num m2no">' + n + '</td><td>' + partCell(it.mat, it.plant) + '</td><td><span class="loc">' + esc(b.bin) + '</span></td><td class="m2lv">' + esc(String(l)) + '</td><td class="m2pl">' + plantTxt(it.plant) + '</td><td class="num">' + nf(it.stock) + '</td></tr>';
