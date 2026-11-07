@@ -1001,3 +1001,53 @@ h1 { font-size: 24px; font-weight: 600; }
 .m2lvh .loc { flex: none; width: auto; display: inline-block; }
 .m2lvh span:last-child { white-space: nowrap; }
 .m2pc3 .loc { width: auto; display: inline-block; }
+
+/* ===== v23 — Module 3: map like Module 2, readable pick list, compact search results ===== */
+/* map: one dark surface, toolbar and legend float inside, height follows the screen */
+.m3right.m2mapcard { padding: 0; background: transparent; border: 0; }
+.m3right.m2mapcard .m3canvas { height: max(560px, calc(100vh - 92px)); min-height: 0; flex: none; margin: 0; }
+@media (min-width: 1100px) { .m3right.m2mapcard { height: auto; } }
+.m3right .m3legend { max-width: calc(100% - 240px); }
+.m3right .m2rot[hidden] ~ .m3legend { max-width: calc(100% - 20px); }
+.m3legend .m3note:empty { display: none; }
+.m3legend .m3note { flex-basis: 100%; color: #ffd27a; font-size: 12.5px; }
+.m3tool .m3mapnote { color: #9fb2c9; font-size: 13px; }
+.m3right.fs .m3canvas, .m3right:fullscreen .m3canvas { position: absolute; inset: 0; height: auto !important; border-radius: 0; }
+.m3right.fs .m3key { display: none; }
+/* full screen: the ordered pick list slides in on the right, like Module 2 details */
+.m3right.fs .m3dock:not([hidden]) { left: auto; right: 10px; top: var(--fs-top, 64px); bottom: 10px; width: min(440px, 38%); height: auto; padding: 12px 14px; box-shadow: -10px 0 30px rgba(0, 0, 0, 0.35); }
+
+/* typography: one sans for reading, mono only for codes; three weights with clear jobs */
+.m3left { font-size: 15px; }
+.m3lbl { font-size: 14px; font-weight: 600; color: var(--ink); }
+.m3head { margin: 2px 0 10px; }
+.m3prod { font-size: 19px; font-weight: 600; letter-spacing: 0.01em; }
+.m3pname { font-size: 14px; color: var(--muted); font-weight: 400; margin-top: 2px; white-space: normal; overflow-wrap: anywhere; }
+
+/* pick rows: number · code / full name · bin.  Names wrap instead of being cut. */
+.m3row { grid-template-columns: 30px minmax(0, 1fr) auto; gap: 1px 12px; padding: 8px 12px; min-height: 0; align-items: center; }
+.m3n { width: 28px; height: 28px; font-size: 14px; font-weight: 600; grid-row: 1 / 3; }
+.m3code { font-size: 14.5px; font-weight: 600; white-space: normal; overflow-wrap: anywhere; overflow: visible; text-overflow: clip; line-height: 1.35; }
+.m3name { font-size: 13.5px; font-weight: 400; color: #4a5872; white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.4; overflow-wrap: anywhere; }
+.m3row .m3bin.big { font-size: 17px; font-weight: 600; grid-row: 1 / 3; align-self: center; padding: 2px 9px 2px 8px; }
+.m3row.sel .m3n { background: var(--tape); color: var(--ink); }
+.m3fl { display: none; }
+.m3gh { font-size: 14px; font-weight: 600; }
+.m3gh small { font-size: 13px; font-weight: 400; }
+
+/* search results: one compact row each — code, kind, product name, Part count */
+.m3opts { display: flex; flex-direction: column; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); overflow: hidden; }
+.m3o { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "c k" "s n"; gap: 1px 10px; text-align: left; background: transparent; border: 0; border-bottom: 1px solid var(--line); padding: 9px 14px; cursor: pointer; font: inherit; color: inherit; }
+.m3o:last-child { border-bottom: 0; }
+.m3o:hover, .m3o[aria-selected="true"] { background: var(--accent-soft); }
+.m3o:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.m3oc { grid-area: c; font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+.m3os { grid-area: s; font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m3on { grid-area: n; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+.m3tag { grid-area: k; justify-self: end; align-self: center; font-size: 12px; font-weight: 500; padding: 1px 8px; border-radius: 999px; background: var(--surface-2); color: var(--muted); white-space: nowrap; }
+.m3tag.job { background: var(--info-soft); color: var(--accent); }
+.m3sh { margin: 4px 0 8px; }
+.m3sh b { font-size: 15px; }
+.m3sh span { font-size: 13px; }
+@media (min-width: 1100px) { .m3right.m2mapcard:not(.fs) { position: sticky; top: 64px; } .m3right.m2mapcard .m3canvas { height: max(520px, calc(100vh - 84px)); } }
+@media (max-width: 1099px) { .m3right.m2mapcard:not(.fs) { position: relative; top: 0; } .m3right.m2mapcard .m3canvas { height: 70vh; } }

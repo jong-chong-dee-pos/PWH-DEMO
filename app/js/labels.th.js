@@ -469,6 +469,8 @@
   "m3.sug.found": "พบ {n} รายการ",   // Found {n} items
   "m3.sug.pick": "เลือก",   // Select
   "m3.sug.hint": "เลือกหนึ่งรายการเพื่อดูเส้นทางหยิบ",   // Choose one to see the pick route
+  "m3.sug.product": "Product",   // Product
+  "m3.sug.parts": "{n} Part (BOM ชั้นแรก)",   // {n} Part (BOM level 1)
   "m3.fs": "เต็มจอ",   // Full screen
   "m3.fs.exit": "ออกจากเต็มจอ",   // Exit full screen
   "m3.sug.none": "ไม่พบรายการที่ตรงกัน ตรวจรหัสหรือเลข JOB อีกครั้ง",   // Nothing matches. Check the code or the JOB number.

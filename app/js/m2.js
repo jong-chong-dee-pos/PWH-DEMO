@@ -67,11 +67,11 @@
     var o = { l: 0, t: 0, r: 0, b: 0 }; if (!M.root) return o;
     var leg = M.root.querySelector('#m2legend'); if (leg) o.b = leg.offsetHeight + 16;
     var box = M.root.querySelector('[data-fsbox]'), tool = box && box.querySelector('.m2tool');
-    if (tool) o.t = tool.offsetTop + tool.offsetHeight + 40;           // toolbar + floor tag under it
+    if (tool) o.t = tool.offsetTop + tool.offsetHeight + (box.querySelector('#m2cnt') ? 40 : 10);   // toolbar (+ floor tag under it)
     else if (M.fs && box && box.querySelector('.m2bar')) { var b2 = box.querySelector('.m2bar'); o.t = b2.offsetTop + b2.offsetHeight + 8; }
     if (M.fs) {
       var sd = M.root.querySelector('.m2side:not([hidden])'); if (sd) o.r = sd.offsetWidth + 20;
-      var dk = M.root.querySelector('.m3dock:not([hidden])'); if (dk) o.b = Math.max(o.b, dk.offsetHeight + 16);
+      var dk = M.root.querySelector('.m3dock:not([hidden])'); if (dk) o.r = Math.max(o.r, dk.offsetWidth + 20);
     }
     return o;
   }
@@ -220,9 +220,10 @@
     if (d3) racks.sort(function (a, b2) { var p = rot(a.x + a.w / 2, a.y + a.h / 2), q = rot(b2.x + b2.w / 2, b2.y + b2.h / 2); return (p[0] + p[1]) - (q[0] + q[1]); });
     if (d3) racks.forEach(function (r) { poly(rectPts({ x: r.x - 1, y: r.y - 1, w: r.w + 2, h: r.h + 2 }, 0), 'rgba(0,0,0,0.38)'); });   // contact shadows
     // a clicked rack stands out: every other rack turns grey and fades back
-    var focus = M.sel && f.racks.some(function (r) { return r.id === M.sel; }), GREY = '#56647a';
+    var selHere = M.sel && f.racks.some(function (r) { return r.id === M.sel; });
+    var fset = selHere ? new Set([M.sel]) : (M.focus && M.focus.size ? M.focus : null), focus = !!fset, GREY = '#56647a';
     racks.forEach(function (r) {
-      var dim = focus && r.id !== M.sel;
+      var dim = focus && !fset.has(r.id);
       if (dim) { c.save(); c.globalAlpha = d3 ? 0.3 : 0.38; }
       var zc = dim ? GREY : zoneColor(r.id), sl = stockLevels(r), H = r.levels * lp, has = sl.length > 0, stc = dim ? GREY : C.stock;
       var tint = dim ? GREY : M.color === 'levels' ? (C.l[r.levels] || C.l[1]) : M.color === 'stock' ? (has ? C.stock : '#33455f') : zc;
@@ -287,7 +288,7 @@
       f.racks.forEach(function (r) {
         if (!M.hl.has(r.id)) return;
         var H3 = d3 ? r.levels * lp : 0;
-        c.save(); if (focus && r.id !== M.sel) c.globalAlpha = 0.45; c.shadowColor = C.hit; c.shadowBlur = 14; poly(rectPts(r, H3), 'rgba(47,134,255,0.85)', C.hitLine, 2); c.restore();
+        c.save(); if (focus && !fset.has(r.id)) c.globalAlpha = 0.45; c.shadowColor = C.hit; c.shadowBlur = 14; poly(rectPts(r, H3), 'rgba(47,134,255,0.85)', C.hitLine, 2); c.restore();
         if (r.id === M.sel) return;
         var tq = P(r.x + r.w / 2, r.y + r.h / 2, H3), fq = Math.max(9, Math.min(13, r.w * z / (String(r.id).length * 0.62))); c.font = '600 ' + fq + 'px "IBM Plex Mono", monospace'; c.fillStyle = '#ffffff'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(r.id, tq[0], tq[1]);
       });
@@ -717,7 +718,7 @@
 
   // ---------- mount ----------
   var api = {
-    M: M, draw: draw, fit: fit, resize: resize, wireMap: wireMap, zoomAt: zoomAt, pal: pal, seg: seg, P: P, side: side, toggleFs: toggleFs,
+    M: M, draw: draw, fit: fit, glideFit: glideFit, rotCtl: rotCtl, insets: insets, resize: resize, wireMap: wireMap, zoomAt: zoomAt, pal: pal, seg: seg, P: P, side: side, toggleFs: toggleFs,
     mount: function (root) {
       M.root = root; M.canvas = null; M.fs = false; document.documentElement.classList.remove('pwh-fs');
       root.innerHTML = '<h1>' + esc(t('nav.m2')) + '</h1>';

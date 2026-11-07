@@ -339,6 +339,7 @@
     'm3.search.label': 'Search a Product or JOB',
     'm3.search.placeholder': 'Type a Product code or a JOB number',
     'm3.sug.kind_product': 'Product–BOM', 'm3.sug.found': 'Found {n} items', 'm3.sug.pick': 'Select', 'm3.sug.hint': 'Choose one to see the pick route',
+    'm3.sug.product': 'Product', 'm3.sug.parts': '{n} Part (BOM level 1)',
     'm3.fs': 'Full screen', 'm3.fs.exit': 'Exit full screen',
     'm3.sug.none': 'Nothing matches. Check the code or the JOB number.',
     'm3.kind.product': 'Product', 'm3.kind.job': 'JOB',

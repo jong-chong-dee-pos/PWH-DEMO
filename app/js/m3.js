@@ -84,14 +84,15 @@
     if (!show) { el.hidden = true; el.innerHTML = ''; return; }
     el.hidden = false;
     if (!P.sug.length) { el.innerHTML = '<div class="m3none">' + esc(t('m3.sug.none')) + '</div>'; return; }
-    el.innerHTML = '<div class="m3sh"><b>' + esc(t('m3.sug.found', { n: P.sug.length })) + '</b><span>' + esc(t('m3.sug.hint')) + '</span></div><div class="m3cards">' +
+    el.innerHTML = '<div class="m3sh"><b>' + esc(t('m3.sug.found', { n: P.sug.length })) + '</b><span>' + esc(t('m3.sug.hint')) + '</span></div><div class="m3opts">' +
       P.sug.map(function (s, i) {
-        var kind = s.kind === 'job'
-          ? esc(t('m3.kind.job')) + ' · ' + esc(fmtDate(s.job.date)) + ' · <span class="code">' + esc(s.product) + '</span>'
-          : esc(t('m3.sug.kind_product')) + (D && D.desc.get(s.code) ? ' · ' + esc(D.desc.get(s.code)) : '');
-        return '<button class="m3c" role="option" data-m3="pick" data-i="' + i + '" aria-selected="' + (i === P.act) + '"><span class="m3cc code">' + esc(s.code) + '</span><span class="m3ck">' + kind + '</span><span class="m3cg">' + esc(t('m3.sug.pick')) + ' →</span></button>';
+        var desc = D && D.desc.get(s.product), n = kidsN(s.product);
+        var tag = s.kind === 'job' ? '<span class="m3tag job">' + esc(t('m3.kind.job')) + ' ' + esc(fmtDate(s.job.date)) + '</span>' : '<span class="m3tag">' + esc(t('m3.sug.product')) + '</span>';
+        var sub = s.kind === 'job' ? '<span class="code">' + esc(s.product) + '</span>' + (desc ? ' · ' + esc(desc) : '') : (desc ? esc(desc) : '');
+        return '<button class="m3o" role="option" data-m3="pick" data-i="' + i + '" aria-selected="' + (i === P.act) + '"><span class="m3oc code">' + esc(s.code) + '</span>' + tag + (sub ? '<span class="m3os">' + sub + '</span>' : '') + (n ? '<span class="m3on">' + esc(t('m3.sug.parts', { n: n })) + '</span>' : '') + '</button>';
       }).join('') + '</div>';
   }
+  function kidsN(prod) { var n = 0; if (D && D.index) D.index.byPlant.forEach(function (pm) { var k = pm.get(prod); if (k && k.size > n) n = k.size; }); return n; }
   function choose(s) {
     P.sel = { kind: s.kind, product: s.product, job: s.job || null, label: s.code };
     P.q = s.code; var inp = $('#m3q'); if (inp) inp.value = s.code;
@@ -198,12 +199,12 @@
     var warn = b && b.stock <= 0 ? '<span class="m3ns">' + esc(t('m3.nostock')) + '</span>' : '';
     return '<div class="m3row' + (P.stop === p.code ? ' sel' : '') + '" data-m3="stop" data-code="' + esc(p.code) + '">' +
       (withSeq ? '<span class="m3n">' + item.seq + '</span>' : '<span class="m3n off">–</span>') +
-      '<div class="m3code code" title="' + esc(p.code) + '">' + esc(p.code) + warn + '</div>' +
-      '<div class="m3name" title="' + esc(p.name) + '">' + esc(p.name) + '</div>' +
-      (b ? binHtml(b) : '') + (b && b.loc && b.loc.kind === 'rack' && D.L && D.L.floors.length > 1 ? '<span class="m3fl">' + esc(t('m3.floor', { n: fnum(b.loc.floor.id) })) + '</span>' : '') + '</div>';
+      '<div class="m3code code">' + esc(p.code) + warn + '</div>' +
+      '<div class="m3name">' + esc(p.name) + '</div>' +
+      (b ? binHtml(b) : '') + '</div>';
   }
   function offRow(p) {
-    return '<div class="m3row" data-m3="stop" data-code="' + esc(p.code) + '"><span class="m3n off">–</span><div class="m3code code" title="' + esc(p.code) + '">' + esc(p.code) + '</div><div class="m3name" title="' + esc(p.name) + '">' + esc(p.name) + '</div>' +
+    return '<div class="m3row" data-m3="stop" data-code="' + esc(p.code) + '"><span class="m3n off">–</span><div class="m3code code">' + esc(p.code) + '</div><div class="m3name">' + esc(p.name) + '</div>' +
       (p.bins.length ? '<span class="m3bin">' + p.bins.map(function (b) { return esc(b.bin); }).join(', ') + '</span>' : '') + '</div>';
   }
   function flowHtml(R) {
@@ -286,15 +287,15 @@
     var seg = '<div class="seg" role="group">' + items.map(function (i) { return '<button data-m3="flt" data-v="' + i[0] + '" aria-pressed="' + (cur === i[0]) + '">' + esc(i[1]) + '</button>'; }).join('') + '</div>';
     return seg + K.seg([['2d', t('m2.view.2d')], ['3d', t('m2.view.3d')]], M.mode, 'mode') +
       (multi && P.flt === 'all' ? '<span class="m3mapnote">' + esc(t('m3.map.showing', { n: fnum(D.L.floors[M.floor].id) })) + '</span>' : '') +
-      '<span class="grow"></span><button class="btn" data-m2="zout" aria-label="Zoom out">−</button><button class="btn" data-m2="zin" aria-label="Zoom in">+</button><button class="btn" data-m2="fit">' + esc(t('m2.fit')) + '</button><button class="btn" data-m2="fs">' + esc(t(M.fs ? 'm3.fs.exit' : 'm3.fs')) + '</button>';
+      '<span class="grow"></span><div class="m2zoom"><button class="btn ic" data-m2="zout" aria-label="' + esc(t('m2.zout')) + '" title="' + esc(t('m2.zout')) + '">−</button><button class="btn ic" data-m2="zin" aria-label="' + esc(t('m2.zin')) + '" title="' + esc(t('m2.zin')) + '">+</button><button class="btn" data-m2="fit">' + esc(t('m2.fit')) + '</button></div><button class="btn primary" data-m2="fs">' + esc(t(M.fs ? 'm3.fs.exit' : 'm3.fs')) + '</button>';
   }
   function renderMap() {
     var el = $('#m3map'); if (!el) return;
     if (!D || !D.L) { el.innerHTML = '<div class="m3nomap">' + esc(t('m3.map.none')) + '</div>'; return; }
     var C = K.pal();
-    el.innerHTML = '<div class="bar m2bar" id="m3bar">' + barHtml() + '</div><div class="m2canvas m3canvas" id="m2wrap"><canvas id="m2cv" tabindex="0" aria-label="Warehouse map"></canvas><div id="m2tip" class="m2tip" hidden></div></div>' +
-      '<div class="m3key"><div class="legend" style="margin:0"><span class="lg"><i class="m3sw"></i>' + esc(t('m3.legend.route')) + '</span><span class="lg"><i class="m3dot"></i>' + esc(t('m3.legend.stop')) + '</span><span class="lg"><i style="background:' + C.start + '"></i>' + esc(t('m2.mk.start')) + '</span><span class="lg"><i style="background:' + C.drop + '"></i>' + esc(t('m2.mk.drop')) + '</span></div>' +
-      '<div class="sub" style="margin:2px 0 0">' + esc(t('m3.scale', { px: D.L.scale })) + '</div><div class="sub" id="m3note" style="margin:0"></div></div><div class="m3dock" id="m3dock"></div>';
+    el.innerHTML = '<div class="m2canvas m3canvas" id="m2wrap"><canvas id="m2cv" tabindex="0" aria-label="Warehouse map"></canvas><div id="m2tip" class="m2tip" hidden></div>' + K.rotCtl() +
+      '<div class="m2legend m3legend" id="m2legend" title="' + esc(t('m3.scale', { px: D.L.scale })) + '"><span class="lg"><i class="m3sw"></i>' + esc(t('m3.legend.route')) + '</span><span class="lg"><i class="m3dot"></i>' + esc(t('m3.legend.stop')) + '</span><span class="lg"><i style="background:' + C.start + '"></i>' + esc(t('m2.mk.start')) + '</span><span class="lg"><i style="background:' + C.drop + '"></i>' + esc(t('m2.mk.drop')) + '</span><span class="m3note" id="m3note"></span></div></div>' +
+      '<div class="m2tool m3tool" id="m3bar">' + barHtml() + '</div><div class="m3dock" id="m3dock"></div>';
     K.wireMap(); K.resize(); K.fit(); K.draw();
   }
   function drawMap(refit, initial) {
@@ -305,6 +306,9 @@
       if (first) { var idx = D.L.floors.map(function (f) { return f.id; }).indexOf(first.bin.loc.floor.id); if (idx >= 0) K.M.floor = idx; }
     }
     var bar = $('#m3bar'); if (bar) bar.innerHTML = barHtml();
+    var rc = $('#m2rot'); if (rc) rc.hidden = K.M.mode !== '3d';
+    // racks on the route stay bright, the rest of the warehouse fades back
+    K.M.focus = R && R.routed ? new Set(R.routed.filter(function (it) { return it.bin.loc.kind === 'rack'; }).map(function (it) { return it.bin.loc.rack; })) : null;
     var nt = $('#m3note'); if (nt) nt.textContent = R && R.bridges ? t('m3.warn.bridges', { n: R.bridges }) : '';
     if (refit) K.fit();
     K.draw();
@@ -333,16 +337,22 @@
       if (it.bin.loc.kind !== 'rack' || it.bin.loc.floor.id !== f.id) return;
       (byRack[it.bin.loc.rack] = byRack[it.bin.loc.rack] || []).push(it);
     });
-    Object.keys(byRack).forEach(function (id) {
+    var placed = [];
+    function free(x, y, w, h) { return !placed.some(function (q) { return x < q[0] + q[2] + 3 && x + w + 3 > q[0] && y < q[1] + q[3] + 3 && y + h + 3 > q[1]; }); }
+    Object.keys(byRack).sort(function (a, b) { return byRack[a][0].seq - byRack[b][0].seq; }).forEach(function (id) {
       var r = D.match.rackById.get(id); if (!r) return;
       var H = o.d3 ? r.levels * o.lp : 0, items = byRack[id], q = Pj(r.x + r.w / 2, r.y + r.h / 2, H), sel = items.some(function (it) { return it.part.code === P.stop; });
       var rp = [Pj(r.x, r.y, H), Pj(r.x + r.w, r.y, H), Pj(r.x + r.w, r.y + r.h, H), Pj(r.x, r.y + r.h, H)];
       c.beginPath(); rp.forEach(function (p, i) { if (i) c.lineTo(p[0], p[1]); else c.moveTo(p[0], p[1]); }); c.closePath();
       c.fillStyle = 'rgba(47,134,255,0.35)'; c.fill(); c.lineWidth = sel ? 3 : 1.5; c.strokeStyle = sel ? '#facc15' : col; c.stroke();
-      var nums = items.map(function (it) { return it.seq; }), label = nums.length > 2 ? nums[0] + '…' + nums[nums.length - 1] : nums.join(','), w = Math.max(24, 10 + label.length * 9);
+      var nums = items.map(function (it) { return it.seq; }), label = nums.length > 2 ? nums[0] + '–' + nums[nums.length - 1] : nums.join(','), w = Math.max(24, 12 + label.length * 8.5);
+      var anchor = q, tries = [[0, 0], [0, -28], [0, 28], [w + 6, 0], [-(w + 6), 0], [0, -54], [w + 6, -28], [-(w + 6), -28], [0, 54]];
+      for (var ti = 0; ti < tries.length; ti++) { if (free(anchor[0] + tries[ti][0] - w / 2, anchor[1] + tries[ti][1] - 12, w, 24)) { q = [anchor[0] + tries[ti][0], anchor[1] + tries[ti][1]]; break; } }
+      placed.push([q[0] - w / 2, q[1] - 12, w, 24]);
+      if (q !== anchor) { c.beginPath(); c.moveTo(anchor[0], anchor[1]); c.lineTo(q[0], q[1]); c.strokeStyle = sel ? '#facc15' : col; c.lineWidth = 1.5; c.stroke(); c.beginPath(); c.arc(anchor[0], anchor[1], 3, 0, 7); c.fillStyle = sel ? '#facc15' : col; c.fill(); }
       c.beginPath(); if (c.roundRect) c.roundRect(q[0] - w / 2, q[1] - 12, w, 24, 12); else c.rect(q[0] - w / 2, q[1] - 12, w, 24);
       c.save(); c.shadowColor = col; c.shadowBlur = 8; c.fillStyle = sel ? '#facc15' : '#ffffff'; c.fill(); c.restore(); c.lineWidth = 2; c.strokeStyle = col; c.stroke();
-      c.fillStyle = '#0c1726'; c.font = '700 14px "IBM Plex Sans Thai", system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(label, q[0], q[1] + 0.5);
+      c.fillStyle = '#0c1726'; c.font = '600 13.5px "IBM Plex Sans Thai", system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(label, q[0], q[1] + 0.5);
     });
     c.restore();
   }
@@ -351,7 +361,7 @@
   function skeleton() {
     return '<div class="m3page"><section class="m3left"><label class="m3lbl" for="m3q">' + esc(t('m3.search.label')) + '</label>' +
       '<div class="m3srch"><input id="m3q" type="search" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="m3sug" placeholder="' + esc(t('m3.search.placeholder')) + '" value="' + esc(P.q) + '"><div id="m3sug" class="m3sug" role="listbox" hidden></div></div>' +
-      '<div id="m3res"></div><span class="sr-only" id="m3live" role="status" aria-live="polite"></span></section><section class="m3right' + (K && K.M.fs ? ' fs' : '') + '" id="m3map" data-fsbox></section></div>';
+      '<div id="m3res"></div><span class="sr-only" id="m3live" role="status" aria-live="polite"></span></section><section class="m3right m2mapcard' + (K && K.M.fs ? ' fs' : '') + '" id="m3map" data-fsbox></section></div>';
   }
   function mount(root) {
     P.root = root;
