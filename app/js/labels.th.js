@@ -481,6 +481,8 @@
   "m3.bin.more": "Part นี้มี {n} Bin กดเพื่อเลือก Bin อื่น",   // {n} bins hold this Part. Click to pick another one
   "m3.bin.pick": "หยิบ {code} จาก",   // Pick {code} from
   "m3.bin.auto": "น้อยสุด",   // least stock
+  "m3.bin.note": "มี {n} Bin · กดป้าย Bin เพื่อเปลี่ยน",   // {n} bins · click the bin to change
+  "m3.bin.note_own": "มี {n} Bin · เปลี่ยน Bin แล้ว",   // {n} bins · you changed the bin
   "m3.fs": "เต็มจอ",   // Full screen
   "m3.fs.exit": "ออกจากเต็มจอ",   // Exit full screen
   "m3.sug.none": "ไม่พบรายการที่ตรงกัน ตรวจรหัสหรือเลข JOB อีกครั้ง",   // Nothing matches. Check the code or the JOB number.

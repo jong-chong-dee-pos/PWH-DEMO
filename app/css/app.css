@@ -1154,3 +1154,21 @@ html.pwh-m3 .main { height: 100vh; }
 .m3bps { font-size: 13px; text-align: right; font-variant-numeric: tabular-nums; }
 .m3bpa { font-size: 11.5px; color: var(--muted); }
 .m3bpk { color: var(--ok); font-weight: 700; }
+
+/* v29 — calmer bin tags, multi-bin rows, smooth KPI pair */
+.m3dock .m3row .m3bin.big { font-size: 12px; font-weight: 600; padding: 1px 6px 1px 6px; border-left-width: 3px; letter-spacing: 0; line-height: 1.5; }
+.m3dock .m3row .m3bin.big.m3binsel { padding-right: 4px; }
+.m3caret { font-size: 9px; }
+.m3dock .m3row.multi { background: #eef5ff; }
+.m3dock .m3row.multi:hover { background: #e3eefc; }
+.m3dock .m3row.multi.sel { background: var(--tape-soft); }
+.m3multi { grid-column: 2; font-size: 11.5px; color: #2f6fd6; line-height: 1.35; margin-top: 1px; }
+.m3dock .m3row.multi .m3bin.big { grid-row: 1 / 4; }
+.m3dock .m3row.multi .m3n { grid-row: 1 / 4; }
+/* distance | time: one KPI strip, same type, same spacing, a soft dot between */
+.m3r1 .m3kpis { gap: 0; }
+.m3r1 .m3kpi { padding: 0 10px; gap: 6px; align-items: baseline; }
+.m3r1 .m3kpi.time:not([hidden]) { border-left: 0; padding-left: 10px; position: relative; }
+.m3r1 .m3kpi.time:not([hidden])::before { content: ""; position: absolute; left: -2px; top: 50%; width: 4px; height: 4px; margin-top: -2px; border-radius: 50%; background: rgba(150, 185, 230, 0.55); }
+.m3r1 .m3kpi .v { font-size: 17px; }
+.m3r1 .m3kpi .k, .m3r1 .m3kpi .b { font-size: 12.5px; }

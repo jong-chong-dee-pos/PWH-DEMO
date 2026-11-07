@@ -344,7 +344,7 @@
     'm3.kpi.dist': 'Distance', 'm3.kpi.m': '{m} m', 'm3.kpi.time': 'Estimated time', 'm3.kpi.min': '{n} min', 'm3.kpi.split': 'walk {w} · pick {p} min',
     'm3.kpi.time_tip': 'Simulation: walk {w} min at {v} m/s, {n} picks x {p} s, {l} lift rides x {ls} s',
     'm3.bin.more': '{n} bins hold this Part. Click to pick another one',
-    'm3.bin.pick': 'Pick {code} from', 'm3.bin.auto': 'least stock',
+    'm3.bin.pick': 'Pick {code} from', 'm3.bin.auto': 'least stock', 'm3.bin.note': '{n} bins · click the bin to change', 'm3.bin.note_own': '{n} bins · you changed the bin',
     'm3.fs': 'Full screen', 'm3.fs.exit': 'Exit full screen',
     'm3.sug.none': 'Nothing matches. Check the code or the JOB number.',
     'm3.kind.product': 'Product', 'm3.kind.job': 'JOB',

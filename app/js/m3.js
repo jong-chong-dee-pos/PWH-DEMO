@@ -226,10 +226,12 @@
   function partRow(item, withSeq) {
     var p = item.part || item, b = item.bin || p.bins[0];
     var warn = '';   // no stock check on the pick list (agreed: navigation only)
-    return '<div class="m3row' + (P.stop === p.code ? ' sel' : '') + '" data-m3="stop" data-code="' + esc(p.code) + '">' +
+    var multi = withSeq && p.alts && p.alts.length > 1;
+    return '<div class="m3row' + (P.stop === p.code ? ' sel' : '') + (multi ? ' multi' : '') + '" data-m3="stop" data-code="' + esc(p.code) + '">' +
       (withSeq ? '<span class="m3n">' + item.seq + '</span>' : '<span class="m3n off">–</span>') +
       '<div class="m3code code">' + esc(p.code) + warn + '</div>' +
       '<div class="m3name">' + esc(p.name) + '</div>' +
+      (multi ? '<div class="m3multi"><span aria-hidden="true">⇄</span> ' + esc(t(p.pick !== p.auto ? 'm3.bin.note_own' : 'm3.bin.note', { n: p.alts.length })) + '</div>' : '') +
       (b ? binHtml(b, withSeq ? p : null) : '') + '</div>';
   }
   function offRow(p) {
