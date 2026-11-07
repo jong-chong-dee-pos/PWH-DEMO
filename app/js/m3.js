@@ -196,7 +196,7 @@
   function binHtml(b) { return '<span class="m3bin big">' + esc(b.bin) + '</span>'; }
   function partRow(item, withSeq) {
     var p = item.part || item, b = item.bin || p.bins[0];
-    var warn = b && b.stock <= 0 ? '<span class="m3ns">' + esc(t('m3.nostock')) + '</span>' : '';
+    var warn = '';   // no stock check on the pick list (agreed: navigation only)
     return '<div class="m3row' + (P.stop === p.code ? ' sel' : '') + '" data-m3="stop" data-code="' + esc(p.code) + '">' +
       (withSeq ? '<span class="m3n">' + item.seq + '</span>' : '<span class="m3n off">–</span>') +
       '<div class="m3code code">' + esc(p.code) + warn + '</div>' +

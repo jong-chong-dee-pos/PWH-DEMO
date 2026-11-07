@@ -11,7 +11,7 @@
     v: { z: 1, ox: 0, oy: 0 }, canvas: null, ctx: null, hits: [], dpr: 1, root: null, confirmRemove: false, busy: ''
   };
   M.rot = 0; M.tilt = 0.6155;   // 3D camera: turn around the floor centre and height angle (drag on the map, or the buttons)
-  try { var sm = localStorage.getItem(modeKey); if (sm === '2d' || sm === '3d') M.mode = sm; M.rot = +localStorage.getItem(modeKey + '-rot') || 0; var tl0 = +localStorage.getItem(modeKey + '-tilt'); if (tl0) M.tilt = tl0; } catch (e) {}
+  try { var sm = localStorage.getItem(modeKey); /* the map always opens in 2D (agreed); 3D is one click away */ M.rot = +localStorage.getItem(modeKey + '-rot') || 0; var tl0 = +localStorage.getItem(modeKey + '-tilt'); if (tl0) M.tilt = tl0; } catch (e) {}
   M.overlay = null;
   // floor / 2D-3D changes redraw in place (a rebuilt page would drop the real full screen)
   M.rerender = function () {

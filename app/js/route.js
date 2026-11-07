@@ -78,18 +78,19 @@
       }
       return best;
     }
-    var lifts = [];
+    var lifts = [], doors = [];
     F.forEach(function (o, fi) {
       o.f.markers.forEach(function (m) {
         var n = repNode(m, fi); if (n < 0) return;
         if (m.type === 'start' && !graph.start) graph.start = n;
         else if (m.type === 'drop' && !graph.drop) graph.drop = n;
         else if (m.type === 'lift') lifts.push(n);
-        else if (m.type === 'door' && !graph.door) graph.door = n;
+        else if (m.type === 'door') { if (!graph.door) graph.door = n; doors.push(n); }
       });
     });
     if (graph.start == null) graph.start = graph.door != null ? graph.door : (lifts[0] != null ? lifts[0] : -1);
     if (graph.drop == null) graph.drop = graph.start;
+    graph.doors = doors;
     graph.liftOf = {};
     lifts.forEach(function (n) { var fi = floorOf[n]; if (graph.liftOf[fi] == null) graph.liftOf[fi] = n; });
     var lw = Math.round(LIFT_M * layout.scale / G);
@@ -183,6 +184,12 @@
     var di = nodes.length; nodes.push({ nodes: [gr.drop], kind: 'D' });
     var liftIdx = {};
     Object.keys(gr.liftOf).forEach(function (fi) { liftIdx[fi] = nodes.length; nodes.push({ nodes: [gr.liftOf[fi]], kind: 'L' }); });
+    // House rules for the way to DROP:
+    //  - finishing on the DROP floor: always leave through the door nearest DROP, then go to DROP
+    //  - coming back down by lift: walk past START, then to DROP
+    var doorIdx = null, dropFl = gr.floorOf[gr.drop], dd = dijkstra(gr, [gr.drop]), bestDoor = -1;
+    (gr.doors || []).forEach(function (n) { if (gr.floorOf[n] === dropFl && dd[n] < INF && (bestDoor < 0 || dd[n] < dd[bestDoor])) bestDoor = n; });
+    if (bestDoor >= 0) { doorIdx = nodes.length; nodes.push({ nodes: [bestDoor], kind: 'R' }); }
     var K = nodes.length, D = [];
     for (var a = 0; a < K; a++) {
       var dist = dijkstra(gr, nodes[a].nodes); D[a] = new Int32Array(K);
@@ -280,20 +287,23 @@
         var set = live.filter(function (i) { return floorOfNode(itemNode(i)) === gf; });
         var entry = floorOfNode(cur) === gf ? cur : liftIdx[gf];
         var nextFloor = k < pm.length - 1 ? pm[k + 1] : dropFloor;
-        var exit = nextFloor === gf ? di : liftIdx[gf];
+        var exit = nextFloor === gf ? (doorIdx != null ? doorIdx : di) : liftIdx[gf];
         if (entry == null || exit == null) { okp = false; return; }
         cost += D[cur][entry];
         var r = optimizePath(set, entry, exit);
         cost += r.cost; ord = ord.concat(r.order); cur = exit;
       });
       if (!okp) return;
-      cost += D[cur][di];
+      if (floorOfNode(cur) !== dropFloor) cost += D[cur][0] + D[0][di];   // down by lift, past START
+      else cost += D[cur][di];
       if (!best || cost < best.cost) best = { cost: cost, order: ord };
     });
     var order = best ? best.order : live.slice();
 
     // walk the final tour again to draw it
-    var legs = [], total = 0, out = [], path = [0].concat(order.map(function (it) { return idx[it][choice[it]]; }), [di]);
+    var lastN = order.length ? idx[order[order.length - 1]][choice[order[order.length - 1]]] : 0;
+    var via = !order.length ? [] : floorOfNode(lastN) === dropFloor ? (doorIdx != null ? [doorIdx] : []) : [0];
+    var legs = [], total = 0, out = [], path = [0].concat(order.map(function (it) { return idx[it][choice[it]]; }), via, [di]);
     for (var s = 0; s < path.length - 1; s++) {
       var A2 = path[s], B2 = path[s + 1], par = new Int32Array(gr.N).fill(-1), dist2 = dijkstra(gr, nodes[A2].nodes, par);
       var tgt = nodes[B2].nodes, end = tgt[0];
