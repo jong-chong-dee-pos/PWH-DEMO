@@ -6,7 +6,8 @@
  *   planned    = rounds that list the Part.  routed = rounds where the Part has a pick point the cart can reach
  *   location   = the bin the pick route uses: same rule as Module 3 (bins on the layout, with stock, least stock, bin name)
  *   distance   = simulated metres along cart aisles from START to DROP (same router as Module 3); the lift adds 0 m
- *   savings    = counted on complete rounds only (every Part of the round routed); partial rounds are shown apart
+ *   distance   = every round whose Parts are known; Parts without a bin on the layout are left out of the route and the
+ *                round is marked "route does not include every Part" (agreed 07/11/2026, replaces complete-rounds-only)
  *   swap       = Part A at bin X <-> Part B at bin Y; other Parts in X and Y and other bins of A and B stay
  * Nothing here changes stored data. */
 (function (g) {
@@ -140,8 +141,13 @@
       var k = key + '|' + ok.map(function (it) { return it.pick.bin; }).join(',') + (legs ? '|L' : '');
       if (cache.has(k)) return cache.get(k);
       var items = ok.map(function (it) { return { key: it.code, cands: [{ bin: it.pick.bin, rack: it.pick.rack, level: it.pick.level, floor: it.pick.floor, stock: 1 }] }; });
-      var res = { m: 0, stops: 0, unreach: [] };
-      if (items.length && d.L) { var r = PWH.route.plan(d.L, items, legs ? {} : { noLegs: true }); res = { m: r.total || 0, stops: r.order.length, unreach: r.unreachable || [], order: r.order, legs: r.legs }; }
+      var res = { m: 0, stops: 0, lifts: 0, unreach: [] };
+      if (items.length && d.L) {
+        var r = PWH.route.plan(d.L, items, legs ? {} : { noLegs: true }), fl = {}; ok.forEach(function (it) { fl[it.code] = it.pick.floor; });
+        // lift rides: every change of floor from START, through the stops, to DROP
+        var cur = r.start ? r.start.floor : null, lifts = 0; r.order.forEach(function (o) { var f = fl[o.key]; if (cur && f && f !== cur) lifts++; cur = f || cur; }); if (r.drop && cur && cur !== r.drop.floor) lifts++;
+        res = { m: r.total || 0, stops: r.order.length, lifts: lifts, unreach: r.unreachable || [], order: r.order, legs: r.legs };
+      }
       cache.set(k, res);
       return res;
     }
@@ -163,13 +169,13 @@
       return i < rounds.length ? tick().then(step) : null;
     }
     function one(r) {
-      r.parts = []; r.m = 0; r.missing = 0; r.unknown = 0; r.byProd = {};
+      r.parts = []; r.m = 0; r.sec = 0; r.missing = 0; r.unknown = 0; r.byProd = {};
       r.products.forEach(function (prod) {
         if (opt.product && prod !== opt.product) return;
         var pp = plantOf(d, r.job, prod), own = opt.plantPick && opt.plantPick[prod];
         if (!pp.plant && own && (pp.plants || []).indexOf(own) >= 0) pp = { plant: own, how: 'user', plants: pp.plants };   // chosen on the page, this calculation only
         function prodRow(status, plant) { var P0 = prods.get(prod); if (!P0) prods.set(prod, (P0 = { product: prod, plant: plant, how: pp.how || '', plants: pp.plants || [], status: status, rounds: 0, complete: 0, m: 0, mAll: 0, parts: 0, routedParts: 0, rlist: [] })); return P0; }
-        if (!pp.plant) { r.unknown++; issues.push({ why: pp.why, date: r.date, line: r.line, job: r.job, product: prod, file: r.file, plants: pp.plants }); var U = prodRow(pp.why, null); U.rounds++; U.rlist.push(r); return; }
+        if (!pp.plant) { r.unknown++; issues.push({ why: pp.why, date: r.date, line: r.line, job: r.job, product: prod, file: r.file, plants: pp.plants }); var U = prodRow(pp.why, null); U.rounds++; U.rlist.push(r); if (pp.why === 'plant') { U.needPlant = true; U.plants = pp.plants; } return; }
         var codes = partsOf(d, prod, pp.plant);
         if (!codes.length) { r.unknown++; issues.push({ why: 'noparts', date: r.date, line: r.line, job: r.job, product: prod, file: r.file }); var U2 = prodRow('noparts', pp.plant); U2.rounds++; U2.rlist.push(r); return; }
         var P = prodRow('ok', pp.plant); P.parts = codes.length;
@@ -185,10 +191,12 @@
           x.n++; x.products.set(prod, (x.products.get(prod) || 0) + 1);
           if (routed) { x.nRoute++; var L = locs.get(it.pick.bin); if (!L) locs.set(it.pick.bin, (L = { bin: it.pick.bin, rack: it.pick.rack, level: it.pick.level, floor: it.pick.floor, n: 0, parts: new Map() })); L.n++; L.parts.set(it.code, (L.parts.get(it.code) || 0) + 1); }
         });
-        r.missing += miss; r.m += rt.m; r.byProd[prod] = { m: rt.m, complete: miss === 0 };
+        var sec = rt.stops ? timeOf(rt.m, rt.stops, rt.lifts).sec : 0;
+        r.missing += miss; r.m += rt.m; r.sec += sec; r.byProd[prod] = { m: rt.m, sec: sec, complete: miss === 0 };
         P.routedParts = codes.length - miss; if (miss) P.status = 'partial';
         P.rounds++; P.mAll += rt.m; P.rlist.push(r);
-        if (miss === 0) { P.complete++; P.m += rt.m; }
+        if (miss === 0) P.complete++;
+        P.m += rt.m; P.missingParts = miss;
         P.missing = miss;
       });
       r.identified = r.parts.length > 0;
@@ -210,7 +218,8 @@
         parts: partList, locs: locList, heat: heat, heatSum: heatSum,
         products: Array.from(prods.values()).sort(function (a, b) { return b.rounds - a.rounds || natural(a.product, b.product); }),
         planFreq: plan, routeFreq: routed, consistent: heatSum === routed,
-        totalM: comp.reduce(function (s, r) { return s + r.m; }, 0),
+        totalM: ident.reduce(function (s, r) { return s + r.m; }, 0),
+        totalSec: ident.reduce(function (s, r) { return s + r.sec; }, 0),
         partialM: ident.filter(function (r) { return !r.complete; }).reduce(function (s, r) { return s + r.m; }, 0),
         issues: issues, router: route
       };
@@ -248,13 +257,14 @@
   function simulate(d, base, pairs, progress) {
     var ov = overrideOf(d, pairs);
     return analyze(d, { from: base.from, to: base.to, product: base.product, plantPick: base.plantPick, ov: ov, router: base.router, progress: progress }).then(function (after) {
-      var useKeys = new Set(base.complete.map(function (r) { return r.key; })), aBy = new Map(); after.rounds.forEach(function (r) { aBy.set(r.key, r); });
-      var prod = new Map(), before = 0, aft = 0, lost = [];
-      base.complete.forEach(function (r) {
+      var aBy = new Map(); after.rounds.forEach(function (r) { aBy.set(r.key, r); });
+      var prod = new Map(), before = 0, aft = 0, secB = 0, secA = 0, lost = [];
+      base.identified.forEach(function (r) {
         var ar = aBy.get(r.key);
         Object.keys(r.byProd).forEach(function (p) {
-          var b0 = r.byProd[p].m, a0 = ar && ar.byProd[p] ? ar.byProd[p].m : b0;
-          if (ar && ar.byProd[p] && !ar.byProd[p].complete) lost.push({ round: r, product: p });
+          var b0 = r.byProd[p].m, a0 = ar && ar.byProd[p] ? ar.byProd[p].m : b0, bs = r.byProd[p].sec, as = ar && ar.byProd[p] ? ar.byProd[p].sec : bs;
+          secB += bs; secA += as;
+          if (ar && ar.byProd[p] && !ar.byProd[p].complete && r.byProd[p].complete) lost.push({ round: r, product: p });
           var x = prod.get(p); if (!x) prod.set(p, (x = { product: p, rounds: 0, before: 0, after: 0 }));
           x.rounds++; x.before += b0; x.after += a0; before += b0; aft += a0;
         });
@@ -262,8 +272,8 @@
       var all = Array.from(prod.values()), changed = all.filter(function (x) { return Math.abs(x.after - x.before) > 0.5; });
       changed.sort(function (a, b) { return (a.after - a.before) - (b.after - b.before); });
       return {
-        before: before, after: aft, save: before - aft, pct: before > 0 ? (before - aft) / before * 100 : null,
-        roundsUsed: base.complete.length, roundsOut: base.rounds.length - base.complete.length,
+        before: before, after: aft, save: before - aft, secBefore: secB, secAfter: secA, secSave: secB - secA, pct: before > 0 ? (before - aft) / before * 100 : null,
+        roundsUsed: base.identified.length, roundsOut: base.rounds.length - base.identified.length, roundsPartial: base.partial.length,
         byProd: changed, better: changed.filter(function (x) { return x.after < x.before; }), worse: changed.filter(function (x) { return x.after > x.before; }),
         lost: lost, afterBase: after, ov: ov, sameFreq: after.planFreq === base.planFreq
       };
@@ -277,7 +287,7 @@
     n = n || 10;
     var out = { list: [], why: '', candidates: 0, failed: 0, tried: 0 };
     if (!d.L) { out.why = 'data'; return Promise.resolve(out); }
-    if (!base.complete.length) { out.why = 'nocomplete'; return Promise.resolve(out); }
+    if (!base.identified.length) { out.why = 'nocomplete'; return Promise.resolve(out); }
     var costOf = new Map();
     function cost(rack) {
       if (costOf.has(rack)) return costOf.get(rack);

@@ -1519,3 +1519,39 @@ a { text-underline-offset: 3px; }
 .m4flow .m3st, .m4flow .m3st.floor, .m4flow .m3st.lift, .m4flow .m3st.end { color: var(--ink); }
 .m4flow .m3st.floor { font-weight: 600; }
 .m4rph { min-height: 60px; align-content: flex-start; }
+
+/* ---------- v37 Module 4: plant choice before calculation, product distance, part search ---------- */
+.m4plant { border-color: var(--warn); background: color-mix(in srgb, var(--warn-soft) 45%, var(--surface)); }
+.m4ppall { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: center; margin-bottom: var(--sp-3); }
+.m4ppl summary { cursor: pointer; font-size: var(--fs-label); color: var(--accent); margin-bottom: var(--sp-2); }
+.m4pplist { display: grid; grid-template-columns: repeat(auto-fill, minmax(420px, 1fr)); gap: var(--sp-1) var(--sp-4); max-height: 420px; overflow-y: auto; }
+.m4ppr { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); padding: 6px 0; border-bottom: 1px solid var(--line); }
+.m4ppr .m4pn { min-width: 0; }
+.m4prt td.m4dist { text-align: right; } .m4prt td.m4dist .sub2 { white-space: normal; }
+.m4prt th:nth-child(3), .m4prt td:nth-child(3) { width: 38%; }
+.m4sugw { position: relative; display: block; }
+.m4sugw input { width: 100%; }
+.m4sug { position: absolute; left: 0; right: 0; top: calc(100% + 4px); z-index: 20; background: var(--surface); border: 1px solid var(--line-2, var(--line)); border-radius: 10px; box-shadow: 0 10px 28px rgba(15, 29, 48, 0.16); max-height: 360px; overflow-y: auto; padding: 4px; }
+.m4sgi { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 0 var(--sp-3); padding: 6px 10px; border-radius: 8px; cursor: pointer; }
+.m4sgi > .sub2:last-child { grid-column: 2; }
+.m4sgi:hover { background: var(--accent-soft); }
+.m4sgn { display: block; padding: 8px 10px; font-size: var(--fs-label); color: var(--muted); }
+.m4sug { min-width: 380px; right: auto; }
+
+/* ---------- v37 cards, recommendations table ---------- */
+.m4k5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+@media (max-width: 1200px) { .m4k5 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 700px) { .m4k5 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.m4kbtn { text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.m4kbtn:hover { border-color: var(--warn); }
+.linkbtn { border: 0; background: none; padding: 0; color: var(--accent); font: inherit; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.m4rhead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-3); }
+.m4rect td { vertical-align: top; }
+.m4rect td.m4pn { position: relative; padding-left: 40px; }
+.m4rect .m4tag { position: absolute; left: 10px; top: 12px; width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; font-weight: 600; font-size: 12px; color: #060d19; }
+.m4rect .m4tag.a { background: #f2b705; } .m4rect .m4tag.b { background: #22d3ee; }
+.m4rect .m4swl { display: flex; gap: 6px; align-items: center; margin-top: 2px; }
+.m4rect td.good { color: var(--ok); white-space: nowrap; }
+.m4recd { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-2) 0; }
+.m4pvg { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
+.m4pvg .tablebox { max-height: 640px; }

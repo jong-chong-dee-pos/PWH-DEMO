@@ -620,7 +620,7 @@
   "m4.k.ident": "รอบที่ระบุ Product/BOM ได้",   // Rounds with Product and BOM
   "m4.k.of": "จาก {n} รอบ",   // of {n} rounds
   "m4.k.complete": "รอบที่จัดเส้นทางครบ",   // Rounds fully routed
-  "m4.k.partial": "ไม่ครบ {n} รอบ แยกไว้",   // {n} rounds incomplete, kept apart
+  "m4.k.partial": "ไม่ครบรายการ {n} รอบ (ยังคิดระยะ ตัด Part ไม่มี Bin)",   // {n} rounds leave out Parts without a bin
   "m4.k.parts_sub": "BOM ชั้นแรก",   // first level of the BOM
   "m4.k.plan": "ความถี่ตามแผน",   // Planned picks
   "m4.k.plan_sub": "นับ 1 ครั้งต่อ Part ต่อรอบ",   // one per Part per round
@@ -681,7 +681,7 @@
   "m4.pv.per": "ระยะต่อรอบ",   // Distance per round
   "m4.pv.per_sub": "รอบที่ครบ",   // complete rounds
   "m4.pv.total": "ระยะรวม",   // Total distance
-  "m4.pv.total_sub": "{n} รอบที่ครบ",   // {n} complete rounds
+  "m4.pv.total_sub": "{n} รอบในช่วงที่เลือก",   // {n} rounds in the range
   "m4.pv.round": "รอบตัวอย่าง",   // Sample round
   "m4.pv.route": "เส้นทางรอบนี้ {m} ม.",   // Route of this round: {m} m
   "m4.partial_route": "เส้นทางไม่ครบรายการ",   // route does not include every Part
@@ -732,7 +732,7 @@
   "m4.sim.run2": "จำลองการสลับ",   // Simulate the swap
   "m4.sim.reset": "คืนค่าการทดลอง",   // Reset the trial
   "m4.sim.blocked": "มีคู่ที่ไม่ผ่านกติกา เอาออกก่อนจึงจำลองได้",   // A pair breaks a rule; remove it to simulate.
-  "m4.sim.result_sub2": "ใช้รอบและข้อมูลชุดเดียวกันทั้งก่อน–หลัง: รอบที่ครบ {u} รอบ (ตัดออก {x} รอบ)",   // Same rounds and data before and after: {u} complete rounds ({x} left out).
+  "m4.sim.result_sub2": "ใช้รอบและข้อมูลชุดเดียวกันทั้งก่อน–หลัง: {u} รอบ (ตัดออก {x} รอบที่ระบุ Part ไม่ได้)",   // Same rounds and data before and after: {u} rounds ({x} left out because their Parts are not known).
   "m4.k.down": "ระยะที่ลดลง",   // Shorter by
   "m4.k.up": "ระยะที่เพิ่มขึ้น",   // Longer by
   "m4.k.used": "รอบที่นำมาคำนวณ",   // Rounds calculated
@@ -770,6 +770,52 @@
   "m4.rp.swapped": "Part {t} ที่สลับ",   // swapped Part {t}
   "m4.rp.moved": "Bin เปลี่ยน",   // bin changed
   "m4.rp.reorder": "ลำดับเปลี่ยน",   // order changed
+  "m4.k.dist_sub2": "ทุกรอบที่ระบุ Part ได้ · เฉลี่ย {m} ม./รอบ · {n} รอบเส้นทางไม่ครบรายการ (ตัด Part ที่ไม่มี Bin)",   // all rounds with known Parts · {m} m per round · {n} rounds leave out Parts without a bin
+  "m4.prods.sub4": "ระยะทาง = เส้นทางจำลอง 1 รอบจาก START ถึง DROP คิดเฉพาะ Part ที่มี Bin บนผัง (โมดูล 2) · คลิก Product เพื่อดู Part และเส้นทาง",   // Distance is the simulated route of one round from START to DROP, using only Parts with a bin on the layout (Module 2). Click a Product to see its Parts and route.
+  "m4.col.jobs": "จำนวน JOB",   // JOBs
+  "m4.col.dist": "ระยะทาง",   // Distance
+  "m4.pt.per": "ต่อรอบ",   // per round
+  "m4.pt.total": "รวม {m} ม. ({n} รอบ)",   // {m} m in all ({n} rounds)
+  "m4.pt.skip": "ไม่รวม {n} จาก {of} Part ที่ไม่มี Bin",   // {n} of {of} Parts have no bin and are left out
+  "m4.pt.chooseplant": "เลือก Plant ด้านบนก่อน",   // choose the Plant above
+  "m4.pt.nobin": "ไม่มี Part ใดมี Bin บนผัง",   // no Part has a bin on the layout
+  "m4.pt.jobs": "{n} JOB",   // {n} JOB
+  "m4.pp.title": "เลือก Plant ให้ {n} Product ก่อนคำนวณ",   // Choose the Plant for {n} Products first
+  "m4.pp.sub": "Product เหล่านี้มี BOM มากกว่า 1 Plant และ JOB ไม่อยู่ในแผนรายเดือน ระบบจึงไม่รู้ว่าใช้ BOM ไหน ยังไม่ถูกนับในตัวเลขจนกว่าจะเลือก Plant · ค่าที่เลือกใช้เฉพาะการคำนวณครั้งนี้",   // These Products have a BOM in more than one Plant and their JOB is not in the monthly plan, so the system cannot tell which BOM to use. They are not in the numbers until a Plant is chosen. The choice is used for this calculation only.
+  "m4.pp.all": "ใช้ Plant เดียวกันทั้งหมด:",   // Same Plant for all:
+  "m4.pp.use": "ใช้ {p}",   // Use {p}
+  "m4.pp.each": "เลือกทีละ Product ({n})",   // Choose for each Product ({n})
+  "m4.pp.apply": "คำนวณด้วย Plant ที่เลือก ({n}/{of})",   // Calculate with the chosen Plants ({n}/{of})
+  "m4.pv.per_sub2": "ทุก Part มี Bin",   // every Part has a bin
+  "m4.recs.scope2": "ประเมินจาก {c} จาก {n} รอบ (ในนั้น {p} รอบตัด Part ที่ไม่มี Bin ออก · {x} รอบระบุ Part ไม่ได้)",   // Measured on {c} of {n} rounds ({p} of them leave out Parts without a bin; {x} rounds have no known Parts).
+  "m4.sim.ph2": "พิมพ์บางส่วนของรหัสหรือชื่อ เช่น 11236",   // Type any part of the code or name
+  "m4.sim.nohit": "ไม่พบ Part ที่มี Location ตรงกับคำค้น",   // No Part with a location matches
+  "m4.k.rounds_sub2": "{j} JOB · {p} Product",   // {j} JOB · {p} Products
+  "m4.k.parts_sub2": "มี Bin บนผัง {a} · ไม่มี {b}",   // with a bin on the layout {a} · without {b}
+  "m4.k.dist_sub3": "เฉลี่ย {m} ม./รอบ · เวลาจำลองรวม {h}",   // {m} m per round · simulated time {h}
+  "m4.hm": "{h} ชม. {m} นาที",   // {h} h {m} min
+  "m4.issshort.nojob": "ไม่มี JOB",   // no JOB
+  "m4.issshort.noproduct": "ไม่มี Product",   // no Product
+  "m4.issshort.plant": "ไม่รู้ Plant",   // Plant unknown
+  "m4.issshort.nobom": "ไม่มี BOM",   // no BOM
+  "m4.issshort.noparts": "ไม่มี Part",   // no Parts
+  "m4.issshort.loc_noloc": "ไม่มี Location",   // no location
+  "m4.issshort.loc_notonlayout": "ไม่มีบนผัง",   // not on layout
+  "m4.issshort.loc_unreach": "เข้าถึงไม่ได้",   // no aisle
+  "m4.issshort.loc_special": "Bin พิเศษ",   // special bin
+  "m4.h.sub2": "ตัวเลข = จำนวนครั้งที่หยิบจากช่องนั้น · รวม {n} ครั้ง · หยิบไม่ได้ {x} ครั้ง",   // Number = picks from that rack · {n} picks in all · {x} picks have no pick point on the layout
+  "m4.pv.order": "ลำดับหยิบ",   // Pick order
+  "m4.recs.simall": "จำลองทุกคู่พร้อมกัน ({n} คู่)",   // Simulate all {n} pairs together
+  "m4.rc.a": "Part A / ช่อง X",   // Part A / bin X
+  "m4.rc.b": "Part B / ช่อง Y",   // Part B / bin Y
+  "m4.rc.save": "ลดลง",   // Shorter by
+  "m4.rc.time": "เวลาจำลอง",   // Simulated time
+  "m4.rc.rule": "กติกา",   // Rules
+  "m4.rc.note": "คิดผลทีละคู่ · คลิกแถวเพื่อดูเหตุผล Product ที่ได้/เสีย และเส้นทางก่อน–หลัง · ยังไม่ตรวจขนาด/น้ำหนัก (ไม่มีข้อมูล)",   // Each pair is counted alone. Click a row for the reason, the Products that gain or lose, and the route before and after. Size and weight are not checked yet (no data).
+  "m4.pp.title2": "เปลี่ยน Plant ของ {n} Product",   // Change the Plant of {n} Products
+  "m4.pp.sub2": "Product เหล่านี้มี BOM มากกว่า 1 Plant และ JOB ไม่อยู่ในแผนรายเดือน ผลจะแสดงเมื่อเลือก Plant ครบทุกตัว · ค่าที่เลือกจำไว้ระหว่างเปิดหน้านี้",   // These Products have a BOM in more than one Plant and their JOB is not in the monthly plan. The results appear once every Product has a Plant. The choice is kept while this page is open.
+  "m4.pp.need": "ต้องเลือกให้ครบทุก Product",   // choose a Plant for every Product
+  "m4.pp.change": "เปลี่ยน Plant ({n})",   // Change Plant ({n})
   "m5.intro": "กติกาที่ใช้ตรวจทุกการสลับ Part และ Bin ที่ล็อกจะไม่ถูกเสนอและสลับไม่ได้",   // Rules every swap is checked against. Locked Parts and bins are never suggested or swapped.
   "m5.rules.title": "กติกาที่ใช้",   // Rules in use
   "m5.rules.sub": "ตามที่ตกลงกับคลัง",   // Agreed with the warehouse

@@ -5,7 +5,7 @@
   var S = {
     root: null, d: null, base: null, tab: 'freq', from: '', to: '', product: '', q: '', sort: 'plan', open: null, partsMax: 60,
     prodView: null, prodRound: 0, hFloor: 0, hSel: {}, hq: '', kits: {}, recs: null, recOpen: null, sim: [], simMsg: '', simRes: null,
-    simProd: null, view: null, busy: null, plantPick: {}, rp: { before: { floor: null, mode: '2d' }, after: { floor: null, mode: '2d' } }, stale: false, runId: 0, err: '', form: { a: '', ab: '', b: '', bb: '' }
+    simProd: null, view: null, busy: null, plantPick: {}, rp: { before: { floor: null, mode: '2d' }, after: { floor: null, mode: '2d' }, pv: { floor: null, mode: '2d' } }, recProd: null, stale: false, runId: 0, err: '', form: { a: '', ab: '', b: '', bb: '' }
   };
   try { var st = localStorage.getItem('pwh-m4tab'); if (st) S.tab = st; } catch (e) {}
 
@@ -57,7 +57,7 @@
     }).catch(function (e) { if (id === S.runId) { S.busy = null; S.err = String(e && e.message || e); render(); } });
   }
   function runRecs() {
-    if (!S.base || S.recs || S.busy) return;
+    if (!S.base || S.recs || S.busy || S.base.products.some(function (p) { return p.needPlant; })) return;
     var id = S.runId;
     setBusy('recs'); render();
     PWH.freq.recommend(S.d, S.base, 12, function (i, n) { if (id === S.runId) setBusy('recs', i, n); }).then(function (r) {
@@ -104,7 +104,7 @@
     files.monthly.forEach(function (f) { fl.push(t('m4.scope.monthlyf') + ': ' + f.name); });
     fl.push(t('m4.scope.layout')); fl.push(t('m4.scope.rules', { n: (d.rules.rules || []).length }));
     return '<div class="m4scope"><p>' + parts.join(' · ') + '</p>' +
-      '<p class="sub2">' + esc(t('m4.scope.note')) + (B ? ' · ' + esc(t('m4.scope.at', { t: fmtTime(B.at) })) : '') + '</p>' +
+      '<p class="sub2">' + esc(t('m4.scope.note')) + (B ? ' · ' + esc(t('m4.scope.at', { t: fmtTime(B.at) })) : '') + (B && ambiguous().some(function (p) { return p.how === 'user'; }) && !B.products.some(function (p) { return p.needPlant; }) ? ' · <button type="button" class="linkbtn" data-m4="pchange">' + esc(t('m4.pp.change', { n: ambiguous().length })) + '</button>' : '') + '</p>' +
       '<details class="m4files"><summary>' + esc(t('m4.scope.files')) + '</summary><ul>' + fl.map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul></details></div>';
   }
 
@@ -112,36 +112,34 @@
   function kpis() {
     var B = S.base;
     function k(label, val, sub, cls) { return '<div class="m4k' + (cls ? ' ' + cls : '') + '"><span class="k">' + esc(label) + '</span><span class="v">' + val + '</span>' + (sub ? '<span class="s">' + sub + '</span>' : '') + '</div>'; }
-    var nIss = issueGroups().reduce(function (s, gp) { return s + gp.items.length; }, 0);
-    return '<div class="m4kpis m4k8">' +
-      k(t('m4.k.rounds'), nf(B.rounds.length), esc(t('m4.k.rounds_sub'))) +
-      k(t('m4.k.ident'), nf(B.identified.length), esc(t('m4.k.of', { n: nf(B.rounds.length) }))) +
-      k(t('m4.k.complete'), nf(B.complete.length), esc(t('m4.k.partial', { n: nf(B.partial.length) }))) +
-      k(t('m4.k.parts'), nf(B.parts.length), esc(t('m4.k.parts_sub'))) +
+    var gs = issueGroups(), nIss = gs.reduce(function (n, gp) { return n + gp.items.length; }, 0);
+    var prods = new Set(), jobs = new Set(); B.rounds.forEach(function (r) { jobs.add(r.job); r.products.forEach(function (p) { prods.add(p); }); });
+    var withBin = B.parts.filter(function (p) { return p.pick.status === 'ok'; }).length;
+    var issSub = gs.map(function (gp) { return esc(t('m4.issshort.' + gp.why)) + ' ' + nf(gp.items.length); }).join(' · ');
+    return '<div class="m4kpis m4k5">' +
+      k(t('m4.k.rounds'), nf(B.rounds.length), esc(t('m4.k.rounds_sub2', { j: nf(jobs.size), p: nf(prods.size) }))) +
+      k(t('m4.k.parts'), nf(B.parts.length), esc(t('m4.k.parts_sub2', { a: nf(withBin), b: nf(B.parts.length - withBin) }))) +
       k(t('m4.k.plan'), nf(B.planFreq), esc(t('m4.k.plan_sub'))) +
-      k(t('m4.k.route'), nf(B.routeFreq), esc(t('m4.k.route_sub', { n: nf(B.planFreq - B.routeFreq) }))) +
-      k(t('m4.k.dist'), mm(B.totalM), esc(t('m4.k.dist_sub', { m: m(B.complete.length ? B.totalM / B.complete.length : 0) }))) +
-      k(t('m4.k.issues'), nf(nIss), esc(t('m4.k.issues_sub')), nIss ? 'warnv' : '') + '</div>' +
+      k(t('m4.k.dist'), mm(B.totalM), esc(t('m4.k.dist_sub3', { m: m(B.identified.length ? B.totalM / B.identified.length : 0), h: hrs(B.totalSec) }))) +
+      '<button type="button" class="m4k m4kbtn' + (nIss ? ' warnv' : '') + '" data-m4="goiss"><span class="k">' + esc(t('m4.k.issues')) + '</span><span class="v">' + nf(nIss) + '</span><span class="s">' + (issSub || esc(t('m4.none'))) + '</span></button></div>' +
       (B.consistent ? '' : '<div class="msg bad" role="status"><span>' + esc(t('m4.err.heatsum', { h: nf(B.heatSum), r: nf(B.routeFreq) })) + '</span></div>');
   }
+  function hrs(sec) { var mn = Math.round(sec / 60); return mn < 60 ? t('m3.kpi.min', { n: mn }) : t('m4.hm', { h: Math.floor(mn / 60), m: mn % 60 }); }
   function matchQ(p) { var q = S.q.trim().toUpperCase(); return !q || p.code.toUpperCase().indexOf(q) >= 0 || (p.name || '').toUpperCase().indexOf(q) >= 0; }
   function partsTable() {
     var B = S.base, rows = B.parts.filter(matchQ).slice();
-    if (S.sort === 'route') rows.sort(function (a, b) { return b.nRoute - a.nRoute || b.n - a.n; });
     var top = Math.max(1, rows.reduce(function (s, p) { return Math.max(s, p.n); }, 0)), shown = rows.slice(0, S.partsMax);
     var body = shown.map(function (p, i) {
       var open = S.open === p.code, prods = Array.from(p.products.entries()).sort(function (a, b) { return b[1] - a[1]; });
       var bins = (p.pick.bins || []), onl = bins.filter(function (b) { return b.loc.kind === 'rack'; });
       var tr = '<tr class="m4r' + (open ? ' open' : '') + '" data-m4="open" data-v="' + esc(p.code) + '" tabindex="0" aria-expanded="' + open + '">' +
         '<td class="num m4rank">' + (i + 1) + '</td><td class="m4pn"><span class="code">' + esc(p.code) + '</span><div class="sub2">' + esc(p.name || '–') + '</div></td>' +
-        '<td class="num">' + nbar(p.n, top) + '</td><td class="num">' + (p.nRoute === p.n ? nf(p.nRoute) : '<b class="m4lo">' + nf(p.nRoute) + '</b>') + '</td>' +
-        '<td class="num">' + nf(prods.length) + '</td>' +
-        '<td>' + (bins.length ? esc(t('m4.bins.n', { n: bins.length, on: onl.length })) : '–') + '</td>' +
+        '<td class="num">' + nbar(p.n, top) + '</td>' +
         '<td>' + (p.pick.status === 'ok' ? locTag(p.pick.bin) + '<div class="sub2">' + esc(floorTxt(p.pick.floor)) + ' · ' + esc(t('m4.times', { n: nf(p.nRoute) })) + '</div>' : '–') + '</td>' +
         '<td>' + statusChip(p.pick) + '</td>' +
         '<td class="m4act">' + (p.pick.status === 'ok' ? '<button type="button" class="btn sm" data-m4="onmap" data-v="' + esc(p.code) + '">' + esc(t('m4.act.map')) + '</button>' : '') +
         '<button type="button" class="btn sm" data-m4="simA" data-v="' + esc(p.code) + '">' + esc(t('m4.act.sim')) + '</button></td></tr>';
-      if (open) tr += '<tr class="m4det"><td></td><td colspan="8"><div class="m4dgrid"><div><div class="m4dh">' + esc(t('m4.det.products', { code: p.code })) + '</div><div class="m4bars">' +
+      if (open) tr += '<tr class="m4det"><td></td><td colspan="5"><div class="m4dgrid"><div><div class="m4dh">' + esc(t('m4.det.products', { code: p.code })) + '</div><div class="m4bars">' +
         prods.map(function (e) { return '<div class="m4bar"><span><span class="code">' + esc(e[0]) + '</span><span class="sub2"> ' + esc(prodName(e[0])) + '</span></span><span class="m4bt"><i style="width:' + Math.max(4, e[1] / p.n * 100) + '%"></i></span><b>' + nf(e[1]) + '</b></div>'; }).join('') + '</div></div>' +
         '<div><div class="m4dh">' + esc(t('m4.det.bins')) + '</div>' + (bins.length ? '<ul class="m4binl">' + bins.map(function (b) {
           var chosen = p.pick.status === 'ok' && b.bin === p.pick.bin;
@@ -150,8 +148,8 @@
       return tr;
     }).join('');
     return '<section class="panel m4card" id="m4parts"><div class="chd"><div class="chd-l"><h2>' + esc(t('m4.parts.title')) + ' <span class="chip info">' + nf(rows.length) + '</span></h2><p class="sub">' + esc(t('m4.parts.sub2')) + '</p></div></div>' +
-      '<div class="m4ptool"><input id="m4q" type="search" placeholder="' + esc(t('m4.q.part')) + '" value="' + esc(S.q) + '" aria-label="' + esc(t('m4.q.part')) + '"><span class="sub2">' + esc(t('m4.q.note')) + '</span><span class="grow"></span><span class="sub2">' + esc(t('m4.sort')) + '</span>' + seg([['plan', t('m4.col.plan')], ['route', t('m4.col.route')]], S.sort, 'sort') + '</div>' +
-      (rows.length ? '<div class="tablebox m4tb"><table class="m4pt"><thead><tr><th class="num">#</th><th>' + esc(t('m4.col.part')) + '</th><th class="num">' + esc(t('m4.col.plan')) + '</th><th class="num">' + esc(t('m4.col.route')) + '</th><th class="num">' + esc(t('m4.col.prods')) + '</th><th>' + esc(t('m4.col.bins')) + '</th><th>' + esc(t('m4.col.chosen')) + '</th><th>' + esc(t('m4.col.status')) + '</th><th></th></tr></thead><tbody>' + body + '</tbody></table></div>' +
+      '<div class="m4ptool"><input id="m4q" type="search" placeholder="' + esc(t('m4.q.part')) + '" value="' + esc(S.q) + '" aria-label="' + esc(t('m4.q.part')) + '"><span class="sub2">' + esc(t('m4.q.note')) + '</span></div>' +
+      (rows.length ? '<div class="tablebox m4tb"><table class="m4pt"><thead><tr><th class="num">#</th><th>' + esc(t('m4.col.part')) + '</th><th class="num">' + esc(t('m4.col.plan')) + '</th><th>' + esc(t('m4.col.chosen')) + '</th><th>' + esc(t('m4.col.status')) + '</th><th></th></tr></thead><tbody>' + body + '</tbody></table></div>' +
         (rows.length > S.partsMax ? '<div class="m4more"><span class="sub2">' + esc(t('m4.more', { n: S.partsMax, t: rows.length })) + '</span><button type="button" class="btn sm" data-m4="more">' + esc(t('m4.more.btn')) + '</button></div>' : '')
         : '<p class="empty-note">' + esc(t(S.q ? 'm4.none.q' : 'm4.none')) + '</p>') + '</section>';
   }
@@ -165,40 +163,58 @@
     if (p.status === 'plant') return '<select class="m4psel" data-prod="' + esc(p.product) + '" aria-label="' + esc(t('m4.ps.choose')) + '"><option value="">' + esc(t('m4.ps.choose')) + '</option>' + p.plants.map(function (x) { return '<option>' + esc(x) + '</option>'; }).join('') + '</select>';
     return esc(p.plant || '–') + (p.how === 'user' ? ' ' + chip('info', t('m4.ps.own')) : '');
   }
+  function distCell(p) {
+    if (p.status === 'plant') return '<span class="sub2">' + esc(t('m4.pt.chooseplant')) + '</span>';
+    if (p.status === 'nobom' || p.status === 'noparts') return '<span class="sub2">' + esc(t('m4.ps.nobom')) + '</span>';
+    if (!p.routedParts) return '<span class="sub2">' + esc(t('m4.pt.nobin')) + '</span>';
+    return '<b>' + mm(p.m / Math.max(1, p.rounds)) + '</b> <span class="sub2">' + esc(t('m4.pt.per')) + '</span>' +
+      '<div class="sub2">' + esc(t('m4.pt.total', { m: m(p.m), n: p.rounds })) + (p.how === 'user' ? ' · Plant ' + esc(p.plant) + ' ' + esc(t('m4.ps.own')) : '') + '</div>' +
+      (p.parts > p.routedParts ? '<div class="m4lo sub2">' + esc(t('m4.pt.skip', { n: p.parts - p.routedParts, of: p.parts })) + '</div>' : '');
+  }
   function prodsTable() {
-    var B = S.base, order = { plant: 0, nobom: 1, noparts: 1, partial: 2, ok: 3 }, rows = B.products.slice().sort(function (a, b) { return (order[a.status] - order[b.status]) || b.rounds - a.rounds; });
-    var cnt = { ok: 0, partial: 0, plant: 0, nobom: 0 }; rows.forEach(function (p) { var k = p.status === 'noparts' ? 'nobom' : p.status; cnt[k] = (cnt[k] || 0) + 1; });
+    var B = S.base, rows = B.products.slice().sort(function (a, b) { return b.rounds - a.rounds || b.m - a.m; });
     var body = rows.slice(0, 200).map(function (p) {
       var on = S.prodView === p.product, ok = p.status === 'ok' || p.status === 'partial';
       return '<tr class="m4r' + (on ? ' open' : '') + '"' + (ok ? ' data-m4="prod" data-v="' + esc(p.product) + '" tabindex="0"' : '') + '><td class="m4pn"><span class="code">' + esc(p.product) + '</span><div class="sub2">' + esc(prodName(p.product) || '–') + '</div></td>' +
-        '<td class="num">' + nf(p.rounds) + '</td><td>' + plantCell(p) + '</td><td class="num">' + (ok ? nf(p.parts) : '–') + '</td>' +
-        '<td class="num">' + (ok ? (p.routedParts === p.parts ? nf(p.routedParts) + '/' + nf(p.parts) : '<b class="m4lo">' + nf(p.routedParts) + '/' + nf(p.parts) + '</b>') : '–') + '</td>' +
-        '<td class="num">' + (p.status === 'ok' && p.complete ? mm(p.m / p.complete) : '–') + '</td><td>' + prodStatus(p) + '</td></tr>';
+        '<td class="num">' + nf(p.rounds) + '</td><td class="num m4dist">' + distCell(p) + '</td></tr>';
     }).join('');
-    return '<section class="panel m4card" id="m4prodt"><div class="chd"><div class="chd-l"><h2>' + esc(t('m4.prods.title2')) + ' <span class="chip info">' + nf(rows.length) + '</span></h2><p class="sub">' + esc(t('m4.prods.sub3')) + '</p></div></div>' +
-      '<div class="m4psum">' + chip('ok', t('m4.ps.ok') + ' ' + cnt.ok) + chip('warn', t('m4.ps.partial0') + ' ' + cnt.partial) + chip('warn', t('m4.ps.plant') + ' ' + cnt.plant) + (cnt.nobom ? chip('warn', t('m4.ps.nobom') + ' ' + cnt.nobom) : '') + '</div>' +
-      (rows.length ? '<div class="tablebox m4tb"><table><thead><tr><th>' + esc(t('m4.col.product')) + '</th><th class="num">JOB</th><th>Plant</th><th class="num">' + esc(t('m4.col.parts')) + '</th><th class="num">' + esc(t('m4.col.found')) + '</th><th class="num">' + esc(t('m4.col.per')) + '</th><th>' + esc(t('m4.col.status')) + '</th></tr></thead><tbody>' + body + '</tbody></table></div>' +
+    return '<section class="panel m4card" id="m4prodt"><div class="chd"><div class="chd-l"><h2>' + esc(t('m4.prods.title2')) + ' <span class="chip info">' + nf(rows.length) + '</span></h2><p class="sub">' + esc(t('m4.prods.sub4')) + '</p></div></div>' +
+      (rows.length ? '<div class="tablebox m4tb"><table class="m4prt"><thead><tr><th>' + esc(t('m4.col.product')) + '</th><th class="num">' + esc(t('m4.col.jobs')) + '</th><th class="num">' + esc(t('m4.col.dist')) + '</th></tr></thead><tbody>' + body + '</tbody></table></div>' +
         (rows.length > 200 ? '<p class="sub">' + esc(t('m4.more', { n: 200, t: rows.length })) + '</p>' : '') : '<p class="empty-note">' + esc(t('m4.none')) + '</p>') +
       (S.prodView ? prodView() : '') + '</section>';
   }
-  function prodView() {
-    var B = S.base, P = B.products.filter(function (x) { return x.product === S.prodView; })[0]; if (!P) return '';
-    var codes = PWH.freq.partsOf(S.d, P.product, P.plant), pmap = new Map(); B.parts.forEach(function (p) { pmap.set(p.code, p); });
-    var list = codes.map(function (c) { return pmap.get(c) || { code: c, name: partName(c), n: 0, nRoute: 0, products: new Map(), pick: PWH.freq.pickOf(S.d, c) }; });
-    var off = list.filter(function (p) { return p.pick.status !== 'ok'; });
-    var rl = P.rlist, ri = Math.min(S.prodRound, rl.length - 1), rr = rl[ri];
-    return '<div class="m4pv" id="m4pv"><div class="m4pvh"><div><h3>' + esc(t('m4.pv.title', { p: P.product })) + '</h3><p class="sub">' + esc(prodName(P.product)) + ' · Plant ' + esc(P.plant) + '</p></div><button type="button" class="btn sm" data-m4="prod" data-v="' + esc(P.product) + '">' + esc(t('m4.close')) + '</button></div>' +
-      '<div class="m4kpis">' +
-      '<div class="m4k"><span class="k">' + esc(t('m4.pv.rounds')) + '</span><span class="v">' + nf(P.rounds) + '</span><span class="s">' + esc(t('m4.k.partial', { n: nf(P.rounds - P.complete) })) + '</span></div>' +
-      '<div class="m4k"><span class="k">' + esc(t('m4.pv.parts')) + '</span><span class="v">' + nf(codes.length) + '</span><span class="s">' + esc(t('m4.pv.off', { n: off.length })) + '</span></div>' +
-      '<div class="m4k"><span class="k">' + esc(t('m4.pv.per')) + '</span><span class="v">' + (P.complete ? mm(P.m / P.complete) : '–') + '</span><span class="s">' + esc(t('m4.pv.per_sub')) + '</span></div>' +
-      '<div class="m4k"><span class="k">' + esc(t('m4.pv.total')) + '</span><span class="v">' + mm(P.m) + '</span><span class="s">' + esc(t('m4.pv.total_sub', { n: P.complete })) + '</span></div></div>' +
-      '<div class="m4pvg"><div class="tablebox m4tb"><table><thead><tr><th>' + esc(t('m4.col.part')) + '</th><th class="num">' + esc(t('m4.col.plan')) + '</th><th>' + esc(t('m4.col.chosen')) + '</th><th>' + esc(t('m4.col.status')) + '</th></tr></thead><tbody>' +
-      list.map(function (p) { return '<tr><td class="m4pn"><span class="code">' + esc(p.code) + '</span><div class="sub2">' + esc(p.name || '–') + '</div></td><td class="num">' + nf(p.products.get(P.product) || 0) + '</td><td>' + (p.pick.status === 'ok' ? locTag(p.pick.bin) + ' <span class="sub2">' + esc(floorTxt(p.pick.floor)) + '</span>' : '–') + '</td><td>' + statusChip(p.pick) + '</td></tr>'; }).join('') + '</tbody></table></div>' +
-      '<div class="m4map"><div class="m4mbar"><label class="m4f"><span>' + esc(t('m4.pv.round')) + '</span><select id="m4round">' + rl.map(function (r, i) { return '<option value="' + i + '"' + (i === ri ? ' selected' : '') + '>' + esc(fmtDate(r.date) + ' · ' + r.line + ' · JOB ' + r.job) + '</option>'; }).join('') + '</select></label><span class="m4mm">' + esc(t('m4.pv.route', { m: m(rr.byProd[P.product] ? rr.byProd[P.product].m : 0) })) + (rr.byProd[P.product] && !rr.byProd[P.product].complete ? ' · ' + esc(t('m4.partial_route')) : '') + '</span></div>' +
-      routeBox('pv') + '</div></div></div>';
+  // Products whose BOM is in more than one Plant: the person chooses the Plant before the results are shown
+  function ambiguous() { return S.base ? S.base.products.filter(function (p) { return p.needPlant || p.how === 'user' || (S.plantPick[p.product] && p.plants.length > 1); }) : []; }
+  function plantPanel(gate) {
+    var list = ambiguous(); if (!list.length) return '';
+    var plants = []; list.forEach(function (p) { p.plants.forEach(function (x) { if (plants.indexOf(x) < 0) plants.push(x); }); }); plants.sort();
+    var D = S.plantDraft = S.plantDraft || {};
+    list.forEach(function (p) { if (!D[p.product] && S.plantPick[p.product]) D[p.product] = S.plantPick[p.product]; });
+    var rows = list.map(function (p) {
+      return '<div class="m4ppr"><span class="m4pn"><span class="code">' + esc(p.product) + '</span><span class="sub2"> ' + esc(prodName(p.product)) + ' · ' + esc(t('m4.pt.jobs', { n: p.rounds })) + '</span></span>' +
+        seg(p.plants.map(function (x) { return [x, x]; }), D[p.product] || '', 'pdraft', ' data-k="' + esc(p.product) + '"') + '</div>';
+    }).join('');
+    var n = list.filter(function (p) { return D[p.product]; }).length;
+    return '<section class="panel m4plant" id="m4plant"><div class="chd"><div class="chd-l"><h2>' + esc(t(gate ? 'm4.pp.title' : 'm4.pp.title2', { n: list.length })) + '</h2><p class="sub">' + esc(t('m4.pp.sub2')) + '</p></div>' + (gate ? '' : '<button type="button" class="btn sm" data-m4="pclose">' + esc(t('m4.close')) + '</button>') + '</div>' +
+      '<div class="m4ppall"><span class="sub2">' + esc(t('m4.pp.all')) + '</span>' + plants.map(function (x) { return '<button type="button" class="btn' + (list.every(function (p) { return D[p.product] === x || p.plants.indexOf(x) < 0; }) && n === list.length ? ' primary' : '') + '" data-m4="pall" data-v="' + esc(x) + '">' + esc(t('m4.pp.use', { p: x })) + '</button>'; }).join('') + '</div>' +
+      '<details class="m4ppl"' + (list.length <= 12 ? ' open' : '') + '><summary>' + esc(t('m4.pp.each', { n: list.length })) + '</summary><div class="m4pplist">' + rows + '</div></details>' +
+      '<div class="m4acts"><button type="button" class="btn primary" data-m4="papply"' + (n === list.length ? '' : ' disabled') + '>' + esc(t('m4.pp.apply', { n: n, of: list.length })) + '</button>' + (n === list.length ? '' : '<span class="sub2">' + esc(t('m4.pp.need')) + '</span>') + '</div></section>';
   }
 
+  // a Product: its route as the pick route page shows it, and the pick order
+  function prodView() {
+    var B = S.base, P = B.products.filter(function (x) { return x.product === S.prodView; })[0]; if (!P || !P.plant) return '';
+    if (!S.pvRoute || S.pvRoute.key !== P.product || S.pvRoute.base !== B) { S.pvRoute = { key: P.product, base: B, sd: sideRoute(P.product, P.plant, null) }; S.rp.pv.floor = null; }
+    var sd = S.pvRoute.sd;
+    var codes = sd.codes.slice().sort(function (a, b) { return (sd.seq[a] || 999) - (sd.seq[b] || 999); });
+    var rows = codes.map(function (c) {
+      var pk = sd.picks[c], q = sd.seq[c];
+      return '<tr' + (q ? '' : ' class="m4re"') + '><td class="num"><b>' + (q || '–') + '</b></td><td class="m4pn"><span class="code">' + esc(c) + '</span><div class="sub2">' + esc(partName(c) || '–') + '</div></td><td>' + (pk.status === 'ok' ? locTag(pk.bin) + ' <span class="sub2">' + esc(floorTxt(pk.floor) + ' · ' + t('m4.level', { n: pk.level })) + '</span>' : chip('warn', t('m4.loc.' + pk.status))) + '</td></tr>';
+    }).join('');
+    return '<div class="m4pv" id="m4pv"><div class="m4pvh"><div><h3>' + esc(t('m4.pv.title', { p: P.product })) + '</h3><p class="sub">' + esc(prodName(P.product)) + ' · Plant ' + esc(P.plant) + ' · ' + esc(t('m4.pt.jobs', { n: P.rounds })) + ' · ' + esc(t('m4.pt.total', { m: m(P.m), n: P.rounds })) + '</p></div><button type="button" class="btn sm" data-m4="prod" data-v="' + esc(P.product) + '">' + esc(t('m4.close')) + '</button></div>' +
+      '<div class="m4pvg">' + routeCard('pv', sd, null) +
+      '<div><div class="m4dh">' + esc(t('m4.pv.order')) + (P.parts > P.routedParts ? ' · <span class="m4lo">' + esc(t('m4.pt.skip', { n: P.parts - P.routedParts, of: P.parts })) + '</span>' : '') + '</div><div class="tablebox m4tb"><table class="m4ord"><thead><tr><th class="num">#</th><th>' + esc(t('m4.col.part')) + '</th><th>Bin</th></tr></thead><tbody>' + rows + '</tbody></table></div></div></div></div>';
+  }
   // ---------- heatmap ----------
   // one continuous colour ramp from 1 pick to the highest count in the range (no fixed steps)
   var HEAT = ['#2b6c9e', '#2a9d8f', '#8ab84a', '#f2b705', '#f0603a'], ZERO = '#4a5a74', NODATA = '#26324a';
@@ -223,7 +239,7 @@
   function heatSection() {
     var B = S.base, max = 0; B.heat.forEach(function (h) { if (h.n > max) max = h.n; });
     S.slots = { f: { id: 'f', base: B, br: breaks(max) } };
-    return '<section class="panel m4card"><div class="chd"><div class="chd-l"><h2>' + esc(t('m4.h.title')) + '</h2><p class="sub">' + esc(t('m4.h.sub', { n: nf(B.heatSum) })) + '</p></div></div>' + heatBox('f', '', S.slots.f.br, true) + '</section>';
+    return '<section class="panel m4card"><div class="chd"><div class="chd-l"><h2>' + esc(t('m4.h.title')) + '</h2><p class="sub">' + esc(t('m4.h.sub2', { n: nf(B.heatSum), x: nf(B.planFreq - B.routeFreq) })) + '</p></div></div>' + heatBox('f', '', S.slots.f.br, true) + '</section>';
   }
   function heatSide(slot) {
     var el = $('#m4hs-' + slot.id); if (!el) return;
@@ -328,24 +344,27 @@
   }
   function recsTab() {
     var R = S.recs, B = S.base;
-    var scope = '<div class="m4note">' + esc(t('m4.recs.scope', { c: nf(B.complete.length), n: nf(B.rounds.length), x: nf(B.rounds.length - B.complete.length) })) + (S.product ? ' ' + esc(t('m4.recs.only', { p: S.product })) : ' ' + esc(t('m4.recs.all'))) + '</div>';
+    var scope = '<div class="m4note">' + esc(t('m4.recs.scope2', { c: nf(B.identified.length), n: nf(B.rounds.length), p: nf(B.partial.length), x: nf(B.rounds.length - B.identified.length) })) + (S.product ? ' ' + esc(t('m4.recs.only', { p: S.product })) : ' ' + esc(t('m4.recs.all'))) + '</div>';
     if (!R) return scope + '<section class="panel"><p class="empty-note">' + esc(t('m4.busy.recs')) + '</p></section>';
     if (!R.list.length) return scope + '<section class="panel"><h2>' + esc(t('m4.norec.title')) + '</h2><p>' + esc(t('m4.norec.' + (R.why || 'nogain'), { c: nf(R.candidates), f: nf(R.failed), n: nf(R.tried) })) + '</p></section>';
     var sum = R.list.reduce(function (s, r) { return s + r.save; }, 0);
-    var head = scope + '<div class="m4note">' + esc(t('m4.recs.head2', { n: R.list.length, m: m(sum) })) + '</div>';
-    return head + R.list.map(function (r, i) {
-      var open = S.recOpen === i, sim = r.sim, topA = Array.from(r.a.products.entries()).sort(function (x, y) { return y[1] - x[1]; }).slice(0, 2);
-      var inSim = S.sim.some(function (s) { return s.a.code === r.a.code && s.b.code === r.b.code; });
+    var head = scope + '<div class="m4note m4rhead"><span>' + esc(t('m4.recs.head2', { n: R.list.length, m: m(sum) })) + '</span><button type="button" class="btn primary" data-m4="simall">' + esc(t('m4.recs.simall', { n: R.list.length })) + '</button></div>';
+    function side(p) { return '<span class="code">' + esc(p.code) + '</span><div class="sub2">' + esc(p.name || partName(p.code) || '–') + '</div><div class="m4swl">' + locTag(p.pick.bin) + '<span class="sub2">' + esc(floorTxt(p.pick.floor)) + ' · ' + esc(t('m4.times', { n: nf(p.n || 0) })) + '</span></div>'; }
+    var rows = R.list.map(function (r, i) {
+      var open = S.recOpen === i, sim = r.sim; sim.pairs = sim.pairs || [{ a: r.a, b: r.b }];
+      var topA = Array.from(r.a.products.entries()).sort(function (x, y) { return y[1] - x[1]; }).slice(0, 2);
       var reason = t('m4.recs.reason2', { a: r.a.code, na: nf(r.a.n), prods: topA.map(function (e) { return e[0] + ' (' + e[1] + ')'; }).join(', ') || '–', ca: m(r.a.c), b: r.b.code, nb: nf(r.b.n), cb: m(r.b.c) });
-      return '<section class="panel m4rec' + (open ? ' open' : '') + '"><div class="m4rh"><span class="m4no">' + (i + 1) + '</span>' + pairHtml(r.a, r.b) +
-        '<div class="m4gain"><b>−' + mm(r.save) + '</b><span>' + esc(pct(r.pct)) + '</span></div></div>' +
-        '<p class="m4why">' + esc(reason) + '</p>' + ruleBlock(r.rules) +
-        '<dl class="m4facts"><div><dt>' + esc(t('m4.before')) + '</dt><dd>' + mm(r.before) + '</dd></div><div><dt>' + esc(t('m4.after')) + '</dt><dd>' + mm(r.after) + '</dd></div><div><dt>' + esc(t('m4.diff')) + '</dt><dd class="good">' + diffTxt(r.before, r.after) + ' (' + pct(r.pct) + ')</dd></div>' +
-        '<div><dt>' + esc(t('m4.recs.used')) + '</dt><dd>' + esc(t('m4.recs.used_v', { u: nf(sim.roundsUsed), x: nf(sim.roundsOut) })) + '</dd></div></dl>' +
+      var tr = '<tr class="m4r' + (open ? ' open' : '') + '" data-m4="ropen" data-v="' + i + '" tabindex="0" aria-expanded="' + open + '"><td class="num m4rank">' + (i + 1) + '</td><td class="m4pn"><span class="m4tag a">A</span>' + side(r.a) + '</td><td class="m4pn"><span class="m4tag b">B</span>' + side(r.b) + '</td>' +
+        '<td class="num good"><b>−' + mm(r.save) + '</b></td><td class="num">' + esc(pct(r.pct)) + '</td><td class="num">' + esc(sim.secSave > 0 ? t('m4.tdown', { n: Math.max(1, Math.round(sim.secSave / 60)) }) : '–') + '</td>' +
+        '<td>' + (r.rules && r.rules.length ? chip('error', t('m4.rule.fail')) : chip('ok', '✓ ' + t('m4.rule.ok'))) + '</td>' +
+        '<td class="m4act"><button type="button" class="btn sm primary" data-m4="tosim" data-v="' + i + '">' + esc(t('m4.btn.tosim2')) + '</button></td></tr>';
+      if (open) tr += '<tr class="m4det"><td></td><td colspan="7"><div class="m4recd"><p class="m4why">' + esc(reason) + '</p>' + ruleBlock(r.rules) +
+        '<dl class="m4facts"><div><dt>' + esc(t('m4.before')) + '</dt><dd>' + mm(r.before) + '</dd></div><div><dt>' + esc(t('m4.after')) + '</dt><dd>' + mm(r.after) + '</dd></div><div><dt>' + esc(t('m4.recs.used')) + '</dt><dd>' + esc(t('m4.recs.used_v', { u: nf(sim.roundsUsed), x: nf(sim.roundsOut) })) + '</dd></div></dl>' +
         '<div class="m4pl"><div><span class="sub2">' + esc(t('m4.recs.better', { n: sim.better.length })) + '</span><div class="m4pds">' + prodList(sim.better, false) + '</div></div><div><span class="sub2">' + esc(t('m4.recs.worse', { n: sim.worse.length })) + '</span><div class="m4pds">' + prodList(sim.worse, true) + '</div></div></div>' +
-        '<div class="m4acts"><button type="button" class="btn sm" data-m4="ropen" data-v="' + i + '" aria-expanded="' + open + '">' + esc(t(open ? 'm4.btn.hide' : 'm4.btn.detail')) + '</button><button type="button" class="btn sm' + (inSim ? '' : ' primary') + '" data-m4="tosim" data-v="' + i + '">' + esc(t(inSim ? 'm4.btn.opensim' : 'm4.btn.tosim2')) + '</button></div>' +
-        (open ? '<div class="m4detail">' + barsHtml(sim.byProd) + routePicker('r', sim.byProd) + '</div>' : '') + '</section>';
+        routePair(sim, 'rec') + '</div></td></tr>';
+      return tr;
     }).join('');
+    return head + '<section class="panel m4card"><div class="tablebox m4tb"><table class="m4rect"><thead><tr><th class="num">#</th><th>' + esc(t('m4.rc.a')) + '</th><th>' + esc(t('m4.rc.b')) + '</th><th class="num">' + esc(t('m4.rc.save')) + '</th><th class="num">%</th><th class="num">' + esc(t('m4.rc.time')) + '</th><th>' + esc(t('m4.rc.rule')) + '</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div><p class="sub2">' + esc(t('m4.rc.note')) + '</p></section>';
   }
 
   // ---------- route map (one Product, one round, before or after) ----------
@@ -424,12 +443,10 @@
     var B = S.base, F = S.form, used = B.parts.filter(function (p) { return p.pick.status === 'ok'; });
     var form = '<section class="panel"><div class="chd"><div class="chd-l"><h2>' + esc(t('m4.sim.title')) + '</h2><p class="sub">' + esc(t('m4.sim.sub2')) + '</p></div></div>' +
       '<form class="m4simf" id="m4add" autocomplete="off">' +
-      '<fieldset><legend>Part A</legend><label class="m4f"><span>' + esc(t('m4.col.part')) + '</span><input id="m4a" list="m4pl" value="' + esc(F.a) + '" placeholder="' + esc(t('m4.sim.ph')) + '" required></label><label class="m4f"><span>' + esc(t('m4.sim.bin')) + '</span><select id="m4ab">' + (F.a && S.d.bins.has(F.a) ? binOpts(F.a, F.ab) : '<option value="">' + esc(t('m4.sim.pickfirst')) + '</option>') + '</select></label></fieldset>' +
+      '<fieldset><legend>Part A</legend><label class="m4f"><span>' + esc(t('m4.col.part')) + '</span><span class="m4sugw"><input id="m4a" value="' + esc(F.a) + '" placeholder="' + esc(t('m4.sim.ph2')) + '" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="m4sug-a" required><span class="m4sug" id="m4sug-a" role="listbox" hidden></span></span></label><label class="m4f"><span>' + esc(t('m4.sim.bin')) + '</span><select id="m4ab">' + (F.a && S.d.bins.has(F.a) ? binOpts(F.a, F.ab) : '<option value="">' + esc(t('m4.sim.pickfirst')) + '</option>') + '</select></label></fieldset>' +
       '<span class="m4x" aria-hidden="true">⇄</span>' +
-      '<fieldset><legend>Part B</legend><label class="m4f"><span>' + esc(t('m4.col.part')) + '</span><input id="m4b" list="m4all" value="' + esc(F.b) + '" placeholder="' + esc(t('m4.sim.ph')) + '" required></label><label class="m4f"><span>' + esc(t('m4.sim.bin')) + '</span><select id="m4bb">' + (F.b && S.d.bins.has(F.b) ? binOpts(F.b, F.bb) : '<option value="">' + esc(t('m4.sim.pickfirst')) + '</option>') + '</select></label></fieldset>' +
+      '<fieldset><legend>Part B</legend><label class="m4f"><span>' + esc(t('m4.col.part')) + '</span><span class="m4sugw"><input id="m4b" value="' + esc(F.b) + '" placeholder="' + esc(t('m4.sim.ph2')) + '" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="m4sug-b" required><span class="m4sug" id="m4sug-b" role="listbox" hidden></span></span></label><label class="m4f"><span>' + esc(t('m4.sim.bin')) + '</span><select id="m4bb">' + (F.b && S.d.bins.has(F.b) ? binOpts(F.b, F.bb) : '<option value="">' + esc(t('m4.sim.pickfirst')) + '</option>') + '</select></label></fieldset>' +
       '<button class="btn" type="submit">' + esc(t('m4.sim.add')) + '</button></form>' +
-      '<datalist id="m4pl">' + used.slice(0, 1500).map(function (p) { return '<option value="' + esc(p.code) + '">' + esc(p.pick.bin + ' · ' + p.nRoute) + '</option>'; }).join('') + '</datalist>' +
-      '<datalist id="m4all">' + Array.from(S.d.bins.keys()).slice(0, 4000).map(function (c) { return '<option value="' + esc(c) + '">'; }).join('') + '</datalist>' +
       (S.simMsg ? '<div class="msg bad" role="status"><span>' + esc(S.simMsg) + '</span></div>' : '');
     if (S.sim.length) {
       form += '<div class="m4pairs">' + S.sim.map(function (s, i) { return '<div class="m4pr">' + pairHtml(s.a, s.b) + ruleBlock(s.rules) + '<button type="button" class="btn sm danger" data-m4="simdel" data-v="' + i + '">' + esc(t('m4.sim.del')) + '</button></div>'; }).join('') + '</div>';
@@ -453,30 +470,29 @@
     if (R.byProd.length) {
       html += '<h3>' + esc(t('m4.sim.byprod')) + '</h3><div class="tablebox m4tb"><table><thead><tr><th>' + esc(t('m4.col.product')) + '</th><th class="num">' + esc(t('m4.col.rounds')) + '</th><th class="num">' + esc(t('m4.before')) + '</th><th class="num">' + esc(t('m4.after')) + '</th><th class="num">' + esc(t('m4.col.change')) + '</th><th class="num">%</th></tr></thead><tbody>' +
         R.byProd.map(function (x) { var up = x.after > x.before, on = S.simProd === x.product; return '<tr class="m4r' + (on ? ' open' : '') + '" data-m4="sprod" data-v="' + esc(x.product) + '" tabindex="0"><td><span class="code">' + esc(x.product) + '</span><div class="sub2">' + esc(prodName(x.product) || '–') + '</div></td><td class="num">' + nf(x.rounds) + '</td><td class="num">' + m(x.before) + '</td><td class="num">' + m(x.after) + '</td><td class="num ' + (up ? 'up' : 'good') + '">' + diffTxt(x.before, x.after) + '</td><td class="num">' + pct(x.before > 0 ? (x.before - x.after) / x.before * 100 : null) + '</td></tr>'; }).join('') + '</tbody></table></div>';
-      if (S.simProd) html += routePair(R);
+      html += routePair(R, 'sim');
     } else html += '<p class="empty-note">' + esc(t('m4.sim.nochange')) + '</p>';
-    // heatmaps before / after on one colour scale
-    var max = 0; [S.base.heat, R.afterBase.heat].forEach(function (hm) { hm.forEach(function (h) { if (h.n > max) max = h.n; }); });
-    var br = breaks(max);
-    S.slots = { b: { id: 'b', base: S.base, br: br }, a: { id: 'a', base: R.afterBase, br: br } };
-    html += '<h3>' + esc(t('m4.sim.heat')) + '</h3><p class="sub">' + esc(t('m4.sim.heat_sub', { b: nf(S.base.routeFreq), a: nf(R.afterBase.routeFreq) })) + '</p><div class="m4hfl">' + floorSeg() + '</div><div class="m4hpair">' + heatBox('b', t('m4.before'), br, false) + heatBox('a', t('m4.after'), br, false) + '</div>';
     return html + '</section>';
   }
 
   // ---------- simulation: before / after routes side by side, like the pick route page ----------
-  function pairRoutes(R) {
-    var P = S.base.products.filter(function (x) { return x.product === S.simProd; })[0]; if (!P || !P.plant) return null;
-    if (S.rcache && S.rcache.key === S.simProd && S.rcache.R === R) return S.rcache;
-    var out = { key: S.simProd, R: R, plant: P.plant, rounds: P.complete || P.rounds };
-    ['before', 'after'].forEach(function (side) {
-      var ov = side === 'after' ? R.ov : null, codes = PWH.freq.partsOf(S.d, P.product, P.plant), picks = {}, items = [];
-      codes.forEach(function (c) { var pk = PWH.freq.pickOf(S.d, c, ov); picks[c] = pk; if (pk.status === 'ok') items.push({ key: c, cands: [{ bin: pk.bin, rack: pk.rack, level: pk.level, floor: pk.floor, stock: 1 }] }); });
-      var res = items.length ? PWH.route.plan(S.d.L, items) : { order: [], legs: [], total: 0, unreachable: [] };
-      var seq = {}, runs = [];
-      res.order.forEach(function (o, i) { seq[o.key] = i + 1; var f = picks[o.key].floor, last = runs[runs.length - 1]; if (last && last.floor === f) last.n++; else runs.push({ floor: f, n: 1 }); });
-      var cur = res.start ? res.start.floor : null, lifts = 0; runs.forEach(function (r) { if (cur && r.floor !== cur) lifts++; cur = r.floor; }); if (res.drop && cur !== res.drop.floor) lifts++;
-      out[side] = { res: res, picks: picks, seq: seq, runs: runs, lifts: lifts, codes: codes, time: PWH.freq.timeOf(res.total || 0, res.order.length, lifts) };
-    });
+  // the route of one round of a Product, as the pick route page draws it (ov = the swap scenario, or none)
+  function sideRoute(product, plant, ov) {
+    var codes = PWH.freq.partsOf(S.d, product, plant), picks = {}, items = [];
+    codes.forEach(function (c) { var pk = PWH.freq.pickOf(S.d, c, ov); picks[c] = pk; if (pk.status === 'ok') items.push({ key: c, cands: [{ bin: pk.bin, rack: pk.rack, level: pk.level, floor: pk.floor, stock: 1 }] }); });
+    var res = items.length ? PWH.route.plan(S.d.L, items) : { order: [], legs: [], total: 0, unreachable: [] };
+    var seq = {}, runs = [];
+    res.order.forEach(function (o, i) { seq[o.key] = i + 1; var f = picks[o.key].floor, last = runs[runs.length - 1]; if (last && last.floor === f) last.n++; else runs.push({ floor: f, n: 1 }); });
+    var cur = res.start ? res.start.floor : null, lifts = 0; runs.forEach(function (r) { if (cur && r.floor !== cur) lifts++; cur = r.floor; }); if (res.drop && cur !== res.drop.floor) lifts++;
+    return { res: res, picks: picks, seq: seq, runs: runs, lifts: lifts, codes: codes, swapped: {}, time: PWH.freq.timeOf(res.total || 0, res.order.length, lifts) };
+  }
+  function pairRoutes(R, prod) {
+    var P = S.base.products.filter(function (x) { return x.product === prod; })[0]; if (!P || !P.plant) return null;
+    if (S.rcache && S.rcache.key === prod && S.rcache.R === R) return S.rcache;
+    var out = { key: prod, R: R, plant: P.plant, rounds: P.rounds }, sw = {};
+    R.pairs.forEach(function (s) { sw[s.a.code] = '#f2b705'; sw[s.b.code] = '#22d3ee'; });
+    out.before = sideRoute(prod, P.plant, null); out.after = sideRoute(prod, P.plant, R.ov);
+    out.before.swapped = out.after.swapped = sw;
     S.rcache = out; return out;
   }
   function mins(sec) { return Math.max(1, Math.round(sec / 60)); }
@@ -494,10 +510,10 @@
   function routeCard(side, sd, other) {
     var V = S.rp[side], fl = S.d.L.floors, fi = V.floor == null ? Math.max(0, fl.map(function (f) { return f.id; }).indexOf(sd.runs.length ? sd.runs[0].floor : fl[0].id)) : V.floor;
     V.floor = fi;
-    var dm = sd.res.total - other.res.total, dt = sd.time.sec - other.time.sec;
-    var delta = side === 'after' && (Math.abs(dm) >= 0.5) ? '<span class="m4dl ' + (dm < 0 ? 'good' : 'up') + '">' + esc(t(dm < 0 ? 'm4.down' : 'm4.up', { m: m(Math.abs(dm)) })) + ' · ' + esc(t(dt < 0 ? 'm4.tdown' : 'm4.tup', { n: Math.max(1, Math.round(Math.abs(dt) / 60)) })) + '</span>' : '';
+    var dm = other ? sd.res.total - other.res.total : 0, dt = other ? sd.time.sec - other.time.sec : 0;
+    var delta = other && side === 'after' && (Math.abs(dm) >= 0.5) ? '<span class="m4dl ' + (dm < 0 ? 'good' : 'up') + '">' + esc(t(dm < 0 ? 'm4.down' : 'm4.up', { m: m(Math.abs(dm)) })) + ' · ' + esc(t(dt < 0 ? 'm4.tdown' : 'm4.tup', { n: Math.max(1, Math.round(Math.abs(dt) / 60)) })) + '</span>' : '';
     return '<div class="m4rp" id="m4rp-' + side + '"><div class="m2mapcard m4rpbox" data-fsbox>' +
-      '<div class="m4rph"><b class="m4rpt">' + esc(t(side === 'before' ? 'm4.before' : 'm4.after')) + '</b>' +
+      '<div class="m4rph">' + (side === 'pv' ? '' : '<b class="m4rpt">' + esc(t(side === 'before' ? 'm4.before' : 'm4.after')) + '</b>') +
       '<span class="m4rpk"><span class="k">' + esc(t('m3.kpi.dist')) + '</span><span class="v">' + mm(sd.res.total || 0) + '</span></span>' +
       '<span class="m4rpk" title="' + esc(t('m3.kpi.time_tip', { w: mins(sd.time.walk), n: sd.res.order.length, p: PWH.SIM.pick, l: sd.lifts, ls: PWH.SIM.lift, v: PWH.SIM.walk })) + '"><span class="k">' + esc(t('m4.simtime')) + '</span><span class="v">' + esc(t('m3.kpi.min', { n: mins(sd.time.sec) })) + '</span><span class="s">' + esc(t('m3.kpi.split', { w: mins(sd.time.walk), p: mins(sd.time.pick + sd.time.lift) })) + '</span></span>' + delta + '</div>' +
       flowLine(sd) +
@@ -505,10 +521,11 @@
       '<span class="grow"></span><button type="button" class="btn sm" data-m4="rz" data-k="' + side + '" data-v="out" aria-label="' + esc(t('m4.h.zout')) + '">−</button><button type="button" class="btn sm" data-m4="rz" data-k="' + side + '" data-v="in" aria-label="' + esc(t('m4.h.zin')) + '">+</button><button type="button" class="btn sm" data-m4="rz" data-k="' + side + '" data-v="fit">' + esc(t('m4.h.fit')) + '</button><button type="button" class="btn sm" data-m4="rfs" data-k="' + side + '">' + esc(t('m4.h.fs')) + '</button></div>' +
       '<div class="m2canvas" id="m2wrap"><canvas id="m2cv" tabindex="0" aria-label="' + esc(t('m4.map.aria')) + '"></canvas><div id="m2tip" class="m2tip" hidden></div></div></div></div>';
   }
-  function routePair(R) {
-    var X = pairRoutes(R); if (!X) return '';
-    var list = R.byProd.map(function (x) { return x.product; });
-    var html = '<h3>' + esc(t('m4.rp.title')) + '</h3><div class="m4mbar"><label class="m4f"><span>' + esc(t('m4.map.product')) + '</span><select id="m4sprod">' + list.map(function (p) { return '<option value="' + esc(p) + '"' + (p === S.simProd ? ' selected' : '') + '>' + esc(p + (prodName(p) ? ' · ' + prodName(p) : '')) + '</option>'; }).join('') + '</select></label><span class="sub2">' + esc(t('m4.rp.note', { n: X.rounds })) + '</span></div>' +
+  function routePair(R, which) {
+    var list = R.byProd.map(function (x) { return x.product; }); if (!list.length) return '';
+    var key = which + 'Prod'; if (list.indexOf(S[key]) < 0) S[key] = list[0];
+    var X = pairRoutes(R, S[key]); if (!X) return '';
+    var html = '<h3>' + esc(t('m4.rp.title')) + '</h3><div class="m4mbar"><label class="m4f"><span>' + esc(t('m4.map.product')) + '</span><select id="m4sprod" data-w="' + which + '">' + list.map(function (p) { return '<option value="' + esc(p) + '"' + (p === S[key] ? ' selected' : '') + '>' + esc(p + (prodName(p) ? ' · ' + prodName(p) : '')) + '</option>'; }).join('') + '</select></label><span class="sub2">' + esc(t('m4.rp.note', { n: X.rounds })) + '</span></div>' +
       '<div class="m4rpair">' + routeCard('before', X.before, X.after) + routeCard('after', X.after, X.before) + '</div>';
     // order of the picks before and after, A / B and changed rows marked
     var swapped = {}; R.pairs.forEach(function (s) { swapped[s.a.code] = 'A'; swapped[s.b.code] = 'B'; });
@@ -524,13 +541,12 @@
     return html;
   }
   function drawPair(side) {
-    var root = $('#m4rp-' + side), X = S.rcache; if (!root || !X) return;
-    var sd = X[side], V = S.rp[side], res = sd.res;
+    var root = $('#m4rp-' + side), sd = side === 'pv' ? S.pvRoute && S.pvRoute.sd : S.rcache && S.rcache[side]; if (!root || !sd) return;
+    var V = S.rp[side], res = sd.res, swapped = sd.swapped || {};
     var K = S.kits['rp-' + side] || (S.kits['rp-' + side] = PWH.mapKit('pwh-m4rp'));
     K.M.root = root; K.M.canvas = null; K.M.layout = S.d.L; K.M.match = S.d.match; K.M.names = true; K.M.rackTint = null; K.M.noDim = false; K.M.noNums = true;
     K.M.mode = V.mode; K.M.floor = V.floor; K.M.sel = null; K.M.hl = null; K.M.onSelect = function () {};
     var racks = new Set(); res.order.forEach(function (o) { var pk = sd.picks[o.key]; if (pk.rack) racks.add(pk.rack); }); K.M.focus = racks;
-    var swapped = {}; X.R.pairs.forEach(function (s) { swapped[s.a.code] = '#f2b705'; swapped[s.b.code] = '#22d3ee'; });
     K.M.overlay = function (c, Pj, f, o) {
       c.save(); c.lineJoin = 'round'; c.lineCap = 'round';
       (res.legs || []).forEach(function (l) {
@@ -567,15 +583,15 @@
     var stale = S.stale ? '<div class="m3banner m4stale" role="status"><span>' + esc(t('m4.stale')) + '</span><button type="button" class="btn sm primary" data-m4="recalc">' + esc(t('m4.f.recalc')) + '</button></div>' : '';
     var err = S.err ? '<div class="msg bad" role="status"><span>' + esc(t('m4.err.run', { e: S.err })) + '</span><button type="button" class="btn sm" data-m4="recalc">' + esc(t('m4.retry')) + '</button></div>' : '';
     S.slots = null;
-    var body = !S.base ? '' : S.tab === 'freq' ? freqTab() : S.tab === 'recs' ? recsTab() : simTab();
+    var gate = S.base && S.base.products.some(function (p) { return p.needPlant; });
+    var body = !S.base ? '' : gate ? plantPanel(true) : (S.showPlant ? plantPanel(false) : '') + (S.tab === 'freq' ? freqTab() : S.tab === 'recs' ? recsTab() : simTab());
     var heldWin = window.scrollY;
     R.innerHTML = head + note + stale + toolbar() + scopeLine() + busyHtml() + err + '<div class="m4body' + (S.busy && S.base ? ' m4old' : '') + (S.stale ? ' m4old' : '') + '">' + body + '</div>';
     window.scrollTo(0, heldWin);
     wire();
     if (S.base && S.slots) Object.keys(S.slots).forEach(function (k) { if ($('#m4h-' + k)) mountHeat(S.slots[k]); });
-    if ($('#m4rb-pv')) drawRoute('pv');
-    if ($('#m4rb-r')) drawRoute('r');
     if ($('#m4rp-before')) { drawPair('before'); drawPair('after'); }
+    if ($('#m4rp-pv')) drawPair('pv');
   }
   function wire() {
     var f1 = $('#m4from'), f2 = $('#m4to');
@@ -588,20 +604,43 @@
       inp.addEventListener('input', function () { S.hq = inp.value; var K = S.kits.f; if (K) { K.M.hl = heatMatches(S.hq); K.draw(); } });
       inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { var K = S.kits.f, set = heatMatches(inp.value); if (K && set && set.size) K.zoomToRacks(Array.from(set)); } });
     });
-    S.root.querySelectorAll('.m4psel').forEach(function (sel) { sel.addEventListener('change', function () { if (!sel.value) return; S.plantPick[sel.getAttribute('data-prod')] = sel.value; run(); }); });
     var rs = $('#m4round'); if (rs) rs.addEventListener('change', function () { S.prodRound = +rs.value; render(); });
-    var spd = $('#m4sprod'); if (spd) spd.addEventListener('change', function () { S.simProd = spd.value; S.rp.before.floor = S.rp.after.floor = null; render(); });
+    var spd = $('#m4sprod'); if (spd) spd.addEventListener('change', function () { S[spd.getAttribute('data-w') + 'Prod'] = spd.value; S.rp.before.floor = S.rp.after.floor = null; render(); });
     var rp = $('#m4rprod'); if (rp) rp.addEventListener('change', function () { S.view.prod = rp.value; if (S.view.kind === 's') S.simProd = rp.value; drawRoute(S.view.kind); });
     var add = $('#m4add');
     if (add) {
       add.addEventListener('submit', function (e) { e.preventDefault(); addSim(); });
       ['a', 'b'].forEach(function (k) {
-        var inp = $('#m4' + k); inp.addEventListener('change', function () { S.form[k] = inp.value.trim().toUpperCase(); S.form[k + 'b'] = ''; render(); });
+        var inp = $('#m4' + k), box = $('#m4sug-' + k), hits = [];
+        function choose(code) { S.form[k] = code; S.form[k + 'b'] = ''; render(); var nx = $('#m4' + k + 'b'); if (nx) nx.focus(); }
+        function show() {
+          hits = partHits(inp.value);
+          box.innerHTML = hits.length ? hits.map(function (h, i) { return '<span class="m4sgi" role="option" data-i="' + i + '"><span class="code">' + esc(h.code) + '</span><span class="sub2">' + esc(h.name || '–') + '</span><span class="sub2">' + esc(h.info) + '</span></span>'; }).join('') : (inp.value.trim() ? '<span class="m4sgn">' + esc(t('m4.sim.nohit')) + '</span>' : '');
+          box.hidden = !box.innerHTML; inp.setAttribute('aria-expanded', String(!box.hidden));
+        }
+        inp.addEventListener('input', show);
+        inp.addEventListener('focus', function () { if (inp.value.trim() && inp.value.trim().toUpperCase() !== S.form[k]) show(); });
+        inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); if (hits.length) choose(hits[0].code); } else if (e.key === 'Escape') { box.hidden = true; } });
+        inp.addEventListener('blur', function () { setTimeout(function () { if (!document.body.contains(box)) return; box.hidden = true; var v = inp.value.trim().toUpperCase(); if (v && v !== S.form[k] && S.d.bins.has(v)) choose(v); }, 150); });
+        box.addEventListener('mousedown', function (e) { var it = e.target.closest('[data-i]'); if (!it) return; e.preventDefault(); choose(hits[+it.getAttribute('data-i')].code); });
         var sel = $('#m4' + k + 'b'); sel.addEventListener('change', function () { S.form[k + 'b'] = sel.value; });
       });
     }
   }
   function wireQ() { var q = $('#m4q'); if (q && !q.dataset.w) { q.dataset.w = 1; } }
+  // Part search for the swap form: any part of the code (e.g. 11236) or of the name; Parts with a bin first
+  function partHits(q) {
+    q = String(q || '').trim().toUpperCase(); if (q.length < 2) return [];
+    var freq = new Map(); S.base.parts.forEach(function (p) { freq.set(p.code, p); });
+    var out = [];
+    S.d.bins.forEach(function (bins, code) {
+      var name = partName(code), C = code.toUpperCase(), at = C.indexOf(q), nm = at < 0 && name.toUpperCase().indexOf(q) >= 0;
+      if (at < 0 && !nm) return;
+      var f = freq.get(code), pk = f ? f.pick : PWH.freq.pickOf(S.d, code);
+      out.push({ code: code, name: name, rank: (at === 0 ? 0 : at > 0 ? 1 : 2) * 1e6 - (f ? f.nRoute : 0), info: pk.status === 'ok' ? pk.bin + ' · ' + t('m4.times', { n: nf(f ? f.nRoute : 0) }) : t('m4.loc.' + pk.status) });
+    });
+    return out.sort(function (a, b) { return a.rank - b.rank || (a.code < b.code ? -1 : 1); }).slice(0, 12);
+  }
   function addSim() {
     var F = S.form; S.simMsg = '';
     F.a = ($('#m4a').value || '').trim().toUpperCase(); F.b = ($('#m4b').value || '').trim().toUpperCase();
@@ -626,9 +665,14 @@
     var a = el.getAttribute('data-m4'), v = el.getAttribute('data-v'), k = el.getAttribute('data-k');
     if (a === 'tab') goTab(v);
     else if (a === 'recalc') run(true);
-    else if (a === 'clear') { var r = PWH.freq.defaultRange(S.d); S.from = r.from; S.to = r.to; S.product = ''; S.q = ''; S.prodView = null; S.plantPick = {}; run(); }
+    else if (a === 'clear') { var r = PWH.freq.defaultRange(S.d); S.from = r.from; S.to = r.to; S.product = ''; S.q = ''; S.prodView = null; S.plantPick = {}; S.plantDraft = {}; run(); }
     else if (a === 'open') { if (e.target.closest('button') && e.target.closest('button') !== el) return; S.open = S.open === v ? null : v; render(); }
     else if (a === 'sort') { S.sort = v; render(); }
+    else if (a === 'pdraft') { S.plantDraft[k] = v; render(); }
+    else if (a === 'pall') { ambiguous().forEach(function (p) { if (p.plants.indexOf(v) >= 0) S.plantDraft[p.product] = v; }); render(); }
+    else if (a === 'papply') { Object.keys(S.plantDraft || {}).forEach(function (p) { S.plantPick[p] = S.plantDraft[p]; }); S.plantDraft = {}; S.showPlant = false; run(); }
+    else if (a === 'pchange') { S.showPlant = true; S.plantDraft = {}; render(); var pp = $('#m4plant'); if (pp) pp.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+    else if (a === 'pclose') { S.showPlant = false; S.plantDraft = {}; render(); }
     else if (a === 'more') { S.partsMax += 60; render(); }
     else if (a === 'prod') { S.prodView = S.prodView === v ? null : v; S.prodRound = 0; render(); var pv = $('#m4pv'); if (pv) pv.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     else if (a === 'onmap') { e.stopPropagation(); selectRackOf(v); }
@@ -638,8 +682,10 @@
     else if (a === 'hfloor') { S.hFloor = +v; S.root.querySelectorAll('[data-m4=hfloor]').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-v') === v); }); Object.keys(S.kits).forEach(function (kk) { if (kk.indexOf('r-') === 0) return; var K = S.kits[kk]; if (K.M.canvas && document.body.contains(K.M.canvas)) { K.M.floor = S.hFloor; K.fit(); K.draw(); } }); }
     else if (a === 'hz') { var K = S.kits[k]; if (!K || !K.M.canvas) return; if (v === 'fit') { K.fit(); K.draw(); } else { var c = K.M.canvas; K.zoomAt(c.clientWidth / 2, c.clientHeight / 2, v === 'in' ? 1.25 : 0.8); } }
     else if (a === 'hfs') { var K2 = S.kits[k]; if (K2) { K2.toggleFs(el); setTimeout(function () { el.textContent = t(K2.M.fs ? 'm4.h.fsexit' : 'm4.h.fs'); }, 80); } }
-    else if (a === 'ropen') { S.recOpen = S.recOpen === +v ? null : +v; S.view = null; render(); }
-    else if (a === 'tosim') { var rr = S.recs.list[+v]; if (!S.sim.some(function (s) { return s.a.code === rr.a.code && s.b.code === rr.b.code; })) S.sim = [{ a: rr.a, b: rr.b, rules: PWH.freq.checkSwap(S.d, rr.a, rr.b) }]; S.simRes = null; S.view = null; goTab('sim'); if (!S.sim[0].rules.length) runSim(); }
+    else if (a === 'ropen') { if (e.target.closest('button') && e.target.closest('button') !== el) return; S.recOpen = S.recOpen === +v ? null : +v; S.rcache = null; S.recProd = null; S.rp.before.floor = S.rp.after.floor = null; render(); }
+    else if (a === 'simall') { S.sim = S.recs.list.map(function (r) { return { a: r.a, b: r.b, rules: PWH.freq.checkSwap(S.d, r.a, r.b) }; }); S.simRes = null; S.rcache = null; goTab('sim'); if (!S.sim.some(function (x) { return x.rules.length; })) runSim(); }
+    else if (a === 'goiss') { var is = $('#m4iss'); if (is) { is.querySelectorAll('details').forEach(function (d) { d.open = true; }); is.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }
+    else if (a === 'tosim') { e.stopPropagation(); S.rcache = null; var rr = S.recs.list[+v]; if (!S.sim.some(function (s) { return s.a.code === rr.a.code && s.b.code === rr.b.code; })) S.sim = [{ a: rr.a, b: rr.b, rules: PWH.freq.checkSwap(S.d, rr.a, rr.b) }]; S.simRes = null; S.view = null; goTab('sim'); if (!S.sim[0].rules.length) runSim(); }
     else if (a === 'simdel') { S.sim.splice(+v, 1); S.simRes = null; render(); }
     else if (a === 'simclear') { S.sim = []; S.simRes = null; S.simMsg = ''; S.view = null; render(); }
     else if (a === 'simrun') runSim();
