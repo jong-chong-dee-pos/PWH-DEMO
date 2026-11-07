@@ -52,6 +52,7 @@
       o.f.racks.forEach(mark); o.f.outside.forEach(mark);
     });
     var graph = { F: F, N: N, walk: walk, floorOf: floorOf, scale: layout.scale, links: {}, rackAccess: new Map(), bridges: 0 };
+    dropZone(graph, block);
     bridge(graph, block);
     // racks stay blocked (they are never painted); find the walkable cells that touch each rack
     F.forEach(function (o) {
@@ -64,6 +65,7 @@
             if (!onRing || cx < 0 || cy < 0 || cx >= o.W || cy >= o.H) continue;
             var n = o.off + cy * o.W + cx; if (walk[n]) cells.push(n);
           }
+          if (graph.zone) { var outZ = cells.filter(function (c) { return !graph.zone[c]; }); if (outZ.length) cells = outZ; }
         }
         graph.rackAccess.set(r.id, cells);
       });
@@ -99,6 +101,37 @@
     }
     cache = { key: key, graph: graph };
     return graph;
+  }
+
+  /* The lift / START / DROP corner of the DROP floor is walled off: its only opening is the door nearest DROP.
+   * Zone = box around that door, START, the lifts and the exit on that floor, plus the DROP strip and the gap between
+   * them. Every open cell inside is walkable (the file does not colour that floor); a step between the zone and the
+   * rest of the floor is allowed only through the door, across it (north-south for a wide door, east-west for a tall one). */
+  function dropZone(gr, block) {
+    var F = gr.F, fi = -1, drop = null;
+    F.forEach(function (o, i) { o.f.markers.forEach(function (m) { if (m.type === 'drop' && !drop) { drop = m; fi = i; } }); });
+    if (!drop) return;
+    var o = F[fi], mk = o.f.markers, cx = drop.x + drop.w / 2, cy = drop.y + drop.h / 2, door = null, bd = Infinity;
+    mk.forEach(function (m) { if (m.type !== 'door') return; var d = Math.pow(m.x + m.w / 2 - cx, 2) + Math.pow(m.y + m.h / 2 - cy, 2); if (d < bd) { bd = d; door = m; } });
+    if (!door) return;
+    var inBox = mk.filter(function (m) { return m === door || m.type === 'start' || m.type === 'lift' || m.type === 'exit'; });
+    var x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    inBox.forEach(function (m) { x0 = Math.min(x0, m.x); y0 = Math.min(y0, m.y); x1 = Math.max(x1, m.x + m.w); y1 = Math.max(y1, m.y + m.h); });
+    var rects = [{ x: x0, y: y0, w: x1 - x0, h: y1 - y0 }, drop];
+    if (drop.y + drop.h < y0) rects.push({ x: drop.x, y: drop.y + drop.h, w: drop.w, h: y0 - drop.y - drop.h });   // DROP strip down to the zone
+    else if (drop.y > y1) rects.push({ x: drop.x, y: y1, w: drop.w, h: drop.y - y1 });
+    var zone = new Uint8Array(gr.N), dcell = new Uint8Array(gr.N);
+    function inside(r, px, py) { return px >= r.x && px < r.x + r.w && py >= r.y && py < r.y + r.h; }
+    for (var yy = 0; yy < o.H; yy++) for (var xx = 0; xx < o.W; xx++) {
+      var n = o.off + yy * o.W + xx, px = o.x0 + (xx + 0.5) * G, py = o.y0 + (yy + 0.5) * G;
+      if (rects.some(function (r) { return inside(r, px, py); })) { zone[n] = 1; if (!block[n]) gr.walk[n] = 1; if (inside(door, px, py)) dcell[n] = 1; }
+    }
+    gr.zone = zone; gr.zoneDoor = dcell; gr.doorNS = door.w >= door.h;
+  }
+  function canStep(gr, a, b, vertical) {
+    if (!gr.zone || gr.zone[a] === gr.zone[b]) return true;
+    var z = gr.zone[a] ? a : b;
+    return gr.zoneDoor[z] === 1 && vertical === gr.doorNS;
   }
 
   // Parts of the walkable area that are not joined to the main aisles (the file only colours the cart aisles, so
@@ -149,10 +182,10 @@
       for (var i = 0; i < b.length; i++) {
         var n = b[i]; if (dist[n] !== d) continue;
         var o = F[floorOf[n]], rel = n - o.off, y = (rel / o.W) | 0, x = rel - y * o.W;
-        if (x > 0 && walk[n - 1]) relax(n - 1, d + 1, n);
-        if (x < o.W - 1 && walk[n + 1]) relax(n + 1, d + 1, n);
-        if (y > 0 && walk[n - o.W]) relax(n - o.W, d + 1, n);
-        if (y < o.H - 1 && walk[n + o.W]) relax(n + o.W, d + 1, n);
+        if (x > 0 && walk[n - 1] && canStep(gr, n, n - 1, false)) relax(n - 1, d + 1, n);
+        if (x < o.W - 1 && walk[n + 1] && canStep(gr, n, n + 1, false)) relax(n + 1, d + 1, n);
+        if (y > 0 && walk[n - o.W] && canStep(gr, n, n - o.W, true)) relax(n - o.W, d + 1, n);
+        if (y < o.H - 1 && walk[n + o.W] && canStep(gr, n, n + o.W, true)) relax(n + o.W, d + 1, n);
         var lk = gr.links[n];
         if (lk) for (var k = 0; k < lk.length; k++) relax(lk[k][0], d + lk[k][1], n);
       }
