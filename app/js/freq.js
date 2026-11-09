@@ -265,8 +265,8 @@
           var b0 = r.byProd[p].m, a0 = ar && ar.byProd[p] ? ar.byProd[p].m : b0, bs = r.byProd[p].sec, as = ar && ar.byProd[p] ? ar.byProd[p].sec : bs;
           secB += bs; secA += as;
           if (ar && ar.byProd[p] && !ar.byProd[p].complete && r.byProd[p].complete) lost.push({ round: r, product: p });
-          var x = prod.get(p); if (!x) prod.set(p, (x = { product: p, rounds: 0, before: 0, after: 0 }));
-          x.rounds++; x.before += b0; x.after += a0; before += b0; aft += a0;
+          var x = prod.get(p); if (!x) prod.set(p, (x = { product: p, rounds: 0, before: 0, after: 0, secBefore: 0, secAfter: 0 }));
+          x.rounds++; x.before += b0; x.after += a0; x.secBefore += bs; x.secAfter += as; before += b0; aft += a0;
         });
       });
       var all = Array.from(prod.values()), changed = all.filter(function (x) { return Math.abs(x.after - x.before) > 0.5; });

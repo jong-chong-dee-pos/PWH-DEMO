@@ -815,11 +815,18 @@
   "m4.rc.save": "ลดลง",   // Shorter by
   "m4.rc.time": "เวลาจำลอง",   // Simulated time
   "m4.rc.rule": "กติกา",   // Rules
-  "m4.rc.note": "คิดผลทีละคู่ · คลิกแถวเพื่อดูเหตุผล Product ที่ได้/เสีย และเส้นทางก่อน–หลัง · ยังไม่ตรวจขนาด/น้ำหนัก (ไม่มีข้อมูล)",   // Each pair is counted alone. Click a row for the reason, the Products that gain or lose, and the route before and after. Size and weight are not checked yet (no data).
+  "m4.rc.note": "คิดผลทีละคู่ · คลิกแถวเพื่อดูผลราย Product ก่อน–หลัง (ระยะ · % · เวลาจำลอง) และเส้นทาง · ยังไม่ตรวจขนาด/น้ำหนัก (ไม่มีข้อมูล)",   // Each pair is counted alone. Click a row to see each Product before and after (distance, %, simulated time) and the routes. Size and weight are not checked yet (no data).
   "m4.pp.title2": "เปลี่ยน Plant ของ {n} Product",   // Change the Plant of {n} Products
   "m4.pp.sub2": "Product เหล่านี้มี BOM มากกว่า 1 Plant และ JOB ไม่อยู่ในแผนรายเดือน ผลจะแสดงเมื่อเลือก Plant ครบทุกตัว · ค่าที่เลือกจำไว้ระหว่างเปิดหน้านี้",   // These Products have a BOM in more than one Plant and their JOB is not in the monthly plan. The results appear once every Product has a Plant. The choice is kept while this page is open.
   "m4.pp.need": "ต้องเลือกให้ครบทุก Product",   // choose a Plant for every Product
   "m4.pp.change": "เปลี่ยน Plant ({n})",   // Change Plant ({n})
+  "m4.rc.affect": "มีผลต่อ {n} Product",   // affects {n} Products
+  "m4.rc.effect": "ผลกระทบ",   // Effect
+  "m4.rc.detail": "คู่ที่ {n}: {a} ⇄ {b}",   // Pair {n}: {a} ⇄ {b}
+  "m4.cmp.byprod": "ผลราย Product",   // Result per Product
+  "m4.cmp.total": "รวมทุก Product",   // All Products
+  "m4.cmp.click": "คลิก Product เพื่อดูเส้นทางก่อน–หลังด้านล่าง",   // Click a Product to see its route before and after below.
+  "m4.rp.base": "ตำแหน่งปัจจุบัน",   // current layout
   "m5.intro": "กติกาที่ใช้ตรวจทุกการสลับ Part และ Bin ที่ล็อกจะไม่ถูกเสนอและสลับไม่ได้",   // Rules every swap is checked against. Locked Parts and bins are never suggested or swapped.
   "m5.rules.title": "กติกาที่ใช้",   // Rules in use
   "m5.rules.sub": "ตามที่ตกลงกับคลัง",   // Agreed with the warehouse

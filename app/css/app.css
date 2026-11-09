@@ -1555,3 +1555,20 @@ a { text-underline-offset: 3px; }
 .m4recd { display: flex; flex-direction: column; gap: var(--sp-2); padding: var(--sp-2) 0; }
 .m4pvg { grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); }
 .m4pvg .tablebox { max-height: 640px; }
+
+/* ---------- v39 route pair: two maps on one grid, rows line up ---------- */
+.m4rpair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: repeat(4, auto); column-gap: var(--sp-4); row-gap: 0; align-items: stretch; }
+.m4rp { display: grid; grid-row: span 4; grid-template-rows: subgrid; min-width: 0; }
+.m4rpbox { grid-row: span 4; display: grid; grid-template-rows: subgrid; row-gap: var(--sp-2); }
+.m4rpbox > * { min-width: 0; }
+.m4rph { min-height: 0; align-items: center; }
+.m4rpbox .m4htool { margin: 0; }
+.m4rpbox .m2canvas { height: 480px !important; }
+.m2mapcard.m4rpbox.fs { display: flex; flex-direction: column; }
+@media (max-width: 1100px) { .m4rpair { grid-template-columns: minmax(0, 1fr); grid-template-rows: none; row-gap: var(--sp-4); } .m4rp, .m4rpbox { grid-row: auto; grid-template-rows: none; display: block; } .m4rpbox > * + * { margin-top: var(--sp-2); } }
+.m4dl.none { background: var(--surface-2); color: var(--muted); font-weight: 500; }
+.m4cmpt td { vertical-align: top; } .m4cmpt tfoot td { border-top: 2px solid var(--line); background: var(--surface-2); }
+.m4cmpt .sub2.good { color: var(--ok); } .m4cmpt .sub2.up { color: var(--err); }
+.m4recdp { scroll-margin-top: 80px; }
+.m4recd > h3 { margin-top: var(--sp-3); }
+.m4recd > h3 + .sub2 { margin-top: calc(-1 * var(--sp-2)); }

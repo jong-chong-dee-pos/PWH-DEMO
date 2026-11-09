@@ -185,6 +185,14 @@
   }
   // Products whose BOM is in more than one Plant: the person chooses the Plant before the results are shown
   function ambiguous() { return S.base ? S.base.products.filter(function (p) { return p.needPlant || p.how === 'user' || (S.plantPick[p.product] && p.plants.length > 1); }) : []; }
+  function plantRefresh() {
+    var box = $('#m4plant'); if (!box) return;
+    var list = ambiguous(), D = S.plantDraft, n = list.filter(function (p) { return D[p.product]; }).length;
+    box.querySelectorAll('[data-m4=pdraft]').forEach(function (b) { b.setAttribute('aria-pressed', String(D[b.getAttribute('data-k')] === b.getAttribute('data-v'))); });
+    var ap = box.querySelector('[data-m4=papply]'); ap.disabled = n !== list.length; ap.textContent = t('m4.pp.apply', { n: n, of: list.length });
+    var need = box.querySelector('.m4ppneed'); if (need) need.hidden = n === list.length;
+    box.querySelectorAll('[data-m4=pall]').forEach(function (b) { var v = b.getAttribute('data-v'); b.classList.toggle('primary', n === list.length && list.every(function (p) { return D[p.product] === v || p.plants.indexOf(v) < 0; })); });
+  }
   function plantPanel(gate) {
     var list = ambiguous(); if (!list.length) return '';
     var plants = []; list.forEach(function (p) { p.plants.forEach(function (x) { if (plants.indexOf(x) < 0) plants.push(x); }); }); plants.sort();
@@ -197,8 +205,8 @@
     var n = list.filter(function (p) { return D[p.product]; }).length;
     return '<section class="panel m4plant" id="m4plant"><div class="chd"><div class="chd-l"><h2>' + esc(t(gate ? 'm4.pp.title' : 'm4.pp.title2', { n: list.length })) + '</h2><p class="sub">' + esc(t('m4.pp.sub2')) + '</p></div>' + (gate ? '' : '<button type="button" class="btn sm" data-m4="pclose">' + esc(t('m4.close')) + '</button>') + '</div>' +
       '<div class="m4ppall"><span class="sub2">' + esc(t('m4.pp.all')) + '</span>' + plants.map(function (x) { return '<button type="button" class="btn' + (list.every(function (p) { return D[p.product] === x || p.plants.indexOf(x) < 0; }) && n === list.length ? ' primary' : '') + '" data-m4="pall" data-v="' + esc(x) + '">' + esc(t('m4.pp.use', { p: x })) + '</button>'; }).join('') + '</div>' +
-      '<details class="m4ppl"' + (list.length <= 12 ? ' open' : '') + '><summary>' + esc(t('m4.pp.each', { n: list.length })) + '</summary><div class="m4pplist">' + rows + '</div></details>' +
-      '<div class="m4acts"><button type="button" class="btn primary" data-m4="papply"' + (n === list.length ? '' : ' disabled') + '>' + esc(t('m4.pp.apply', { n: n, of: list.length })) + '</button>' + (n === list.length ? '' : '<span class="sub2">' + esc(t('m4.pp.need')) + '</span>') + '</div></section>';
+      '<details class="m4ppl"' + (list.length <= 12 || S.ppOpen ? ' open' : '') + '><summary>' + esc(t('m4.pp.each', { n: list.length })) + '</summary><div class="m4pplist">' + rows + '</div></details>' +
+      '<div class="m4acts"><button type="button" class="btn primary" data-m4="papply"' + (n === list.length ? '' : ' disabled') + '>' + esc(t('m4.pp.apply', { n: n, of: list.length })) + '</button>' + '<span class="sub2 m4ppneed"' + (n === list.length ? ' hidden' : '') + '>' + esc(t('m4.pp.need')) + '</span></div></section>';
   }
 
   // a Product: its route as the pick route page shows it, and the pick order
@@ -342,6 +350,22 @@
       return '<div class="m4cr"><span class="code">' + esc(x.product) + '</span><div class="m4cb"><i class="b" style="width:' + (x.before / max * 100) + '%"></i><i class="a' + (up ? ' up' : '') + '" style="width:' + (x.after / max * 100) + '%"></i></div><span class="m4cv' + (up ? ' up' : '') + '">' + m(x.before) + ' → ' + m(x.after) + ' ' + esc(t('m4.unit')) + ' (' + (up ? '+' : '−') + m(Math.abs(x.after - x.before)) + ')</span></div>';
     }).join('') + '<div class="m4leg"><span><i class="b"></i>' + esc(t('m4.before')) + '</span><span><i class="a"></i>' + esc(t('m4.after')) + '</span><span><i class="a up"></i>' + esc(t('m4.worse')) + '</span></div></div>';
   }
+  function prodCmp(byProd) {
+    if (!byProd.length) return '<p class="sub">' + esc(t('m4.sim.nochange')) + '</p>';
+    var tb = 0, ta = 0, sb = 0, sa = 0;
+    var rows = byProd.map(function (x) {
+      tb += x.before; ta += x.after; sb += x.secBefore || 0; sa += x.secAfter || 0;
+      return cmpRow('<span class="code">' + esc(x.product) + '</span><div class="sub2">' + esc(prodName(x.product) || '–') + '</div>', x.rounds, x.before, x.after, x.secBefore || 0, x.secAfter || 0, x.product);
+    }).join('');
+    return '<div class="tablebox m4tb"><table class="m4cmpt"><thead><tr><th>' + esc(t('m4.col.product')) + '</th><th class="num">' + esc(t('m4.col.rounds')) + '</th><th class="num">' + esc(t('m4.before')) + '</th><th class="num">' + esc(t('m4.after')) + '</th><th class="num">' + esc(t('m4.col.change')) + '</th><th class="num">%</th><th class="num">' + esc(t('m4.rc.time')) + '</th></tr></thead><tbody>' + rows + '</tbody>' +
+      '<tfoot>' + cmpRow('<b>' + esc(t('m4.cmp.total')) + '</b>', null, tb, ta, sb, sa) + '</tfoot></table></div>';
+  }
+  function cmpRow(label, rounds, b, a, sb, sa, prod) {
+    var d = b - a, up = d < -0.5, ds = sb - sa;
+    return '<tr' + (prod ? ' class="m4r" data-m4="cprod" data-v="' + esc(prod) + '" tabindex="0"' : '') + '><td class="m4pn">' + label + '</td><td class="num">' + (rounds == null ? '' : nf(rounds)) + '</td><td class="num">' + mm(b) + '</td><td class="num">' + mm(a) + '</td>' +
+      '<td class="num ' + (up ? 'up' : Math.abs(d) < 0.5 ? '' : 'good') + '"><b>' + diffTxt(b, a) + '</b></td><td class="num">' + pct(b > 0 ? d / b * 100 : null) + '</td>' +
+      '<td class="num">' + esc(t('m3.kpi.min', { n: Math.round(sb / 60) })) + ' → ' + esc(t('m3.kpi.min', { n: Math.round(sa / 60) })) + '<div class="sub2 ' + (ds < 0 ? 'up' : 'good') + '">' + (Math.abs(ds) < 30 ? esc(t('m4.same')) : esc(t(ds > 0 ? 'm4.tdown' : 'm4.tup', { n: Math.max(1, Math.round(Math.abs(ds) / 60)) }))) + '</div></td></tr>';
+  }
   function recsTab() {
     var R = S.recs, B = S.base;
     var scope = '<div class="m4note">' + esc(t('m4.recs.scope2', { c: nf(B.identified.length), n: nf(B.rounds.length), p: nf(B.partial.length), x: nf(B.rounds.length - B.identified.length) })) + (S.product ? ' ' + esc(t('m4.recs.only', { p: S.product })) : ' ' + esc(t('m4.recs.all'))) + '</div>';
@@ -350,21 +374,21 @@
     var sum = R.list.reduce(function (s, r) { return s + r.save; }, 0);
     var head = scope + '<div class="m4note m4rhead"><span>' + esc(t('m4.recs.head2', { n: R.list.length, m: m(sum) })) + '</span><button type="button" class="btn primary" data-m4="simall">' + esc(t('m4.recs.simall', { n: R.list.length })) + '</button></div>';
     function side(p) { return '<span class="code">' + esc(p.code) + '</span><div class="sub2">' + esc(p.name || partName(p.code) || '–') + '</div><div class="m4swl">' + locTag(p.pick.bin) + '<span class="sub2">' + esc(floorTxt(p.pick.floor)) + ' · ' + esc(t('m4.times', { n: nf(p.n || 0) })) + '</span></div>'; }
+    var detail = '';
     var rows = R.list.map(function (r, i) {
       var open = S.recOpen === i, sim = r.sim; sim.pairs = sim.pairs || [{ a: r.a, b: r.b }];
       var topA = Array.from(r.a.products.entries()).sort(function (x, y) { return y[1] - x[1]; }).slice(0, 2);
       var reason = t('m4.recs.reason2', { a: r.a.code, na: nf(r.a.n), prods: topA.map(function (e) { return e[0] + ' (' + e[1] + ')'; }).join(', ') || '–', ca: m(r.a.c), b: r.b.code, nb: nf(r.b.n), cb: m(r.b.c) });
       var tr = '<tr class="m4r' + (open ? ' open' : '') + '" data-m4="ropen" data-v="' + i + '" tabindex="0" aria-expanded="' + open + '"><td class="num m4rank">' + (i + 1) + '</td><td class="m4pn"><span class="m4tag a">A</span>' + side(r.a) + '</td><td class="m4pn"><span class="m4tag b">B</span>' + side(r.b) + '</td>' +
-        '<td class="num good"><b>−' + mm(r.save) + '</b></td><td class="num">' + esc(pct(r.pct)) + '</td><td class="num">' + esc(sim.secSave > 0 ? t('m4.tdown', { n: Math.max(1, Math.round(sim.secSave / 60)) }) : '–') + '</td>' +
+        '<td><b>' + esc(t('m4.rc.affect', { n: sim.byProd.length })) + '</b><div class="sub2">' + esc(t('m4.k.updown', { a: sim.better.length, b: sim.worse.length })) + '</div></td>' +
         '<td>' + (r.rules && r.rules.length ? chip('error', t('m4.rule.fail')) : chip('ok', '✓ ' + t('m4.rule.ok'))) + '</td>' +
         '<td class="m4act"><button type="button" class="btn sm primary" data-m4="tosim" data-v="' + i + '">' + esc(t('m4.btn.tosim2')) + '</button></td></tr>';
-      if (open) tr += '<tr class="m4det"><td></td><td colspan="7"><div class="m4recd"><p class="m4why">' + esc(reason) + '</p>' + ruleBlock(r.rules) +
-        '<dl class="m4facts"><div><dt>' + esc(t('m4.before')) + '</dt><dd>' + mm(r.before) + '</dd></div><div><dt>' + esc(t('m4.after')) + '</dt><dd>' + mm(r.after) + '</dd></div><div><dt>' + esc(t('m4.recs.used')) + '</dt><dd>' + esc(t('m4.recs.used_v', { u: nf(sim.roundsUsed), x: nf(sim.roundsOut) })) + '</dd></div></dl>' +
-        '<div class="m4pl"><div><span class="sub2">' + esc(t('m4.recs.better', { n: sim.better.length })) + '</span><div class="m4pds">' + prodList(sim.better, false) + '</div></div><div><span class="sub2">' + esc(t('m4.recs.worse', { n: sim.worse.length })) + '</span><div class="m4pds">' + prodList(sim.worse, true) + '</div></div></div>' +
-        routePair(sim, 'rec') + '</div></td></tr>';
+      if (open) detail = '<section class="panel m4card m4recdp" id="m4recd"><div class="chd"><div class="chd-l"><h2>' + esc(t('m4.rc.detail', { n: i + 1, a: r.a.code, b: r.b.code })) + '</h2></div><button type="button" class="btn sm" data-m4="ropen" data-v="' + i + '">' + esc(t('m4.close')) + '</button></div><div class="m4recd"><p class="m4why">' + esc(reason) + '</p>' + ruleBlock(r.rules) +
+        '<h3>' + esc(t('m4.cmp.byprod')) + '</h3><p class="sub2">' + esc(t('m4.recs.used_v', { u: nf(sim.roundsUsed), x: nf(sim.roundsOut) })) + ' · ' + esc(t('m4.cmp.click')) + '</p>' + prodCmp(sim.byProd) +
+        routePair(sim, 'rec') + '</div></section>';
       return tr;
     }).join('');
-    return head + '<section class="panel m4card"><div class="tablebox m4tb"><table class="m4rect"><thead><tr><th class="num">#</th><th>' + esc(t('m4.rc.a')) + '</th><th>' + esc(t('m4.rc.b')) + '</th><th class="num">' + esc(t('m4.rc.save')) + '</th><th class="num">%</th><th class="num">' + esc(t('m4.rc.time')) + '</th><th>' + esc(t('m4.rc.rule')) + '</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div><p class="sub2">' + esc(t('m4.rc.note')) + '</p></section>';
+    return head + '<section class="panel m4card"><div class="tablebox m4tb"><table class="m4rect"><thead><tr><th class="num">#</th><th>' + esc(t('m4.rc.a')) + '</th><th>' + esc(t('m4.rc.b')) + '</th><th>' + esc(t('m4.rc.effect')) + '</th><th>' + esc(t('m4.rc.rule')) + '</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div><p class="sub2">' + esc(t('m4.rc.note')) + '</p></section>' + detail;
   }
 
   // ---------- route map (one Product, one round, before or after) ----------
@@ -468,8 +492,7 @@
       (R.lost.length ? '<div class="msg warn" role="status"><span>' + esc(t('m4.sim.lost', { n: R.lost.length })) + '</span></div>' : '') +
       (R.sameFreq ? '' : '<div class="msg bad" role="status"><span>' + esc(t('m4.err.freq')) + '</span></div>');
     if (R.byProd.length) {
-      html += '<h3>' + esc(t('m4.sim.byprod')) + '</h3><div class="tablebox m4tb"><table><thead><tr><th>' + esc(t('m4.col.product')) + '</th><th class="num">' + esc(t('m4.col.rounds')) + '</th><th class="num">' + esc(t('m4.before')) + '</th><th class="num">' + esc(t('m4.after')) + '</th><th class="num">' + esc(t('m4.col.change')) + '</th><th class="num">%</th></tr></thead><tbody>' +
-        R.byProd.map(function (x) { var up = x.after > x.before, on = S.simProd === x.product; return '<tr class="m4r' + (on ? ' open' : '') + '" data-m4="sprod" data-v="' + esc(x.product) + '" tabindex="0"><td><span class="code">' + esc(x.product) + '</span><div class="sub2">' + esc(prodName(x.product) || '–') + '</div></td><td class="num">' + nf(x.rounds) + '</td><td class="num">' + m(x.before) + '</td><td class="num">' + m(x.after) + '</td><td class="num ' + (up ? 'up' : 'good') + '">' + diffTxt(x.before, x.after) + '</td><td class="num">' + pct(x.before > 0 ? (x.before - x.after) / x.before * 100 : null) + '</td></tr>'; }).join('') + '</tbody></table></div>';
+      html += '<h3>' + esc(t('m4.sim.byprod')) + '</h3><p class="sub2">' + esc(t('m4.cmp.click')) + '</p>' + prodCmp(R.byProd);
       html += routePair(R, 'sim');
     } else html += '<p class="empty-note">' + esc(t('m4.sim.nochange')) + '</p>';
     return html + '</section>';
@@ -497,7 +520,7 @@
   }
   function mins(sec) { return Math.max(1, Math.round(sec / 60)); }
   function flowLine(sd) {
-    var res = sd.res; if (!res.start) return '';
+    var res = sd.res; if (!res.start) return '<div class="m3flow m4flow"></div>';
     var h = [], cur = res.start.floor, df = res.drop.floor;
     function st(c, tx) { return '<span class="m3st ' + c + '"><i aria-hidden="true"></i>' + esc(tx) + '</span>'; }
     function lift(a, b) { return t(+fnum(b) > +fnum(a) ? 'm3.flow.up' : 'm3.flow.down'); }
@@ -507,11 +530,11 @@
     h.push(st('end', t('m2.mk.drop')));
     return '<div class="m3flow m4flow" role="list" aria-label="' + esc(t('m3.flow.title')) + '">' + h.join('<span class="m3ln" aria-hidden="true"></span>') + '</div>';
   }
-  function routeCard(side, sd, other) {
-    var V = S.rp[side], fl = S.d.L.floors, fi = V.floor == null ? Math.max(0, fl.map(function (f) { return f.id; }).indexOf(sd.runs.length ? sd.runs[0].floor : fl[0].id)) : V.floor;
+  function routeCard(side, sd, other, hint) {
+    var V = S.rp[side], fl = S.d.L.floors, first = hint || (sd.runs.length ? sd.runs[0].floor : fl[0].id), fi = V.floor == null ? Math.max(0, fl.map(function (f) { return f.id; }).indexOf(first)) : V.floor;
     V.floor = fi;
     var dm = other ? sd.res.total - other.res.total : 0, dt = other ? sd.time.sec - other.time.sec : 0;
-    var delta = other && side === 'after' && (Math.abs(dm) >= 0.5) ? '<span class="m4dl ' + (dm < 0 ? 'good' : 'up') + '">' + esc(t(dm < 0 ? 'm4.down' : 'm4.up', { m: m(Math.abs(dm)) })) + ' · ' + esc(t(dt < 0 ? 'm4.tdown' : 'm4.tup', { n: Math.max(1, Math.round(Math.abs(dt) / 60)) })) + '</span>' : '';
+    var delta = other && side === 'before' ? '<span class="m4dl none">' + esc(t('m4.rp.base')) + '</span>' : other && side === 'after' && (Math.abs(dm) >= 0.5) ? '<span class="m4dl ' + (dm < 0 ? 'good' : 'up') + '">' + esc(t(dm < 0 ? 'm4.down' : 'm4.up', { m: m(Math.abs(dm)) })) + ' · ' + esc(t(dt < 0 ? 'm4.tdown' : 'm4.tup', { n: Math.max(1, Math.round(Math.abs(dt) / 60)) })) + '</span>' : '';
     return '<div class="m4rp" id="m4rp-' + side + '"><div class="m2mapcard m4rpbox" data-fsbox>' +
       '<div class="m4rph">' + (side === 'pv' ? '' : '<b class="m4rpt">' + esc(t(side === 'before' ? 'm4.before' : 'm4.after')) + '</b>') +
       '<span class="m4rpk"><span class="k">' + esc(t('m3.kpi.dist')) + '</span><span class="v">' + mm(sd.res.total || 0) + '</span></span>' +
@@ -525,8 +548,9 @@
     var list = R.byProd.map(function (x) { return x.product; }); if (!list.length) return '';
     var key = which + 'Prod'; if (list.indexOf(S[key]) < 0) S[key] = list[0];
     var X = pairRoutes(R, S[key]); if (!X) return '';
+    var hint = X.before.runs.length ? X.before.runs[0].floor : null;   // both maps open on the same floor
     var html = '<h3>' + esc(t('m4.rp.title')) + '</h3><div class="m4mbar"><label class="m4f"><span>' + esc(t('m4.map.product')) + '</span><select id="m4sprod" data-w="' + which + '">' + list.map(function (p) { return '<option value="' + esc(p) + '"' + (p === S[key] ? ' selected' : '') + '>' + esc(p + (prodName(p) ? ' · ' + prodName(p) : '')) + '</option>'; }).join('') + '</select></label><span class="sub2">' + esc(t('m4.rp.note', { n: X.rounds })) + '</span></div>' +
-      '<div class="m4rpair">' + routeCard('before', X.before, X.after) + routeCard('after', X.after, X.before) + '</div>';
+      '<div class="m4rpair">' + routeCard('before', X.before, X.after, hint) + routeCard('after', X.after, X.before, hint) + '</div>';
     // order of the picks before and after, A / B and changed rows marked
     var swapped = {}; R.pairs.forEach(function (s) { swapped[s.a.code] = 'A'; swapped[s.b.code] = 'B'; });
     var codes = X.before.codes.slice().sort(function (a, b) { return (X.after.seq[a] || 999) - (X.after.seq[b] || 999); });
@@ -604,6 +628,7 @@
       inp.addEventListener('input', function () { S.hq = inp.value; var K = S.kits.f; if (K) { K.M.hl = heatMatches(S.hq); K.draw(); } });
       inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { var K = S.kits.f, set = heatMatches(inp.value); if (K && set && set.size) K.zoomToRacks(Array.from(set)); } });
     });
+    var ppl = S.root.querySelector('.m4ppl'); if (ppl) ppl.addEventListener('toggle', function () { S.ppOpen = ppl.open; });
     var rs = $('#m4round'); if (rs) rs.addEventListener('change', function () { S.prodRound = +rs.value; render(); });
     var spd = $('#m4sprod'); if (spd) spd.addEventListener('change', function () { S[spd.getAttribute('data-w') + 'Prod'] = spd.value; S.rp.before.floor = S.rp.after.floor = null; render(); });
     var rp = $('#m4rprod'); if (rp) rp.addEventListener('change', function () { S.view.prod = rp.value; if (S.view.kind === 's') S.simProd = rp.value; drawRoute(S.view.kind); });
@@ -668,8 +693,8 @@
     else if (a === 'clear') { var r = PWH.freq.defaultRange(S.d); S.from = r.from; S.to = r.to; S.product = ''; S.q = ''; S.prodView = null; S.plantPick = {}; S.plantDraft = {}; run(); }
     else if (a === 'open') { if (e.target.closest('button') && e.target.closest('button') !== el) return; S.open = S.open === v ? null : v; render(); }
     else if (a === 'sort') { S.sort = v; render(); }
-    else if (a === 'pdraft') { S.plantDraft[k] = v; render(); }
-    else if (a === 'pall') { ambiguous().forEach(function (p) { if (p.plants.indexOf(v) >= 0) S.plantDraft[p.product] = v; }); render(); }
+    else if (a === 'pdraft') { S.plantDraft[k] = v; plantRefresh(); }
+    else if (a === 'pall') { ambiguous().forEach(function (p) { if (p.plants.indexOf(v) >= 0) S.plantDraft[p.product] = v; }); plantRefresh(); }
     else if (a === 'papply') { Object.keys(S.plantDraft || {}).forEach(function (p) { S.plantPick[p] = S.plantDraft[p]; }); S.plantDraft = {}; S.showPlant = false; run(); }
     else if (a === 'pchange') { S.showPlant = true; S.plantDraft = {}; render(); var pp = $('#m4plant'); if (pp) pp.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     else if (a === 'pclose') { S.showPlant = false; S.plantDraft = {}; render(); }
@@ -682,13 +707,14 @@
     else if (a === 'hfloor') { S.hFloor = +v; S.root.querySelectorAll('[data-m4=hfloor]').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-v') === v); }); Object.keys(S.kits).forEach(function (kk) { if (kk.indexOf('r-') === 0) return; var K = S.kits[kk]; if (K.M.canvas && document.body.contains(K.M.canvas)) { K.M.floor = S.hFloor; K.fit(); K.draw(); } }); }
     else if (a === 'hz') { var K = S.kits[k]; if (!K || !K.M.canvas) return; if (v === 'fit') { K.fit(); K.draw(); } else { var c = K.M.canvas; K.zoomAt(c.clientWidth / 2, c.clientHeight / 2, v === 'in' ? 1.25 : 0.8); } }
     else if (a === 'hfs') { var K2 = S.kits[k]; if (K2) { K2.toggleFs(el); setTimeout(function () { el.textContent = t(K2.M.fs ? 'm4.h.fsexit' : 'm4.h.fs'); }, 80); } }
-    else if (a === 'ropen') { if (e.target.closest('button') && e.target.closest('button') !== el) return; S.recOpen = S.recOpen === +v ? null : +v; S.rcache = null; S.recProd = null; S.rp.before.floor = S.rp.after.floor = null; render(); }
+    else if (a === 'ropen') { if (e.target.closest('button') && e.target.closest('button') !== el) return; S.recOpen = S.recOpen === +v ? null : +v; S.rcache = null; S.recProd = null; S.rp.before.floor = S.rp.after.floor = null; render(); var rd = $('#m4recd'); if (rd) rd.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     else if (a === 'simall') { S.sim = S.recs.list.map(function (r) { return { a: r.a, b: r.b, rules: PWH.freq.checkSwap(S.d, r.a, r.b) }; }); S.simRes = null; S.rcache = null; goTab('sim'); if (!S.sim.some(function (x) { return x.rules.length; })) runSim(); }
     else if (a === 'goiss') { var is = $('#m4iss'); if (is) { is.querySelectorAll('details').forEach(function (d) { d.open = true; }); is.scrollIntoView({ behavior: 'smooth', block: 'start' }); } }
     else if (a === 'tosim') { e.stopPropagation(); S.rcache = null; var rr = S.recs.list[+v]; if (!S.sim.some(function (s) { return s.a.code === rr.a.code && s.b.code === rr.b.code; })) S.sim = [{ a: rr.a, b: rr.b, rules: PWH.freq.checkSwap(S.d, rr.a, rr.b) }]; S.simRes = null; S.view = null; goTab('sim'); if (!S.sim[0].rules.length) runSim(); }
     else if (a === 'simdel') { S.sim.splice(+v, 1); S.simRes = null; render(); }
     else if (a === 'simclear') { S.sim = []; S.simRes = null; S.simMsg = ''; S.view = null; render(); }
     else if (a === 'simrun') runSim();
+    else if (a === 'cprod') { S[S.tab === 'recs' ? 'recProd' : 'simProd'] = v; S.rcache = null; S.rp.before.floor = S.rp.after.floor = null; render(); var rpp = $('#m4rp-before'); if (rpp) rpp.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     else if (a === 'sprod') { S.simProd = v; S.rp.before.floor = S.rp.after.floor = null; render(); var rp = $('#m4rp-before'); if (rp) rp.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     else if (a === 'rfloor') { S.rp[k].floor = +v; S.root.querySelectorAll('[data-m4=rfloor][data-k=' + k + ']').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-v') === v); }); var KF = S.kits['rp-' + k]; if (KF) { KF.M.floor = +v; KF.fit(); KF.draw(); } }
     else if (a === 'rmode') { S.rp[k].mode = v; S.root.querySelectorAll('[data-m4=rmode][data-k=' + k + ']').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-v') === v); }); var KM = S.kits['rp-' + k]; if (KM) { KM.M.mode = v; KM.fit(); KM.draw(); } }
