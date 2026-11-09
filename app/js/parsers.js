@@ -9,6 +9,7 @@
  * Row layouts
  *   bom      [src, parent, comp, text, plant, qty, unit]          src: Z = ZBOM sheet, S = SBOM sheet
  *   matloc   [stype, bin, material, plants, stock]                material '' = empty bin; stock is summed across plants
+ *            every storage type is used (A00 and C00; C00 was left out before 09/11/2026)
  *   daily    [job, material, desc, qty, line, finishDate]
  *   monthly  [leadOrder, plant, order, material, desc, qty, delivered, confirmed, unit, start, finish, status]
  *
@@ -203,14 +204,14 @@
     }
     var sn = best.sn, h = best.h, data = best.data;
     var bins = new Set(), emptyBins = new Set(), occupied = new Set(), mats = new Set(), seen = new Set(), special = {}, perMat = new Map();
-    var merged = new Map(), plants = {}, c00 = 0, types = {};
+    var merged = new Map(), plants = {}, types = {}, nRows = 0, nPlantMerged = 0, nEmptyRows = 0, nEmptyDup = 0;
     for (var i = h.row + 1; i < data.length; i++) {
       var r = data[i];
       var bin = str(r[h.idx.bin]), mat = str(r[h.idx.mat]);
       if (!bin && !mat) continue;
       var rn = rowNo(data, i);
       var stype = str(r[h.idx.stype]);
-      if (stype.toUpperCase() === 'C00') { c00++; continue; }
+      nRows++;
       if (!bin) { iss.add('error', 'bin_empty', { sheet: sn, row: rn, col: ML_H.bin, val: '', note: mat }); continue; }
       var isEmpty = !mat || mat.toLowerCase() === '<<empty>>';
       var stock = num(r[h.idx.stock]);
@@ -220,6 +221,8 @@
       if (!BIN_STD.test(bin)) { special[bin] = (special[bin] || 0) + 1; }
       bins.add(bin);
       if (isEmpty) {
+        nEmptyRows++;
+        if (emptyBins.has(bin)) nEmptyDup++;
         if (!emptyBins.has(bin)) { emptyBins.add(bin); rows.push([stype, bin, '', '', 0]); }
         continue;
       }
@@ -232,7 +235,7 @@
       var s = perMat.get(mat); if (!s) perMat.set(mat, (s = new Set())); s.add(bin);
       var mk = bin + '|' + mat, row = merged.get(mk);
       if (!row) { row = [stype, bin, mat, plant, 0]; merged.set(mk, row); rows.push(row); }
-      else if (plant && row[3].split('+').indexOf(plant) < 0) row[3] = row[3] ? row[3] + '+' + plant : plant;
+      else { nPlantMerged++; if (plant && row[3].split('+').indexOf(plant) < 0) row[3] = row[3] ? row[3] + '+' + plant : plant; }
       row[4] += isFinite(stock) ? stock : 0;
     }
     if (!rows.length) return { ok: false, fatal: ['fatal.no_rows', {}] };
@@ -249,7 +252,7 @@
         ['stat.materials', mats.size],
         ['stat.types', tk.map(function (k) { return (k || '-') + ' (' + types[k] + ')'; }).join(', ')],
         ['stat.plants', Object.keys(plants).sort().map(function (p) { return p + ' (' + plants[p] + ')'; }).join(', ')],
-        ['stat.c00_ignored', c00]
+        ['stat.ml_rows', nRows], ['stat.ml_merged', nPlantMerged], ['stat.ml_emptydup', nEmptyDup], ['stat.ml_saved', rows.length]
       ]
     };
   }

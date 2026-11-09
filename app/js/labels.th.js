@@ -406,6 +406,10 @@
   "fatal.date_required": "เลือกวันที่ (แผนรายวัน) หรือเดือน (แผนรายเดือน) ก่อนอัปโหลด",   // Choose the date (daily plan) or the month (monthly plan) before uploading.
   "issue.date_differs_header": "วันที่ที่เขียนไว้ในรายงานไม่ตรงกับวันที่ที่คุณเลือก",   // The date written in the report differs from the date you chose.
   "issue.date_differs_header.todo": "ตรวจว่าเลือกวันที่ถูกต้อง ระบบใช้วันที่ที่คุณเลือก",   // Check that you chose the right date. The date you chose is used.
+  "stat.ml_rows": "แถวในไฟล์ (ไม่นับหัวตาราง)",   // Rows in the file
+  "stat.ml_merged": "แถวที่รวมกัน: Part เดียวกันในช่องเดียวกันคนละ Plant (รวมสต็อก)",   // Rows joined: same bin and Part in another Plant (stock added up)
+  "stat.ml_saved": "แถวที่เก็บในระบบ (ช่องละ Part ละ 1 แถว · ช่องว่างช่องละ 1 แถว)",   // Rows kept (one per bin and Part; one per empty bin)
+  "stat.ml_emptydup": "แถวที่รวมกัน: ช่องว่างเดียวกันซ้ำ (เช่น อยู่ทั้ง A00 และ C00)",   // Rows joined: the same empty bin listed again (e.g. under both storage types)
   "stat.c00_ignored": "แถวที่ไม่นำมาใช้ (Storage Type C00)",   // Rows ignored (storage type C00)
   "loc.sheet": "ชีต",   // Sheet
   "loc.row": "แถว",   // Row
