@@ -899,7 +899,7 @@
   "m5.a.picked": "ที่เลือก:",   // Selected:
   "m5.a.none": "ยังไม่ได้เลือก",   // Nothing selected yet
   "m5.a.wholefloor": "ทั้ง{f}",   // All of {f}
-  "m5.a.rows": "โซน {v}",   // zones {v}
+  "m5.a.rows": "แถว {v}",   // rows {v}
   "m5.a.bins": "Bin {v}",   // bins {v}
   "m5.a.more": "และอีก {n} รายการ",   // and {n} more
   "m5.reason2": "เหตุผล (ไม่บังคับ)",   // Reason (optional)
@@ -943,9 +943,9 @@
   "m5.act.out": "ห้ามย้ายออกจากที่นี่",   // May not move out of here
   "m5.act.out.sub": "ของที่เก็บอยู่ที่นี่ต้องอยู่ที่เดิม",   // What is stored here stays
   "m5.act.lock.sub": "อยู่ที่เดิมเสมอ ไม่ต้องเลือกพื้นที่",   // Stays wherever it is now
-  "m5.pm.rack": "ช่อง",   // Rack
-  "m5.pm.row": "โซน (แถว)",   // Zone (row)
-  "m5.pm.floor": "ทั้งชั้น",   // Whole floor
+  "m5.pm.rack": "ช่องเก็บ",   // Bin / rack
+  "m5.pm.row": "แถวแร็ค",   // Rack row
+  "m5.pm.floor": "ชั้นอาคาร",   // Building floor
   "m5.map.hint.rack": "คลิกช่องเพื่อเลือก ถ้าต้องการเฉพาะบางชั้นเก็บ เลือกใต้แผนที่",   // Click a rack to select it; to narrow it to some levels, pick them below the map.
   "m5.map.hint.row": "คลิกช่องใดก็ได้เพื่อเลือกทั้งแถว (โซน) คลิกซ้ำเพื่อเอาออก",   // Click any rack to select its whole row (zone); click again to remove it.
   "m5.map.hint.floor": "คลิกช่องใดก็ได้ หรือกดปุ่ม เพื่อเลือกทั้งชั้น",   // Click any rack, or the button, to select the whole floor.
@@ -1051,9 +1051,9 @@
   "m5.leg.some": "บางชั้นเก็บ",   // Some levels
   "m5.a.none2": "ยังไม่ได้เลือก — คลิกบนแผนที่ด้านขวา",   // Nothing selected yet — click on the map on the right
   "m5.noarea": "กติกาแบบนี้ไม่ต้องเลือกพื้นที่",   // This kind of rule needs no area.
-  "m5.map.hint2.rack": "คลิกช่องบนแผนที่ด้านขวา ถ้าต้องการเฉพาะบางชั้นเก็บ เลือกด้านล่าง",   // Click racks on the map on the right. To narrow a rack to some levels, pick them below.
-  "m5.map.hint2.row": "คลิกช่องใดก็ได้บนแผนที่ด้านขวาเพื่อเลือกทั้งโซน (แถว) คลิกซ้ำเพื่อเอาออก",   // Click any rack on the map on the right to select its whole zone (row); click again to remove it.
-  "m5.map.hint2.floor": "คลิกช่องใดก็ได้บนแผนที่ด้านขวา หรือกดปุ่ม เพื่อเลือกทั้งชั้น",   // Click any rack on the map on the right, or the button, to select the whole floor.
+  "m5.map.hint2.rack": "คลิกช่องบนแผนที่ ถ้าต้องการเฉพาะบางชั้นเก็บ (เช่น 3G-04-01) เลือกด้านล่าง",   // Click racks on the map. To narrow a rack to some levels (e.g. 3G-04-01), pick them below.
+  "m5.map.hint2.row": "คลิกช่องใดก็ได้บนแผนที่เพื่อเลือกทั้งแถว คลิกซ้ำเพื่อเอาออก เลือกหลายแถวรวมเป็นโซนได้",   // Click any rack on the map to select its whole row; click again to remove it. Select several to make a zone.
+  "m5.map.hint2.floor": "คลิกช่องใดก็ได้บนแผนที่ หรือกดปุ่ม เพื่อเลือกทั้งชั้นอาคาร",   // Click any rack on the map, or the button, to select the whole building floor.
   "m5.slot.where0": "ที่ไหน",   // Where
   "m5.slot.where2": "ที่ไหน — เลือกบนแผนที่",   // Where — pick on the map
   "m5.col.who": "ใคร",   // Who
@@ -1093,6 +1093,76 @@
   "m5.t.empty": "ยังไม่มี Part ในประเภทนี้ เปิด “ยังไม่จัดกลุ่ม” เพื่อเพิ่ม",   // No Parts in this type yet. Open “Not grouped yet” to add some.
   "m5.t.done": "ใส่ประเภท {t} ให้ {n} รายการแล้ว",   // {n} Parts set to {t}
   "m5.ph.part3": "ค้นหาจากบางส่วนของรหัสหรือชื่อ",   // Search by part of a code or name
+  "m5.k4.lock": "ล็อกตำแหน่ง",   // Lock position
+  "m5.k4.lock.mean": "ห้ามย้าย Part ที่เลือกออกจากช่องปัจจุบัน",   // The chosen Parts may not leave their current bins
+  "m5.k4.lock.ex": "เช่น ล็อก Part A ที่ 3G-04-01",   // e.g. lock Part A at 3G-04-01
+  "m5.k4.deny": "ห้ามย้ายไปพื้นที่",   // May not move into
+  "m5.k4.deny.mean": "ห้ามใช้พื้นที่ที่ระบุเป็นปลายทาง พื้นที่อื่นยังพิจารณาได้",   // The area may not be a destination; other areas are still considered
+  "m5.k4.deny.ex": "เช่น Packaging ห้ามย้ายไปชั้น 2",   // e.g. Packaging may not move to floor 2
+  "m5.k4.allow": "ย้ายได้เฉพาะพื้นที่",   // May move only to
+  "m5.k4.allow.mean": "ปลายทางต้องอยู่ในพื้นที่ที่ระบุเท่านั้น",   // The destination must be inside the area
+  "m5.k4.allow.ex": "เช่น Part จากแถว 3G ย้ายได้เฉพาะแถว 1A และ 1B",   // e.g. Parts from row 3G only to rows 1A and 1B
+  "m5.k4.pair": "จำกัดคู่สลับ",   // Limit swap partner
+  "m5.k4.pair.mean": "กำหนดว่า Part อีกฝั่งต้องอยู่ในกลุ่มใด",   // The Part on the other side must be in one of the chosen groups
+  "m5.k4.pair.ex": "เช่น Packaging สลับได้เฉพาะกับ Packaging",   // e.g. Packaging swaps only with Packaging
+  "m5.slot.kind": "ประเภทกติกา",   // Rule kind
+  "m5.slot.lockwho": "Part และ Location ที่ต้องการล็อก",   // Part and the location to lock
+  "m5.slot.pairwho": "Part หรือกลุ่ม Part ที่ต้องการควบคุม",   // Part or group to control
+  "m5.slot.src": "ต้นทาง",   // Source
+  "m5.slot.dest.deny": "พื้นที่ปลายทางที่ห้าม",   // Destination that is not allowed
+  "m5.slot.dest.allow": "พื้นที่ปลายทางที่อนุญาต",   // Destination that is allowed
+  "m5.slot.partners": "กลุ่ม Part ที่ยอมให้เป็นคู่สลับ",   // Groups allowed as the swap partner
+  "m5.src.q": "ใช้กับ Part ที่มาจาก",   // Applies to Parts coming from
+  "m5.src.any": "ทุกต้นทาง",   // Any source
+  "m5.src.some": "เฉพาะบางพื้นที่",   // Only some areas
+  "m5.ap.src.deny": "พื้นที่ต้นทาง",   // Source area
+  "m5.ap.src.allow": "พื้นที่ต้นทาง",   // Source area
+  "m5.ap.dest.deny": "ปลายทางที่ห้าม",   // Forbidden destination
+  "m5.ap.dest.allow": "ปลายทางที่อนุญาต",   // Allowed destination
+  "m5.ap.active": "คลิกบนแผนที่จะเลือกให้ช่องนี้",   // Clicks on the map go here
+  "m5.ap.pick": "เลือกบนแผนที่",   // Pick on the map
+  "m5.dst.samefloor": "ชั้นอาคารเดียวกับต้นทาง",   // Same building floor as the source
+  "m5.dst.samefloor.sub": "ใช้อย่างเดียวแทน \"ห้ามข้ามชั้น\" หรือใช้ร่วมกับพื้นที่ได้",   // Use alone for "no swap across floors", or together with an area
+  "m5.dst.none": "ย้ายไม่ได้",   // Cannot move
+  "m5.dst.with": "สลับกับ",   // Swap with
+  "m5.wh.cond": "เงื่อนไข",   // Condition
+  "m5.wh.row": "แถว",   // Row
+  "m5.a.row": "แถว",   // row
+  "m5.lk.all": "ทุกช่องที่อยู่",   // every bin it is in
+  "m5.lk.all2": "ทุกช่อง ({n})",   // Every bin ({n})
+  "m5.lk.nobin": "Part นี้ไม่มีช่องในข้อมูล Material–Location",   // This Part has no bin in the Material–Location data.
+  "m5.partners.sub": "Part ที่ไม่มีประเภทไม่นับเป็นสมาชิกกลุ่มใด และช่องปลายทางของทั้งสอง Part ยังต้องผ่านกติกาพื้นที่ด้วย",   // A Part with no item type never counts as a member. The bins of both Parts must still pass the area rules.
+  "m5.err.src": "เลือกพื้นที่ต้นทางบนแผนที่ หรือเลือก ทุกต้นทาง",   // Pick the source area on the map, or choose Any source
+  "m5.err.allow": "เลือกปลายทางที่อนุญาตบนแผนที่ หรือติ๊ก ชั้นอาคารเดียวกับต้นทาง",   // Pick the allowed destination on the map, or tick Same building floor as the source
+  "m5.err.partners": "เลือกกลุ่มที่ยอมให้เป็นคู่สลับอย่างน้อย 1 กลุ่ม",   // Pick at least one group allowed as the partner
+  "m5.s4.lock": "ล็อก {v}",   // Lock {v}
+  "m5.s4.deny": "{who}{from} ห้ามย้ายไป {a}",   // {who}{from} may not move to {a}
+  "m5.s4.allow": "{who}{from} ย้ายได้เฉพาะ {a}",   // {who}{from} may move only to {a}
+  "m5.s4.pair": "{who} สลับได้เฉพาะกับ {v}",   // {who} swaps only with {v}
+  "m5.s.from": " ที่มาจาก {a}",   //  coming from {a}
+  "m5.and": "และ",   // and
+  "m5.why4.lock": "{p} ถูกล็อก — {rule}",   // {p} is locked — {rule}
+  "m5.why4.deny": "{p}: ปลายทางเป็นพื้นที่ห้าม — {rule}",   // {p}: destination is forbidden — {rule}
+  "m5.why4.allow": "{p}: ปลายทางอยู่นอกพื้นที่ที่อนุญาต — {rule}",   // {p}: destination is outside the allowed area — {rule}
+  "m5.why4.floor": "{p}: ปลายทางอยู่คนละชั้นอาคาร — {rule}",   // {p}: destination is on another floor — {rule}
+  "m5.why4.pair": "{p} สลับกับ {o} ({ot}) ไม่ได้ — {rule}",   // {p} may not swap with {o} ({ot}) — {rule}
+  "m5.test.ok4": "ไม่พบข้อห้ามตามกติกาที่กำหนด",   // No restriction found under the rules set
+  "m5.rule4.both": "ตรวจทั้ง A → ช่องของ B และ B → ช่องของ A",   // Both sides are checked: A → bin of B and B → bin of A.
+  "m5.rule4.lock": "หากฝั่งใดถูกล็อกหรือผิดกติกา ถือว่าคู่นั้นสลับไม่ได้",   // If either side is locked or breaks a rule, the pair cannot swap.
+  "m5.rule4.all": "ต้องผ่านทุกกติกาที่เกี่ยวข้อง กติกาอนุญาตไม่ลบล้างข้อห้าม",   // Every rule that applies must pass; an allow rule never cancels a forbid rule.
+  "m5.rule4.none": "หากไม่มีข้อจำกัด แสดงว่า \"ไม่พบข้อห้ามตามกติกาที่กำหนด\"",   // With no restriction, the result reads "No restriction found under the rules set".
+  "m5.rule4.size": "ขนาด น้ำหนัก และความจุช่อง เป็นการตรวจความเหมาะสมทางกายภาพแยกต่างหาก (ยังไม่มีข้อมูล) ไม่ใช่ประเภทกติกาเพิ่ม",   // Size, weight and bin capacity are a separate physical check (no data yet), not another rule kind.
+  "m5.leg4.lock": "ช่องที่ล็อก",   // Locked bins
+  "m5.leg4.src": "ต้นทาง",   // Source
+  "m5.leg4.deny": "ปลายทางที่ห้าม",   // Forbidden destination
+  "m5.leg4.allow": "ปลายทางที่อนุญาต",   // Allowed destination
+  "m5.map.picking2": "คลิกช่องบนแผนที่ ช่องที่ไฮไลต์ในฟอร์มด้านซ้ายจะรับการเลือก",   // Click racks on the map. The highlighted block in the form on the left receives the clicks.
+  "m5.noarea2": "กติกาประเภทนี้ไม่ต้องเลือกพื้นที่บนแผนที่",   // This rule kind needs no area on the map.
+  "m5.v.tied": "กติกาที่ใช้เฉพาะ Part จากบางต้นทาง ไม่แสดงสีในมุมมองประเภท",   // Rules that apply only to Parts from a certain source are not coloured when viewing a type.
+  "m5.list.sub4": "4 ประเภท: ล็อกอะไร · ห้ามไปไหน · ไปได้ที่ไหน · สลับกับใคร ทุกกติกาที่เกี่ยวข้องต้องผ่าน",   // Four kinds: lock what · may not move into · may move only to · who may swap with whom. Every rule that applies must pass.
+  "m5.col.kind": "ประเภทกติกา",   // Kind
+  "m5.col.src": "ต้นทาง",   // Source
+  "m5.col.dest": "ปลายทาง / เงื่อนไข",   // Destination / condition
   "m5.intro2": "กำหนดว่า Part ใด จากตรงไหน ย้ายไปที่ใดได้หรือไม่ได้ คำแนะนำและ Simulation ในโมดูล 4 จะใช้เฉพาะคู่ที่ผ่านทุกกติกาในหน้านี้",   // Set which Parts may move from where to where. Module 4 suggests and simulates only swaps that pass every rule here.
   "m5.new.title": "สร้างกติกาใหม่",   // New rule
   "m5.new.sub": "เลือกประเภท Part และพื้นที่ ไม่ต้องพิมพ์เงื่อนไข",   // Pick the type, the Parts and the areas. No conditions to type.

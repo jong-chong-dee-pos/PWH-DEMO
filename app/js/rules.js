@@ -1,29 +1,32 @@
-/* Module 5 rules engine: may Part p move from bin X to bin Y?
+/* Module 5 rules engine: may Part A (in bin X) and Part B (in bin Y) swap?
  *
- * Agreed with the warehouse (2026-11-09, round 2). A rule is a sentence in 3 slots:
- *   who    Parts (listed) | item types (packaging, PU pallet …) | all Parts
- *   act    keep  = must stay here only        (destination must be inside the area)   green on the map
- *          deny  = may not move here           (destination must be outside the area) red on the map
- *          out   = may not move out of here    (source inside the area cannot move)
- *          lock  = never moves                 (no area)
- *          samefloor = swaps stay on one floor    (no area; was a page switch before v45)
- *          sametype  = swaps only with a Part of the same item type (no area; for "all Parts" a Part with no type is free)
- *   where  bins (3G-03-03) | racks (3G-03, every level) | zones = rack rows (1A, 3G) | whole floors
- * Which rules count for a Part: rules for all Parts always; then the Part's own rules, and only when it
- * has none, the rules of its item type ("a Part's own rule beats its type").
- * Within one level, several "keep" rules add up (allowed if inside any of them); across levels each must hold.
- * A paused rule (off) is kept but not used. Size / weight: no data yet, never treated as passed.
- * Stored as meta 'rules' = { v: 3, types: [{id,name}], partType: {code: typeId}, rules: [], log: [] }. */
+ * Four rule kinds (agreed with the warehouse, 2026-11-09 round 3):
+ *   lock   ล็อกตำแหน่ง        listed Parts may not leave the chosen bins (or every bin they are in). Other Parts in those bins are free.
+ *   deny   ห้ามย้ายไปพื้นที่     who → may not END in the area. Optional source area: only Parts coming from there.
+ *                             It forbids moving in; it does not keep Parts that are already there from leaving.
+ *   allow  ย้ายได้เฉพาะพื้นที่    who (from any place, or from a source area) → destination must be inside the area,
+ *                             and/or on the same building floor as the source. Covers "must stay in A", "may not leave A",
+ *                             "3G only to 1A" and "no swap across floors".
+ *   pair   จำกัดคู่สลับ         who → the Part on the other side must belong to one of the listed item types.
+ * who = listed Parts | item types | all Parts (lock: Parts only; pair: Parts or types).
+ * Areas (same for every kind): bins (3G-04-01), racks (3G-04, every level), rack rows (3G), floors.
+ * Deciding a pair: both A → Y and B → X are checked; a locked or refused side refuses the pair; every rule that applies
+ * must pass (an "allow" never cancels a "deny"); a paused rule (off) is kept but not used.
+ * Size / weight / bin capacity are a separate physical check (no data yet) and are never treated as passed.
+ * Stored as meta 'rules' = { v: 4, types: [{id,name}], partType: {code: typeId}, rules: [], log: [] }. */
 (function (g) {
   var PWH = g.PWH;
   var CUR = null;   // the rules last loaded or saved, for reason lines shown without the data at hand
   var DEFAULT_TYPES = ['Packaging', 'Part ผลิตเอง', 'Part PU พาเลท', 'Part PU ชิ้นเล็ก'];
+  var KINDS = ['lock', 'deny', 'allow', 'pair'];
 
   function zoneOf(rack) { var m = String(rack || '').match(/^([0-9]*[A-Z]+)/); return m ? m[1] : String(rack || ''); }
   function emptyArea() { return { rows: [], floors: [], racks: [], bins: [] }; }
   function fixArea(a) { a = a || {}; return { rows: a.rows || [], floors: a.floors || [], racks: a.racks || [], bins: a.bins || [] }; }
+  function areaEmpty(a) { a = fixArea(a); return !a.rows.length && !a.floors.length && !a.racks.length && !a.bins.length; }
+  function allWho() { return { kind: 'all', parts: [], types: [] }; }
 
-  // ---------- older formats -> v3 ----------
+  // ---------- older formats -> v4 ----------
   function areaFromV1(a, zones) {
     var out = emptyArea(); if (!a) return out;
     var v = a.values || [];
@@ -34,7 +37,7 @@
     return out;
   }
   function isAny(a) { return !a || a.type === 'any'; }
-  function fromV1(old) {   // lock / allow / deny / floor + zones -> v2
+  function fromV1(old) {   // v1 lock / allow / deny / floor + zones -> v2
     var zones = old.zones || [], rules = [], dropped = [];
     (old.rules || []).forEach(function (r) {
       var base = { id: r.id, reason: r.reason || '', by: r.by, at: r.at, was: r.name }, parts = (r.subject && !r.subject.all && r.subject.parts) || [];
@@ -45,35 +48,51 @@
     });
     return { v: 2, sameFloor: false, rules: rules, log: (old.log || []).slice(), dropped: dropped };
   }
-  function fromV2(d) {   // lock / area(in|out|both) / keep -> v3 sentences
+  function fromV2(d) {   // v2 lock / area(in|out|both) / keep -> v3 sentences
     var rules = [];
     (d.rules || []).forEach(function (r) {
       var base = { id: r.id, reason: r.reason || '', by: r.by, at: r.at, conv: r.conv, was: r.was };
       if (r.kind === 'lock') rules.push(Object.assign({}, base, { who: { kind: 'part', parts: r.parts || [], types: [] }, act: 'lock', area: emptyArea() }));
       else if (r.kind === 'keep') rules.push(Object.assign({}, base, { who: { kind: 'part', parts: r.parts || [], types: [] }, act: 'keep', area: fixArea(r.area) }));
       else if (r.kind === 'area') {
-        if (r.dir !== 'in') rules.push(Object.assign({}, base, { who: { kind: 'all', parts: [], types: [] }, act: 'out', area: fixArea(r.area) }));
-        if (r.dir !== 'out') rules.push(Object.assign({}, base, { id: r.dir === 'both' ? r.id + 'b' : r.id, who: { kind: 'all', parts: [], types: [] }, act: 'deny', area: fixArea(r.area) }));
+        if (r.dir !== 'in') rules.push(Object.assign({}, base, { who: allWho(), act: 'out', area: fixArea(r.area) }));
+        if (r.dir !== 'out') rules.push(Object.assign({}, base, { id: r.dir === 'both' ? r.id + 'b' : r.id, who: allWho(), act: 'deny', area: fixArea(r.area) }));
       }
     });
-    var log = (d.log || []).slice(); log.push({ act: 'convert', name: (d.dropped || []).join(', '), by: 'system', at: Date.now() });
-    return { v: 3, sameFloor: !!d.sameFloor, sameType: false, types: DEFAULT_TYPES.map(function (n, i) { return { id: 'T' + (i + 1), name: n }; }), partType: {}, rules: rules, log: log, dropped: d.dropped || [] };
+    if (d.sameFloor) rules.push({ id: 'Rsamefloor', who: allWho(), act: 'samefloor', area: emptyArea(), reason: '', by: 'system', at: Date.now() });
+    return { v: 3, types: DEFAULT_TYPES.map(function (n, i) { return { id: 'T' + (i + 1), name: n }; }), partType: {}, rules: rules, log: (d.log || []).slice(), dropped: d.dropped || [] };
   }
+  function fromV3(d) {   // v3 keep / deny / out / lock / samefloor / sametype (+ v44 page switches) -> v4 four kinds
+    var rules = [], dropped = (d.dropped || []).slice(), types = d.types || [];
+    var src = (d.rules || []).slice();
+    if (d.sameFloor) src.push({ id: 'Rsf' + Date.now(), who: allWho(), act: 'samefloor', by: 'system', at: Date.now() });
+    if (d.sameType) src.push({ id: 'Rst' + Date.now(), who: allWho(), act: 'sametype', by: 'system', at: Date.now() });
+    src.forEach(function (r) {
+      var base = { id: r.id, reason: r.reason || '', by: r.by, at: r.at, off: !!r.off, conv: r.conv, was: r.was }, who = r.who || allWho(), area = fixArea(r.area);
+      if (r.act === 'lock') {
+        if (who.kind === 'part') rules.push(Object.assign({}, base, { kind: 'lock', who: who, lockBins: {} }));
+        else dropped.push(PWH.t ? ruleTextV3(r, d) : r.id);
+      }
+      else if (r.act === 'deny') rules.push(Object.assign({}, base, { kind: 'deny', who: who, src: null, dest: area }));
+      else if (r.act === 'keep') rules.push(Object.assign({}, base, { kind: 'allow', who: who, src: null, dest: area, sameFloor: false }));
+      else if (r.act === 'out') rules.push(Object.assign({}, base, { kind: 'allow', who: who, src: area, dest: JSON.parse(JSON.stringify(area)), sameFloor: false }));
+      else if (r.act === 'samefloor') rules.push(Object.assign({}, base, { kind: 'allow', who: who, src: null, dest: emptyArea(), sameFloor: true }));
+      else if (r.act === 'sametype') {
+        // "swap only with the same type": one pair rule per type it covered
+        var tps = who.kind === 'type' ? who.types : who.kind === 'all' ? types.map(function (x) { return x.id; }) : [];
+        if (who.kind === 'part') { var tp = (d.partType || {})[who.parts[0]]; if (tp) rules.push(Object.assign({}, base, { kind: 'pair', who: who, partners: [tp] })); else dropped.push(r.id); }
+        tps.forEach(function (id, i) { rules.push(Object.assign({}, base, { id: r.id + (i ? '-' + i : ''), kind: 'pair', who: { kind: 'type', parts: [], types: [id] }, partners: [id] })); });
+      }
+    });
+    var log = (d.log || []).slice(); log.push({ act: 'convert', name: dropped.join(', '), by: 'system', at: Date.now() });
+    return { v: 4, types: types.length ? types : DEFAULT_TYPES.map(function (n, i) { return { id: 'T' + (i + 1), name: n }; }), partType: d.partType || {}, rules: rules, log: log, dropped: dropped };
+  }
+  function ruleTextV3(r, d) { var w = r.who || {}; return (w.kind === 'type' ? w.types.map(function (id) { return typeName(d, id); }).join(', ') : (w.parts || []).join(', ')) + ' · ' + r.act; }
   function load() {
     return Promise.all([PWH.db.getMeta('rules').catch(function () { return null; }), PWH.db.getMeta('locks').catch(function () { return null; })]).then(function (r) {
       var data = r[0];
-      if (data && data.v === 3) {
-        CUR = data;
-        if (data.sameFloor || data.sameType) {   // the two page switches (v44) become rules for all Parts
-          [['sameFloor', 'samefloor'], ['sameType', 'sametype']].forEach(function (x) {
-            if (data[x[0]]) data.rules.push({ id: 'R' + x[1] + Date.now(), who: { kind: 'all', parts: [], types: [] }, act: x[1], area: emptyArea(), reason: '', by: 'system', at: Date.now() });
-          });
-          delete data.sameFloor; delete data.sameType;
-          return PWH.db.setMeta('rules', data).then(function () { return data; }, function () { return data; });
-        }
-        return data;
-      }
-      if (!data || data.v !== 2) {
+      if (data && data.v === 4) { CUR = data; return data; }
+      if (!data || (data.v !== 2 && data.v !== 3)) {
         data = data || { rules: [], zones: [], log: [] };
         var old = r[1];   // locks from the very first version of Module 5
         if (old && old.items && old.items.length && !data.migrated) old.items.forEach(function (l) {
@@ -82,13 +101,12 @@
         });
         data = fromV1(data);
       }
-      var v3 = fromV2(data); CUR = v3;
-      if (v3.sameFloor) v3.rules.push({ id: 'Rsamefloor', who: { kind: 'all', parts: [], types: [] }, act: 'samefloor', area: emptyArea(), reason: '', by: 'system', at: Date.now() });
-      delete v3.sameFloor; delete v3.sameType;
-      return PWH.db.setMeta('rules', v3).then(function () { return v3; }, function () { return v3; });
+      if (data.v === 2) data = fromV2(data);
+      var v4 = fromV3(data); CUR = v4;
+      return PWH.db.setMeta('rules', v4).then(function () { return v4; }, function () { return v4; });
     });
   }
-  function save(data) { data.v = 3; CUR = data; return PWH.db.setMeta('rules', data); }
+  function save(data) { data.v = 4; CUR = data; return PWH.db.setMeta('rules', data); }
 
   // ---------- checking ----------
   // where a bin is: { bin, rack, row, floor }
@@ -99,87 +117,75 @@
       (area.bins || []).indexOf(pl.bin) >= 0 || (area.bins || []).indexOf(pl.rack) >= 0;
   }
   function typeOf(data, code) { return (data && data.partType && data.partType[code]) || null; }
-  /* the rules that count for a subject { code } or { type }, grouped by level: all / own (Part) / type */
+  function covers(r, code, tp) {
+    var w = r.who || {};
+    return w.kind === 'all' || (w.kind === 'part' && code && (w.parts || []).indexOf(code) >= 0) || (w.kind === 'type' && tp && (w.types || []).indexOf(tp) >= 0);
+  }
+  /* every rule in use that covers a subject { code } or { type } — all of them must pass (no precedence) */
   function rulesFor(data, subj) {
-    var all = [], own = [], typ = [], tp = subj.code ? typeOf(data, subj.code) : subj.type;
-    ((data && data.rules) || []).forEach(function (r) {
-      if (r.off) return;
-      var w = r.who || {};
-      if (w.kind === 'all') all.push(r);
-      else if (w.kind === 'part' && subj.code && (w.parts || []).indexOf(subj.code) >= 0) own.push(r);
-      else if (w.kind === 'type' && tp && (w.types || []).indexOf(tp) >= 0) typ.push(r);
-    });
-    return { levels: [all, own.length ? own : typ], own: own.length > 0, type: tp };
+    var tp = subj.code ? typeOf(data, subj.code) : subj.type;
+    return ((data && data.rules) || []).filter(function (r) { return !r.off && covers(r, subj.code, tp); });
   }
-  // reasons a subject may not END at place Y (destination rules only)
-  function destWhy(lv, Y) {
+  function fromOk(r, X) { return !r.src || areaEmpty(r.src) || (X && inArea(r.src, X)); }
+  function lockedAt(r, code, X) { var b = (r.lockBins || {})[code]; return !b || !b.length || (X && b.indexOf(X.bin) >= 0); }
+  // reasons the subject may not end at Y, coming from X (X may be null: rules tied to a source are then left out)
+  function destWhy(list, X, Y, ignoreSrcRules) {
     var why = [];
-    lv.levels.forEach(function (list) {
-      list.forEach(function (r) { if (r.act === 'deny' && inArea(r.area, Y)) why.push({ code: 'deny', rule: r }); });
-      var keeps = list.filter(function (r) { return r.act === 'keep'; });
-      if (keeps.length && !keeps.some(function (r) { return inArea(r.area, Y); })) why.push({ code: 'keep', rule: keeps[0], rules: keeps });
+    list.forEach(function (r) {
+      if (r.kind !== 'deny' && r.kind !== 'allow') return;
+      var tied = r.src && !areaEmpty(r.src);
+      if (tied && (ignoreSrcRules || !X)) return;
+      if (!fromOk(r, X)) return;
+      if (r.kind === 'deny' && inArea(r.dest, Y)) why.push({ code: 'deny', rule: r });
+      if (r.kind === 'allow') {
+        var inside = areaEmpty(r.dest) || inArea(r.dest, Y), floorOk = !r.sameFloor || !X || X.floor === Y.floor;
+        if (!inside || !floorOk) why.push({ code: 'allow', rule: r, floor: inside && !floorOk });
+      }
     });
     return why;
-  }
-  // reasons a subject may not LEAVE place X
-  function srcWhy(lv, X) {
-    var why = [];
-    lv.levels.forEach(function (list) { list.forEach(function (r) { if (r.act === 'lock') why.push({ code: 'lock', rule: r }); else if (r.act === 'out' && inArea(r.area, X)) why.push({ code: 'out', rule: r }); }); });
-    return why;
-  }
-  function sameFloorRule(lv) { var hit = null; lv.levels.forEach(function (list) { list.forEach(function (r) { if (!hit && r.act === 'samefloor') hit = r; }); }); return hit; }
-  // "swap only with the same type" for one side of a pair: the reason, or null
-  function sameTypeWhy(data, me, other) {
-    var lv = rulesFor(data, { code: me }), tm = typeOf(data, me), to = typeOf(data, other), hit = null;
-    lv.levels.forEach(function (list) { list.forEach(function (r) {
-      if (hit || r.act !== 'sametype' || !tm || tm === to) return;
-      if (r.who.kind === 'all' && !to) return;   // for all Parts: a Part with no type is free
-      hit = { code: 'sametype', rule: r, part: me, a: tm, b: to };
-    }); });
-    return hit;
   }
   /* checkMove(data, partCode, fromPick, toPick) -> [] when allowed, else the reasons (toPick may be null: only "may it leave?") */
   function checkMove(data, code, fromPick, toPick) {
-    var lv = rulesFor(data, { code: code }), X = placeOf(fromPick), Y = placeOf(toPick);
-    var why = srcWhy(lv, X);
-    if (Y) why = why.concat(destWhy(lv, Y));
-    if (X && Y && X.floor !== Y.floor) { var sf = sameFloorRule(lv); if (sf) why.push({ code: 'samefloor', rule: sf }); }
+    var list = rulesFor(data, { code: code }), X = placeOf(fromPick), Y = placeOf(toPick), why = [];
+    list.forEach(function (r) { if (r.kind === 'lock' && lockedAt(r, code, X)) why.push({ code: 'lock', rule: r }); });
+    if (Y) why = why.concat(destWhy(list, X, Y));
     return why;
+  }
+  // "the Part on the other side must belong to …" for one side of a pair
+  function pairWhy(data, me, other) {
+    var tm = typeOf(data, me), to = typeOf(data, other), out = [];
+    ((data && data.rules) || []).forEach(function (r) {
+      if (r.off || r.kind !== 'pair' || !covers(r, me, tm)) return;
+      if (!to || (r.partners || []).indexOf(to) < 0) out.push({ code: 'pair', rule: r, part: me, other: other, otherType: to });
+    });
+    return out;
   }
   /* checkSwap: both sides of a 1:1 swap — A goes from X to Y and B from Y to X */
   function checkSwap(data, a, b) {
     var why = [];
     checkMove(data, a.code, a.pick, b.pick).forEach(function (w) { w.side = 'a'; w.part = a.code; why.push(w); });
-    checkMove(data, b.code, b.pick, a.pick).forEach(function (w) { if (w.code === 'samefloor' && why.some(function (x) { return x.code === 'samefloor'; })) return; w.side = 'b'; w.part = b.code; why.push(w); });   // the floor reason once per pair
-    var sa = sameTypeWhy(data, a.code, b.code), sb = sameTypeWhy(data, b.code, a.code);
-    if (sa) why.push(sa); if (sb && !(sa && sa.rule === sb.rule)) why.push(sb);
-    return why;
+    checkMove(data, b.code, b.pick, a.pick).forEach(function (w) { w.side = 'b'; w.part = b.code; why.push(w); });
+    return why.concat(pairWhy(data, a.code, b.code), pairWhy(data, b.code, a.code));
   }
-  // a Part or a place that no rule lets move at all (used to skip candidates early)
-  function frozen(data, code, pick) { return srcWhy(rulesFor(data, { code: code }), placeOf(pick)).length > 0; }
-  // a Part stored where its own destination rules say it may not be (it already breaks a rule)
-  function misplaced(data, code, pick) { return pick ? destWhy(rulesFor(data, { code: code }), placeOf(pick)) : []; }
-  /* for the green / red map: may subject { code } or { type } end at this place? (from: current pick for the floor switch) */
+  // a Part locked where it is (used to skip candidates early)
+  function frozen(data, code, pick) { var X = placeOf(pick); return rulesFor(data, { code: code }).some(function (r) { return r.kind === 'lock' && lockedAt(r, code, X); }); }
+  // a Part stored where a rule with no source condition says it may not be (it already breaks a rule)
+  function misplaced(data, code, pick) { return pick ? destWhy(rulesFor(data, { code: code }), null, placeOf(pick), true) : []; }
+  /* for the green / red map: may subject { code } or { type } end at this place? fromPick = the Part's current bin */
   function destOk(data, subj, place, fromPick) {
-    var lv = subj._lv || (subj._lv = rulesFor(data, subj)), why = destWhy(lv, place);
-    if (fromPick && fromPick.floor !== place.floor) { var sf = sameFloorRule(lv); if (sf) why.push({ code: 'samefloor', rule: sf }); }
-    return why;
+    var list = subj._list || (subj._list = rulesFor(data, subj));
+    return destWhy(list, fromPick ? placeOf(fromPick) : null, place, !fromPick);
   }
-  // rules that leave a subject nowhere to go: a level whose "keep" areas are all inside its "deny" areas, or two levels whose "keep" areas never meet
+  // subjects whose rules (without a source condition) leave nowhere to go
   function deadEnds(data, places) {
-    var out = [];
-    function allowedSet(list) {
-      var keeps = list.filter(function (r) { return r.act === 'keep'; }), denies = list.filter(function (r) { return r.act === 'deny'; });
-      return places.filter(function (p) { return (!keeps.length || keeps.some(function (r) { return inArea(r.area, p); })) && !denies.some(function (r) { return inArea(r.area, p); }); });
-    }
-    var subjects = [];
+    var out = [], subjects = [], seen = {};
     (data.types || []).forEach(function (tp) { subjects.push({ type: tp.id, label: tp.name }); });
-    var seen = {}; (data.rules || []).forEach(function (r) { if (r.who && r.who.kind === 'part') (r.who.parts || []).forEach(function (c) { if (!seen[c]) { seen[c] = 1; subjects.push({ code: c, label: c }); } }); });
-    subjects.push({ type: '\u0000none', label: '' });
+    (data.rules || []).forEach(function (r) { if (r.who && r.who.kind === 'part') (r.who.parts || []).forEach(function (c) { if (!seen[c]) { seen[c] = 1; subjects.push({ code: c, label: c }); } }); });
+    subjects.push({ type: '_none', label: '' });
     subjects.forEach(function (s) {
-      var lv = rulesFor(data, s); if (!lv.levels[0].length && !lv.levels[1].length) return;
-      var ok = allowedSet(lv.levels[0].concat(lv.levels[1]));
-      if (!ok.length) out.push({ subj: s, rules: lv.levels[0].concat(lv.levels[1]).filter(function (r) { return r.act === 'keep' || r.act === 'deny'; }) });
+      var list = rulesFor(data, s).filter(function (r) { return (r.kind === 'deny' || r.kind === 'allow') && (!r.src || areaEmpty(r.src)) && !(r.kind === 'allow' && areaEmpty(r.dest)); });
+      if (!list.length) return;
+      if (!places.some(function (p) { return !destWhy(list, null, p, true).length; })) out.push({ subj: s, rules: list });
     });
     return out;
   }
@@ -202,22 +208,37 @@
     if (w.kind === 'type') return t('m5.w.type', { v: (w.types || []).length ? w.types.map(function (id) { return typeName(data, id); }).join(', ') : '…' });
     return t('m5.w.part', { v: (w.parts || []).length ? list(w.parts) : '…' });
   }
+  function lockText(r) {
+    var parts = (r.who && r.who.parts) || [], lb = r.lockBins || {};
+    return parts.map(function (c) { var b = lb[c]; return b && b.length ? c + ' @ ' + b.join(', ') : c + ' (' + PWH.t('m5.lk.all') + ')'; }).join('; ') || '…';
+  }
+  function destText(r) {
+    var t = PWH.t, bits = [];
+    if (!areaEmpty(r.dest)) bits.push(areaText(r.dest));
+    if (r.sameFloor) bits.push(t('m5.dst.samefloor'));
+    return bits.join(' ' + t('m5.and') + ' ') || '…';
+  }
   // the rule as one sentence a person reads
   function ruleText(r, data) {
     var t = PWH.t; data = data || CUR;
-    if (!r.act) return '';
-    return t('m5.s.' + r.act, { who: whoText(data, r.who), a: areaText(r.area) });
+    if (!r || !r.kind) return '';
+    var w = whoText(data, r.who), src = r.src && !areaEmpty(r.src) ? t('m5.s.from', { a: areaText(r.src) }) : '';
+    if (r.kind === 'lock') return t('m5.s4.lock', { v: lockText(r) });
+    if (r.kind === 'deny') return t('m5.s4.deny', { who: w, from: src, a: areaText(r.dest) });
+    if (r.kind === 'allow') return t('m5.s4.allow', { who: w, from: src, a: destText(r) });
+    if (r.kind === 'pair') return t('m5.s4.pair', { who: w, v: (r.partners || []).map(function (id) { return typeName(data, id); }).join(', ') || '…' });
+    return '';
   }
-  // one line for each reason a move is refused (data gives type names)
+  // one line for each reason a pair is refused
   function reasonText(w, data) {
     var t = PWH.t; data = data || CUR;
-    if (w.code === 'lock' || w.code === 'out' || w.code === 'deny' || w.code === 'keep') return t('m5.why.' + w.code, { p: w.part, rule: ruleText(w.rule, data) });
-    if (w.code === 'samefloor') return t('m5.why.samefloor', { p: w.part, rule: ruleText(w.rule, data) });
-    if (w.code === 'sametype') return t('m5.why.sametype', { p: w.part, a: typeName(data, w.a), b: w.b ? typeName(data, w.b) : t('m5.t.notype'), rule: ruleText(w.rule, data) });
-    if (w.code === 'type') return t('m5.why.type', { a: typeName(data, w.a), b: typeName(data, w.b) });
+    if (w.code === 'lock') return t('m5.why4.lock', { p: w.part, rule: ruleText(w.rule, data) });
+    if (w.code === 'deny') return t('m5.why4.deny', { p: w.part, rule: ruleText(w.rule, data) });
+    if (w.code === 'allow') return t(w.floor ? 'm5.why4.floor' : 'm5.why4.allow', { p: w.part, rule: ruleText(w.rule, data) });
+    if (w.code === 'pair') return t('m5.why4.pair', { p: w.part, o: w.other, ot: w.otherType ? typeName(data, w.otherType) : t('m5.t.notype'), rule: ruleText(w.rule, data) });
     return t('m4.rule.' + w.code, { v: w.v || '' });
   }
-  PWH.rules = { reasonText: reasonText, ruleText: ruleText, areaText: areaText, whoText: whoText, typeName: typeName, typeOf: typeOf, load: load, save: save,
-    checkMove: checkMove, checkSwap: checkSwap, frozen: frozen, misplaced: misplaced, destOk: destOk, deadEnds: deadEnds, rulesFor: rulesFor,
-    zoneOf: zoneOf, inArea: inArea, placeOf: placeOf, emptyArea: emptyArea, fixArea: fixArea };
+  PWH.rules = { KINDS: KINDS, reasonText: reasonText, ruleText: ruleText, areaText: areaText, whoText: whoText, destText: destText, lockText: lockText, typeName: typeName, typeOf: typeOf,
+    load: load, save: save, checkMove: checkMove, checkSwap: checkSwap, frozen: frozen, misplaced: misplaced, destOk: destOk, deadEnds: deadEnds, rulesFor: rulesFor,
+    zoneOf: zoneOf, inArea: inArea, placeOf: placeOf, emptyArea: emptyArea, fixArea: fixArea, areaEmpty: areaEmpty };
 })(window);

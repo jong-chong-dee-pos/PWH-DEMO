@@ -11,12 +11,10 @@
  * Engine: rules.js. Every change is logged with who and when. */
 (function (g) {
   var PWH = g.PWH, t = PWH.t;
-  var ACTS = ['keep', 'deny', 'out', 'lock', 'samefloor', 'sametype'];
-  var NOAREA = { lock: 1, samefloor: 1, sametype: 1 };
-  var TINT = { keep: '#22c55e', deny: '#ef4444', out: '#f59e0b', lock: '#94a3b8', off: '#55657e', some: '#eab308', here: '#38bdf8' };
-  var CHIP = { keep: 'ok', deny: 'error', out: 'warn', lock: 'info', samefloor: 'info', sametype: 'info' };
+  var TINT = { keep: '#22c55e', deny: '#ef4444', lock: '#f59e0b', src: '#38bdf8', off: '#55657e', some: '#eab308', here: '#a78bfa' };
+  var CHIP = { lock: 'warn', deny: 'error', allow: 'ok', pair: 'info' };
   var S = { root: null, data: null, parts: [], names: new Map(), L: null, ml: [], match: null, fd: null, places: null,
-    form: null, pmode: 'row', lastRack: null, kit: null, floor: 0, mode: 'view', selRule: null,
+    form: null, ptarget: 'dest', pmode: 'row', lastRack: null, kit: null, floor: 0, mode: 'view', selRule: null,
     view: { kind: 'type', code: '', type: null }, card: '_none', tq: '', tpick: new Set(), tedit: null, moveTo: '',
     confirm: null, msg: null, test: null, misQ: '' };
   var NONE = '_none';
@@ -73,64 +71,105 @@
   }
   function typeCount(id) { var n = 0, pt = S.data.partType; for (var k in pt) if (pt[k] === id) n++; return n; }
   function rulesOfType(id) { return S.data.rules.filter(function (r) { return r.who && r.who.kind === 'type' && r.who.types.indexOf(id) >= 0; }).length; }
+  function lockFloor(r) { var c = (r.who.parts || [])[0], pk = c && pickFor(c); return pk && pk.floor; }
   function areaFloor(a) { return a.floors[0] || rowFloor(a.rows[0]) || (a.racks[0] && S.match && (S.match.rackById.get(a.racks[0]) || {}).floor) || (a.bins[0] && S.match && (S.match.rackById.get(a.bins[0].replace(/-\d+$/, '')) || {}).floor); }
 
   // ---------- rule form ----------
-  function newForm() { return { who: { kind: 'type', parts: [], types: [] }, act: 'keep', area: R().emptyArea(), reason: '' }; }
-  function formOf(r) { return { id: r.id, who: JSON.parse(JSON.stringify(r.who)), act: r.act, area: R().fixArea(JSON.parse(JSON.stringify(r.area || {}))), reason: r.reason || '', off: r.off, edit: true }; }
-  function areaEmpty(a) { return !a.rows.length && !a.floors.length && !a.racks.length && !a.bins.length; }
+  function newForm(kind) { return { kind: kind || 'deny', who: { kind: kind === 'lock' || kind === 'pair' ? 'part' : 'type', parts: [], types: [] }, lockBins: {}, srcOn: false, src: R().emptyArea(), dest: R().emptyArea(), sameFloor: false, partners: [], reason: '' }; }
+  function formOf(r) {
+    var f = newForm(r.kind); f.id = r.id; f.edit = true; f.off = r.off; f.reason = r.reason || '';
+    f.who = JSON.parse(JSON.stringify(r.who || f.who)); f.lockBins = JSON.parse(JSON.stringify(r.lockBins || {}));
+    f.srcOn = !!(r.src && !R().areaEmpty(r.src)); f.src = R().fixArea(JSON.parse(JSON.stringify(r.src || {}))); f.dest = R().fixArea(JSON.parse(JSON.stringify(r.dest || {})));
+    f.sameFloor = !!r.sameFloor; f.partners = (r.partners || []).slice();
+    return f;
+  }
   function formOk(f) {
     if (f.who.kind === 'part' && !f.who.parts.length) return t('m5.err.parts');
     if (f.who.kind === 'type' && !f.who.types.length) return t('m5.err.types');
-    if (f.who.kind === 'all' && f.act === 'lock') return t('m5.err.lockall');
-    if (!NOAREA[f.act] && areaEmpty(f.area)) return t('m5.err.area');
+    if ((f.kind === 'deny' || f.kind === 'allow') && f.srcOn && R().areaEmpty(f.src)) return t('m5.err.src');
+    if (f.kind === 'deny' && R().areaEmpty(f.dest)) return t('m5.err.area');
+    if (f.kind === 'allow' && R().areaEmpty(f.dest) && !f.sameFloor) return t('m5.err.allow');
+    if (f.kind === 'pair' && !f.partners.length) return t('m5.err.partners');
     return '';
   }
   function toRule(f) {
     var w = { kind: f.who.kind, parts: f.who.kind === 'part' ? f.who.parts.slice() : [], types: f.who.kind === 'type' ? f.who.types.slice() : [] };
-    return { id: f.id || 'R' + Date.now(), who: w, act: f.act, area: NOAREA[f.act] ? R().emptyArea() : JSON.parse(JSON.stringify(f.area)), reason: (f.reason || '').trim(), off: !!f.off, by: who(), at: Date.now() };
+    var r = { id: f.id || 'R' + Date.now(), kind: f.kind, who: w, reason: (f.reason || '').trim(), off: !!f.off, by: who(), at: Date.now() };
+    if (f.kind === 'lock') { r.lockBins = {}; w.parts.forEach(function (c) { r.lockBins[c] = (f.lockBins[c] || []).slice(); }); }
+    if (f.kind === 'deny' || f.kind === 'allow') { r.src = f.srcOn ? JSON.parse(JSON.stringify(f.src)) : null; r.dest = JSON.parse(JSON.stringify(f.dest)); }
+    if (f.kind === 'allow') r.sameFloor = !!f.sameFloor;
+    if (f.kind === 'pair') r.partners = f.partners.slice();
+    return r;
   }
   function preview(f) { return R().ruleText(toRule(f), S.data); }
+  function needsMap(f) { return f && (f.kind === 'deny' || f.kind === 'allow'); }
+  function curArea(f) { return S.ptarget === 'src' && f.srcOn ? f.src : f.dest; }
   function partsBox(list, id, del) {
     return '<div class="m4sugw m5sugw"><input id="' + id + '" placeholder="' + esc(t('m5.ph.part2')) + '" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="' + id + 'sug"><span class="m4sug" id="' + id + 'sug" role="listbox" hidden></span></div>' +
       (list ? '<div class="m5chips">' + list.map(function (v, i) { return '<span class="m5chip"><span class="code">' + esc(v) + '</span><span class="sub2">' + esc(S.names.get(v) || '') + '</span><button type="button" data-m5="' + del + '" data-i="' + i + '" aria-label="' + esc(t('m4.sim.del')) + ' ' + esc(v) + '">×</button></span>'; }).join('') + '</div>' : '');
+  }
+  function lockBox(f) {   // each Part: its storage bins, all ticked = every bin it is in
+    var list = f.who.parts;
+    return partsBox(null, 'm5part', 'delpart') + (list.length ? '<div class="m5locks">' + list.map(function (c, i) {
+      var pk = pickFor(c), bins = (pk && pk.bins || []).map(function (b) { return b.bin; }), sel = f.lockBins[c] || [], all = !sel.length;
+      return '<div class="m5lk"><div class="m5lkh"><span class="code">' + esc(c) + '</span><span class="sub2">' + esc(S.names.get(c) || '') + '</span><button type="button" class="m5x" data-m5="delpart" data-i="' + i + '" aria-label="' + esc(t('m4.sim.del')) + ' ' + esc(c) + '">×</button></div>' +
+        (bins.length ? '<div class="m5grid"><button type="button" class="m5pick" data-m5="lkall" data-v="' + esc(c) + '" aria-pressed="' + all + '">' + esc(t('m5.lk.all2', { n: bins.length })) + '</button>' +
+          bins.map(function (b) { return '<button type="button" class="m5pick code" data-m5="lkbin" data-v="' + esc(c) + '" data-b="' + esc(b) + '" aria-pressed="' + (!all && sel.indexOf(b) >= 0) + '">' + esc(b) + '</button>'; }).join('') + '</div>'
+          : '<p class="sub2">' + esc(t('m5.lk.nobin')) + '</p>') + '</div>';
+    }).join('') + '</div>' : '');
   }
   function typeButtons(sel, act) {
     if (!S.data.types.length) return '<p class="sub2">' + esc(t('m5.t.none')) + '</p>';
     return '<div class="m5grid wide">' + S.data.types.map(function (tp) { return '<button type="button" class="m5pick" data-m5="' + act + '" data-v="' + esc(tp.id) + '" aria-pressed="' + (sel.indexOf(tp.id) >= 0) + '">' + esc(tp.name) + ' <small>' + nf(typeCount(tp.id)) + '</small></button>'; }).join('') + '</div>';
   }
-  function selSummary(f) {
-    var a = f.area, bits = [];
-    function c(label, act, v, sub) { return '<span class="m5chip"><span class="code">' + esc(label) + '</span>' + (sub ? '<span class="sub2">' + esc(sub) + '</span>' : '') + '<button type="button" data-m5="' + act + '" data-v="' + esc(v) + '" aria-label="' + esc(t('m4.sim.del')) + ' ' + esc(label) + '">×</button></span>'; }
+  function selSummary(a, side) {
+    var bits = [];
+    function c(label, act, v, sub) { return '<span class="m5chip"><span class="code">' + esc(label) + '</span>' + (sub ? '<span class="sub2">' + esc(sub) + '</span>' : '') + '<button type="button" data-m5="' + act + '" data-k="' + side + '" data-v="' + esc(v) + '" aria-label="' + esc(t('m4.sim.del')) + ' ' + esc(label) + '">×</button></span>'; }
     a.floors.forEach(function (x) { bits.push(c(t('m5.a.wholefloor', { f: floorTxt(x) }), 'unfloor', x)); });
-    a.rows.forEach(function (x) { bits.push(c(x, 'unrow', x, t('m5.a.zone') + (rowFloor(x) ? ' · ' + floorTxt(rowFloor(x)) : ''))); });
+    a.rows.forEach(function (x) { bits.push(c(x, 'unrow', x, t('m5.a.row') + (rowFloor(x) ? ' · ' + floorTxt(rowFloor(x)) : ''))); });
     a.racks.forEach(function (x) { bits.push(c(x, 'unrack', x, t('m5.a.alllv'))); });
     a.bins.forEach(function (x) { bits.push(c(x, 'unbin', x, '')); });
     return bits.length ? '<div class="m5chips">' + bits.join('') + '</div>' : '<p class="sub2 m5none">' + esc(t('m5.a.none2')) + '</p>';
   }
   function levelPanel(f) {
-    var id = S.lastRack, rk = id && S.match && S.match.rackById.get(id);
+    var id = S.lastRack, rk = id && S.match && S.match.rackById.get(id), a = curArea(f);
     if (!rk || S.pmode !== 'rack') return '';
-    var n = Math.max(1, rk.levels || 1), whole = f.area.racks.indexOf(id) >= 0, lv = [];
-    for (var l = 1; l <= n; l++) lv.push('<button type="button" class="m5pick" data-m5="lv" data-v="' + l + '" aria-pressed="' + (f.area.bins.indexOf(id + '-' + pad2(l)) >= 0) + '">' + esc(t('m5.lv', { n: l })) + '</button>');
+    var n = Math.max(1, rk.levels || 1), whole = a.racks.indexOf(id) >= 0, lv = [];
+    for (var l = 1; l <= n; l++) lv.push('<button type="button" class="m5pick" data-m5="lv" data-v="' + l + '" aria-pressed="' + (a.bins.indexOf(id + '-' + pad2(l)) >= 0) + '">' + esc(t('m5.lv', { n: l })) + '</button>');
     return '<div class="m5lv"><span><b>' + esc(id) + '</b> <span class="sub2">' + esc(t('m5.lv.sub')) + '</span></span><div class="m5grid"><button type="button" class="m5pick" data-m5="lvall" aria-pressed="' + whole + '">' + esc(t('m5.lv.all')) + '</button>' + lv.join('') + '</div></div>';
   }
+  function areaPicker(f, side) {   // one area block (source or destination); the active one receives map clicks
+    var a = side === 'src' ? f.src : f.dest, on = S.ptarget === side || (side === 'dest' && !(f.srcOn && S.ptarget === 'src'));
+    var cur = S.L && S.L.floors[S.floor] ? S.L.floors[S.floor].id : null, whole = cur && a.floors.indexOf(cur) >= 0;
+    return '<div class="m5ap' + (on ? ' on' : '') + ' s-' + side + '" data-side="' + side + '"><div class="m5aph"><b>' + esc(t('m5.ap.' + side + '.' + f.kind)) + '</b>' +
+      (on ? '<span class="m5aptag">' + esc(t('m5.ap.active')) + '</span>' : '<button type="button" class="btn sm" data-m5="ptarget" data-v="' + side + '">' + esc(t('m5.ap.pick')) + '</button>') + '</div>' +
+      (on ? '<p class="sub2">' + esc(t('m5.map.hint2.' + S.pmode)) + '</p><div class="m5wtool">' + seg([['rack', t('m5.pm.rack')], ['row', t('m5.pm.row')], ['floor', t('m5.pm.floor')]], S.pmode, 'pmode') +
+        (S.pmode === 'floor' ? '<button type="button" class="btn sm" data-m5="wholefloor" aria-pressed="' + whole + '">' + esc(t(whole ? 'm5.map.unwhole' : 'm5.map.whole', { f: floorTxt(cur) })) + '</button>' : '') +
+        '<button type="button" class="btn sm" data-m5="clear">' + esc(t('m5.map.clear')) + '</button></div><div class="m5lvw">' + levelPanel(f) + '</div>' : '') +
+      '<div class="m5sel" data-side="' + side + '">' + selSummary(a, side) + '</div></div>';
+  }
+  function slot(n, title, body) { return '<div class="m5slot"><div class="m5slh"><span class="m5n">' + n + '</span><b>' + esc(title) + '</b></div>' + body + '</div>'; }
   function formHtml() {
-    var f = S.form, w = f.who;
-    var cur = S.L && S.L.floors[S.floor] ? S.L.floors[S.floor].id : null, whole = cur && f.area.floors.indexOf(cur) >= 0;
-    var where = NOAREA[f.act] ? '<p class="sub2">' + esc(t('m5.noarea')) + '</p>' : !S.L ? '<div class="msg warn"><span>' + esc(t('m5.nolayout')) + '</span></div>' :
-      '<p class="sub2">' + esc(t('m5.map.hint2.' + S.pmode)) + '</p><div class="m5wtool">' + seg([['rack', t('m5.pm.rack')], ['row', t('m5.pm.row')], ['floor', t('m5.pm.floor')]], S.pmode, 'pmode') +
-      (S.pmode === 'floor' ? '<button type="button" class="btn sm" data-m5="wholefloor" aria-pressed="' + whole + '">' + esc(t(whole ? 'm5.map.unwhole' : 'm5.map.whole', { f: floorTxt(cur) })) + '</button>' : '') +
-      '<button type="button" class="btn sm" data-m5="clear">' + esc(t('m5.map.clear')) + '</button></div><div id="m5lvw">' + levelPanel(f) + '</div><div id="m5sel">' + selSummary(f) + '</div>';
-    return '<div class="m5fbox" id="m5form"><div class="m5fh"><h3>' + esc(t(f.edit ? 'm5.edit.title' : 'm5.new.title')) + '</h3><button type="button" class="btn sm" data-m5="cancel">' + esc(t('m5.cancel')) + '</button></div>' +
-      '<div class="m5slot"><div class="m5slh"><span class="m5n">1</span><b>' + esc(t('m5.slot.who')) + '</b></div>' + seg([['part', t('m5.wk.part')], ['type', t('m5.wk.type')], ['all', t('m5.wk.all')]], w.kind, 'wkind') +
-      (w.kind === 'part' ? partsBox(w.parts, 'm5part', 'delpart') : w.kind === 'type' ? typeButtons(w.types, 'wtype') : '<p class="sub2">' + esc(t('m5.wk.all.sub')) + '</p>') + '</div>' +
-      '<div class="m5slot"><div class="m5slh"><span class="m5n">2</span><b>' + esc(t('m5.slot.act')) + '</b></div><div class="m5acts">' + ACTS.map(function (a) {
-        var dis = a === 'lock' && w.kind === 'all';
-        return '<button type="button" class="m5act a-' + a + '" data-m5="act" data-v="' + a + '" aria-pressed="' + (f.act === a) + '"' + (dis ? ' disabled' : '') + '><i aria-hidden="true"></i><span><b>' + esc(t('m5.act.' + a)) + '</b><small>' + esc(t('m5.act.' + a + '.sub')) + '</small></span></button>';
-      }).join('') + '</div></div>' +
-      '<div class="m5slot"><div class="m5slh"><span class="m5n">3</span><b>' + esc(t(NOAREA[f.act] ? 'm5.slot.where0' : 'm5.slot.where2')) + '</b></div>' + where + '</div>' +
-      '<div class="m5slot"><label class="m5f"><span>' + esc(t('m5.reason2')) + '</span><input id="m5reason" value="' + esc(f.reason) + '" placeholder="' + esc(t('m5.ph.reason')) + '"></label></div>' +
+    var f = S.form, w = f.who, k = f.kind, html = '';
+    html += slot(1, t('m5.slot.kind'), '<div class="m5kinds4">' + R().KINDS.map(function (x) {
+      return '<button type="button" class="m5k4 k-' + x + '" data-m5="kind" data-v="' + x + '" aria-pressed="' + (k === x) + '"' + (f.edit && k !== x ? ' disabled' : '') + '><i aria-hidden="true"></i><span><b>' + esc(t('m5.k4.' + x)) + '</b><small>' + esc(t('m5.k4.' + x + '.mean')) + '</small><em>' + esc(t('m5.k4.' + x + '.ex')) + '</em></span></button>';
+    }).join('') + '</div>');
+    var whoKinds = k === 'lock' ? [['part', t('m5.wk.part')]] : k === 'pair' ? [['part', t('m5.wk.part')], ['type', t('m5.wk.type')]] : [['part', t('m5.wk.part')], ['type', t('m5.wk.type')], ['all', t('m5.wk.all')]];
+    var whoBody = (whoKinds.length > 1 ? seg(whoKinds, w.kind, 'wkind') : '') +
+      (k === 'lock' ? lockBox(f) : w.kind === 'part' ? partsBox(w.parts, 'm5part', 'delpart') : w.kind === 'type' ? typeButtons(w.types, 'wtype') : '<p class="sub2">' + esc(t('m5.wk.all.sub')) + '</p>');
+    html += slot(2, t(k === 'lock' ? 'm5.slot.lockwho' : k === 'pair' ? 'm5.slot.pairwho' : 'm5.slot.who'), whoBody);
+    if (k === 'deny' || k === 'allow') {
+      if (!S.L) html += slot(3, t('m5.slot.where0'), '<div class="msg warn"><span>' + esc(t('m5.nolayout')) + '</span></div>');
+      else {
+        var srcSeg = '<div class="m5srcq"><span class="sub2">' + esc(t('m5.src.q')) + '</span>' + seg([['any', t('m5.src.any')], ['some', t('m5.src.some')]], f.srcOn ? 'some' : 'any', 'srcon') + '</div>';
+        html += slot(3, t('m5.slot.src'), srcSeg + (f.srcOn ? areaPicker(f, 'src') : ''));
+        html += slot(4, t(k === 'deny' ? 'm5.slot.dest.deny' : 'm5.slot.dest.allow'), areaPicker(f, 'dest') +
+          (k === 'allow' ? '<label class="m5chk m5sf"><input type="checkbox" id="m5samefloor"' + (f.sameFloor ? ' checked' : '') + '> <span><b>' + esc(t('m5.dst.samefloor')) + '</b><span class="sub2">' + esc(t('m5.dst.samefloor.sub')) + '</span></span></label>' : ''));
+      }
+    } else if (k === 'pair') html += slot(3, t('m5.slot.partners'), typeButtons(f.partners, 'partner') + '<p class="sub2">' + esc(t('m5.partners.sub')) + '</p>');
+    var n = (k === 'deny' || k === 'allow') ? 5 : 4;
+    html += slot(n, t('m5.reason2'), '<input id="m5reason" class="m5in" value="' + esc(f.reason) + '" placeholder="' + esc(t('m5.ph.reason')) + '" aria-label="' + esc(t('m5.reason2')) + '">');
+    return '<div class="m5fbox" id="m5form"><div class="m5fh"><h3>' + esc(t(f.edit ? 'm5.edit.title' : 'm5.new.title')) + '</h3><button type="button" class="btn sm" data-m5="cancel">' + esc(t('m5.cancel')) + '</button></div>' + html +
       '<div class="m5sum"><span class="sub2">' + esc(t('m5.preview')) + '</span> <b id="m5prev">' + esc(preview(f)) + '</b></div>' +
       (S.msg && S.msg[0] === 'bad' ? '<div class="msg bad" role="status"><span>' + esc(S.msg[1]) + '</span></div>' : '') +
       '<div class="m4acts"><button type="button" class="btn primary" data-m5="save">' + esc(t(f.edit ? 'm5.save.edit' : 'm5.save')) + '</button><button type="button" class="btn" data-m5="cancel">' + esc(t('m5.cancel')) + '</button></div></div>';
@@ -144,52 +183,63 @@
     var p = w.parts || [];
     return '<div class="m5codes">' + p.slice(0, 3).map(function (c) { return '<span class="code">' + esc(c) + '</span>'; }).join('') + (p.length > 3 ? '<span class="sub2">' + esc(t('m5.a.more', { n: p.length - 3 })) + '</span>' : '') + '</div>';
   }
-  function whereCell(r) {
-    if (NOAREA[r.act]) return '<span class="sub2">–</span>';
-    var a = R().fixArea(r.area), lines = [];
+  function areaLines(a) {
+    a = R().fixArea(a); var lines = [];
     function line(k, list) { if (list.length) lines.push('<div class="m5wl"><span class="sub2">' + esc(t(k)) + '</span><span>' + esc(list.slice(0, 10).join(', ') + (list.length > 10 ? ' ' + t('m5.a.more', { n: list.length - 10 }) : '')) + '</span></div>'); }
     line('m5.wh.floor', a.floors.map(function (f) { return String(f).replace(/^F/, ''); }));
-    line('m5.wh.zone', a.rows); line('m5.wh.rack', a.racks); line('m5.wh.bin', a.bins);
+    line('m5.wh.row', a.rows); line('m5.wh.rack', a.racks); line('m5.wh.bin', a.bins);
     return lines.join('');
   }
+  function srcCell(r) {
+    if (r.kind === 'lock') { var lb = r.lockBins || {}; return (r.who.parts || []).map(function (c) { var b = lb[c]; return '<div class="m5wl"><span class="sub2">' + esc(t('m5.wh.bin')) + '</span><span>' + esc(b && b.length ? b.join(', ') : t('m5.lk.all')) + '</span></div>'; }).join(''); }
+    if (r.kind === 'pair') return '<span class="sub2">–</span>';
+    return r.src && !R().areaEmpty(r.src) ? areaLines(r.src) : '<span class="sub2">' + esc(t('m5.src.any')) + '</span>';
+  }
+  function destCell(r) {
+    if (r.kind === 'lock') return '<span class="sub2">' + esc(t('m5.dst.none')) + '</span>';
+    if (r.kind === 'pair') return '<div class="m5wl"><span class="sub2">' + esc(t('m5.dst.with')) + '</span><span>' + (r.partners || []).map(function (id) { return '<span class="m5tchip">' + esc(typeName(id)) + '</span>'; }).join(' ') + '</span></div>';
+    return areaLines(r.dest) + (r.sameFloor ? '<div class="m5wl"><span class="sub2">' + esc(t('m5.wh.cond')) + '</span><span>' + esc(t('m5.dst.samefloor')) + '</span></div>' : '');
+  }
   function listHtml() {
-    var rules = S.data.rules.slice().sort(function (a, b) { return b.at - a.at; });
+    var rules = S.data.rules.slice().sort(function (a, b) { return R().KINDS.indexOf(a.kind) - R().KINDS.indexOf(b.kind) || b.at - a.at; });
     var dead = S.L ? R().deadEnds(S.data, places()) : [];
     var rows = rules.map(function (r) {
       var c = S.confirm === r.id, sel = S.selRule === r.id && !S.form;
       return '<tr class="m5rr' + (r.off ? ' m5off' : '') + (sel ? ' sel' : '') + '" data-m5="selrule" data-id="' + esc(r.id) + '" tabindex="0" aria-selected="' + sel + '">' +
-        '<td>' + chip(CHIP[r.act] || 'info', t('m5.act.' + r.act)) + '</td><td>' + whoCell(r) + '</td><td>' + whereCell(r) + (r.reason ? '<div class="m5rnar sub2">' + esc(t('m5.reason')) + ': ' + esc(r.reason) + '</div>' : '') + '</td>' +
-        '<td>' + (r.reason ? esc(r.reason) : '<span class="sub2">–</span>') + (r.conv ? '<div>' + chip('warn', t('m5.conv')) + '</div>' : '') + '</td>' +
+        '<td>' + chip(CHIP[r.kind], t('m5.k4.' + r.kind)) + (r.conv ? '<div>' + chip('warn', t('m5.conv')) + '</div>' : '') + '</td><td>' + whoCell(r) + '</td><td>' + srcCell(r) + '</td><td>' + (r.kind === 'pair' ? '' : '<div class="m5rnar m5srcn"><div class="m5wl"><span class="sub2">' + esc(t('m5.col.src')) + '</span><span>' + esc(r.kind === 'lock' ? R().lockText(r) : r.src && !R().areaEmpty(r.src) ? R().areaText(r.src) : t('m5.src.any')) + '</span></div></div>') + destCell(r) +
+        (r.reason ? '<div class="m5rnar sub2">' + esc(t('m5.reason')) + ': ' + esc(r.reason) + '</div>' : '') + '</td>' +
+        '<td>' + (r.reason ? esc(r.reason) : '<span class="sub2">–</span>') + '</td>' +
         '<td><label class="m5mini" data-stop="1"><input type="checkbox" data-m5r="off" data-id="' + esc(r.id) + '"' + (r.off ? '' : ' checked') + ' aria-label="' + esc(t('m5.col.state')) + '"><span class="m5sw" aria-hidden="true"></span></label></td>' +
         '<td class="num"><div class="m5rowacts" data-stop="1"><button type="button" class="btn sm" data-m5="edit" data-id="' + esc(r.id) + '">' + esc(t('m5.edit')) + '</button><button type="button" class="btn sm danger' + (c ? ' confirm' : '') + '" data-m5="del" data-id="' + esc(r.id) + '">' + esc(t(c ? 'm5.del.confirm' : 'm5.del')) + '</button></div></td></tr>';
     }).join('');
     return (S.msg && S.msg[0] === 'ok' ? '<div class="msg ok" role="status"><span>' + esc(S.msg[1]) + '</span></div>' : '') +
       ((S.data.dropped || []).length ? '<div class="msg warn" role="status"><span>' + esc(t('m5.dropped', { n: S.data.dropped.join(', ') })) + '</span></div>' : '') +
       (dead.length ? '<div class="msg bad" role="status"><span>' + esc(t('m5.dead', { n: dead.map(function (x) { return x.subj.code ? x.subj.label : x.subj.label ? t('m5.w.type', { v: x.subj.label }) : t('m5.w.all'); }).join(', ') })) + '</span></div>' : '') +
-      (rules.length ? '<div class="tablebox"><table class="m5tbl m5rtab"><colgroup><col class="c-act"><col class="c-who"><col class="c-where"><col class="c-why"><col class="c-on"><col class="c-btn"></colgroup><thead><tr><th>' + esc(t('m5.col.act')) + '</th><th>' + esc(t('m5.col.who')) + '</th><th>' + esc(t('m5.col.where')) + '</th><th>' + esc(t('m5.reason')) + '</th><th>' + esc(t('m5.col.state')) + '</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div><p class="sub2 m5hint">' + esc(t('m5.list.click')) + '</p>'
+      (rules.length ? '<div class="tablebox"><table class="m5tbl m5rtab"><colgroup><col class="c-act"><col class="c-who"><col class="c-src"><col class="c-where"><col class="c-why"><col class="c-on"><col class="c-btn"></colgroup><thead><tr><th>' + esc(t('m5.col.kind')) + '</th><th>' + esc(t('m5.col.who')) + '</th><th>' + esc(t('m5.col.src')) + '</th><th>' + esc(t('m5.col.dest')) + '</th><th>' + esc(t('m5.reason')) + '</th><th>' + esc(t('m5.col.state')) + '</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div><p class="sub2 m5hint">' + esc(t('m5.list.click')) + '</p>'
         : '<p class="empty-note">' + esc(t('m5.none2')) + '</p>');
   }
 
   // ---------- the one map ----------
-  function mapMode() { return S.form && !NOAREA[S.form.act] ? 'pick' : S.form ? 'idle' : S.mode; }
+  function mapMode() { return S.form && needsMap(S.form) ? 'pick' : S.form ? 'idle' : S.mode; }
   function viewSubj() { var V = S.view; return V.kind === 'part' ? (V.code ? { code: V.code } : null) : (V.type ? { type: V.type } : null); }
   function viewData() {
     var subj = viewSubj(); if (!subj || !S.match) return null;
     var key = JSON.stringify(subj); if (S.viewCache && S.viewCache.key === key) return S.viewCache;
     var cur = subj.code ? pickFor(subj.code) : null, curPick = cur && cur.status === 'ok' ? cur : null, byRack = new Map();
     places().forEach(function (pl) { var w = R().destOk(S.data, subj, pl, curPick), x = byRack.get(pl.rack) || { ok: 0, no: 0 }; if (w.length) x.no++; else x.ok++; byRack.set(pl.rack, x); });
-    var lv = R().rulesFor(S.data, subj), src = subj.code && curPick ? R().checkMove(S.data, subj.code, curPick, null) : [];
+    var list = R().rulesFor(S.data, subj), src = subj.code && curPick ? R().checkMove(S.data, subj.code, curPick, null) : [];
     var n = [0, 0, 0]; byRack.forEach(function (x) { n[!x.no ? 0 : !x.ok ? 2 : 1]++; });
-    S.viewCache = { key: key, subj: subj, cur: curPick, byRack: byRack, rules: lv.levels[0].concat(lv.levels[1]), own: lv.own, type: lv.type, src: src, n: n };
+    S.viewCache = { key: key, subj: subj, cur: curPick, byRack: byRack, rules: list, type: subj.code ? R().typeOf(S.data, subj.code) : subj.type, src: src, n: n,
+      tied: !subj.code && list.some(function (r) { return r.src && !R().areaEmpty(r.src); }) };
     return S.viewCache;
   }
   function mapInfo() {
     var m = mapMode();
-    if (m === 'pick') return '<p class="sub2">' + esc(t('m5.map.picking')) + '</p>';
-    if (m === 'idle') return '<p class="sub2">' + esc(t('m5.noarea')) + '</p>';
+    if (m === 'pick') return '<p class="sub2">' + esc(t('m5.map.picking2')) + '</p>';
+    if (m === 'idle') return '<p class="sub2">' + esc(t('m5.noarea2')) + '</p>';
     if (m === 'rule') {
       var r = S.data.rules.filter(function (x) { return x.id === S.selRule; })[0];
-      return r ? '<p class="m5mi"><b>' + esc(R().ruleText(r, S.data)) + '</b></p>' + (NOAREA[r.act] ? '<p class="sub2">' + esc(t('m5.noarea')) + '</p>' : '') : '';
+      return r ? '<p class="m5mi"><b>' + esc(R().ruleText(r, S.data)) + '</b></p>' + (r.kind === 'pair' ? '<p class="sub2">' + esc(t('m5.noarea2')) + '</p>' : '') : '';
     }
     var D = viewData();
     if (!D) return '<p class="sub2">' + esc(t('m5.v.pick2')) + '</p>';
@@ -198,8 +248,18 @@
       (s.code ? '<span class="h">' + esc(D.cur ? t('m5.v.now', { b: D.cur.bin }) : t('m5.v.nowhere')) + '</span>' : '') + '</div>' +
       (s.code ? '<p class="sub2">' + esc((S.names.get(s.code) || '') + ' · ' + t('m5.v.type', { t: D.type ? typeName(D.type) : t('m5.t.notype') })) + '</p>' : '') +
       (D.src.length ? '<div class="msg bad"><span>' + esc(t('m5.v.cannot')) + ' ' + esc(D.src.map(function (w) { return R().ruleText(w.rule, S.data); }).join(' / ')) + '</span></div>' : '') +
-      '<details class="m5vrd"' + (D.rules.length <= 3 ? ' open' : '') + '><summary>' + esc(t('m5.v.rules2', { n: D.rules.length })) + '</summary>' + (D.rules.length ? '<ul class="m5vr">' + D.rules.map(function (r) { return '<li>' + chip(CHIP[r.act], t('m5.act.' + r.act)) + ' ' + esc(R().ruleText(r, S.data)) + '</li>'; }).join('') + '</ul>' : '<p class="sub2">' + esc(t('m5.v.norules')) + '</p>') +
-      (s.code && D.own && D.type ? '<p class="sub2">' + esc(t('m5.v.ownwins')) + '</p>' : '') + '</details>';
+      (D.tied ? '<p class="sub2">' + esc(t('m5.v.tied')) + '</p>' : '') +
+      '<details class="m5vrd"' + (D.rules.length <= 3 ? ' open' : '') + '><summary>' + esc(t('m5.v.rules2', { n: D.rules.length })) + '</summary>' + (D.rules.length ? '<ul class="m5vr">' + D.rules.map(function (r) { return '<li>' + chip(CHIP[r.kind], t('m5.k4.' + r.kind)) + ' ' + esc(R().ruleText(r, S.data)) + '</li>'; }).join('') + '</ul>' : '<p class="sub2">' + esc(t('m5.v.norules')) + '</p>') + '</details>';
+  }
+  function legendFor(m) {
+    if (m === 'view') return [['keep', 'm5.v.leg.ok'], ['some', 'm5.v.leg.some'], ['deny', 'm5.v.leg.no']].concat(S.view.kind === 'part' ? [['here', 'm5.v.leg.here']] : []).concat([['off', 'm5.v.leg.free']]);
+    var r = m === 'rule' ? S.data.rules.filter(function (x) { return x.id === S.selRule; })[0] : m === 'pick' ? toRule(S.form) : null;
+    if (!r || r.kind === 'pair') return [];
+    if (r.kind === 'lock') return [['lock', 'm5.leg4.lock'], ['off', 'm5.leg.off']];
+    var out = [];
+    if (r.src && !R().areaEmpty(r.src)) out.push(['src', 'm5.leg4.src']);
+    out.push([r.kind === 'deny' ? 'deny' : 'keep', r.kind === 'deny' ? 'm5.leg4.deny' : 'm5.leg4.allow'], ['some', 'm5.leg.some'], ['off', 'm5.leg.off']);
+    return out;
   }
   function mapCard() {
     if (!S.L) return '<aside class="m5mapc"><div class="msg warn"><span>' + esc(t('m5.nolayout')) + '</span></div></aside>';
@@ -208,18 +268,16 @@
     var viewer = m === 'pick' || m === 'idle' ? '' : '<div class="m5vpick">' + seg([['type', t('m5.wk.type')], ['part', t('m5.wk.part')]], V.kind, 'vkind') +
       (V.kind === 'part' ? '<div class="m4sugw m5sugw"><input id="m5vpart" value="' + esc(V.code) + '" placeholder="' + esc(t('m5.ph.part3')) + '" autocomplete="off" role="combobox" aria-expanded="false" aria-controls="m5vpartsug"><span class="m4sug" id="m5vpartsug" role="listbox" hidden></span></div>'
         : '<select id="m5vtype" aria-label="' + esc(t('m5.wk.type')) + '"><option value="">' + esc(t('m5.v.choose')) + '</option>' + S.data.types.map(function (tp) { return '<option value="' + esc(tp.id) + '"' + (V.type === tp.id ? ' selected' : '') + '>' + esc(tp.name) + '</option>'; }).join('') + '</select>') + '</div>';
-    var leg = m === 'view' ? [['keep', 'm5.v.leg.ok'], ['some', 'm5.v.leg.some'], ['deny', 'm5.v.leg.no']].concat(V.kind === 'part' ? [['here', 'm5.v.leg.here']] : [])
-      : m === 'rule' ? (function () { var r = S.data.rules.filter(function (x) { return x.id === S.selRule; })[0]; return r && !NOAREA[r.act] ? [[r.act, 'm5.leg.' + r.act]] : []; })()
-      : S.form && !NOAREA[S.form.act] ? [[S.form.act, 'm5.leg.' + S.form.act], ['some', 'm5.leg.some']] : [];
     return '<aside class="m5mapc"><div class="m2mapcard m5map" id="m5map" data-fsbox><div class="m5mh"><div><h3>' + esc(t(title)) + '</h3></div>' + (m === 'rule' ? '<button type="button" class="btn sm" data-m5="backview">' + esc(t('m5.map.back')) + '</button>' : '') + '</div>' + viewer +
       '<div class="m4htool">' + seg(fl.map(function (x, i) { return [String(i), floorTxt(x.id)]; }), String(S.floor), 'floor') + '<span class="grow"></span>' +
       '<button type="button" class="btn sm" data-m5="zoom" data-v="out" aria-label="' + esc(t('m4.h.zout')) + '">−</button><button type="button" class="btn sm" data-m5="zoom" data-v="in" aria-label="' + esc(t('m4.h.zin')) + '">+</button><button type="button" class="btn sm" data-m5="zoom" data-v="fit">' + esc(t('m4.h.fit')) + '</button></div>' +
       '<div class="m2canvas" id="m2wrap"><canvas id="m2cv" tabindex="0" aria-label="' + esc(t(title)) + '"></canvas><div id="m2tip" class="m2tip" hidden></div></div>' +
-      '<div class="m5leg">' + leg.concat([['off', m === 'view' ? 'm5.v.leg.free' : 'm5.leg.off']]).map(function (l) { return '<span><i style="background:' + TINT[l[0]] + '"></i>' + esc(t(l[1])) + '</span>'; }).join('') + '</div>' +
+      '<div class="m5leg" id="m5leg">' + legHtml(m) + '</div>' +
       '<div class="m5minfo" id="m5minfo">' + mapInfo() + '</div></div></aside>';
   }
+  function legHtml(m) { return legendFor(m).map(function (l) { return '<span><i style="background:' + TINT[l[0]] + '"></i>' + esc(t(l[1])) + '</span>'; }).join(''); }
   function rulesSection() {
-    return '<section class="panel m5sec" id="m5rules"><div class="chd"><div class="chd-l"><h2>' + esc(t('m5.list.title')) + ' <span class="chip info">' + S.data.rules.filter(function (r) { return !r.off; }).length + '</span></h2><p class="sub">' + esc(t('m5.list.sub3')) + '</p></div>' +
+    return '<section class="panel m5sec" id="m5rules"><div class="chd"><div class="chd-l"><h2>' + esc(t('m5.list.title')) + ' <span class="chip info">' + S.data.rules.filter(function (r) { return !r.off; }).length + '</span></h2><p class="sub">' + esc(t('m5.list.sub4')) + '</p></div>' +
       (S.form ? '' : '<button type="button" class="btn primary" data-m5="new">+ ' + esc(t('m5.new.btn')) + '</button>') + '</div>' +
       '<div class="m5rgrid"><div class="m5rleft">' + (S.form ? formHtml() : '') + listHtml() + '</div>' + mapCard() + '</div></section>';
   }
@@ -277,8 +335,8 @@
     var L = misplacedList(), q = S.misQ.trim().toUpperCase(), shown = q ? L.filter(function (x) { return x.code.indexOf(q) >= 0 || String(S.names.get(x.code) || '').toUpperCase().indexOf(q) >= 0; }) : L;
     return '<section class="panel m5sec" id="m5mis"><div class="chd"><div class="chd-l"><h2>' + esc(t('m5.mis.title')) + ' <span class="chip ' + (L.length ? 'warn' : 'ok') + '">' + nf(L.length) + '</span></h2><p class="sub">' + esc(t('m5.mis.sub')) + '</p></div></div>' +
       (L.length ? '<div class="m5cpt"><input id="m5misq" type="search" value="' + esc(S.misQ) + '" placeholder="' + esc(t('m5.ph.part3')) + '" aria-label="' + esc(t('m5.ph.part3')) + '"><span class="sub2">' + esc(t('m5.t.showing', { n: nf(Math.min(200, shown.length)), m: nf(shown.length) })) + '</span></div>' +
-        '<div class="tablebox m5ptb"><table class="m5tbl m5mist"><colgroup><col class="c-code"><col class="c-name"><col class="c-type"><col class="c-bin"><col class="c-n"><col class="c-act"><col></colgroup><thead><tr><th>Part</th><th>' + esc(t('m5.col.name')) + '</th><th>' + esc(t('m5.wk.type')) + '</th><th>' + esc(t('m5.mis.now')) + '</th><th class="num">' + esc(t('m5.mis.n')) + '</th><th>' + esc(t('m5.col.act')) + '</th><th>' + esc(t('m5.mis.rule')) + '</th></tr></thead><tbody>' +
-        shown.slice(0, 200).map(function (x) { var tp = S.data.partType[x.code], w = x.why[0]; return '<tr><td><span class="code">' + esc(x.code) + '</span></td><td>' + esc(S.names.get(x.code) || '–') + '</td><td>' + (tp ? '<span class="m5tchip">' + esc(typeName(tp)) + '</span>' : '<span class="sub2">' + esc(t('m5.t.notype')) + '</span>') + '</td><td>' + loc(x.pick.bin) + '</td><td class="num">' + nf(x.n) + '</td><td>' + chip(CHIP[w.rule.act], t('m5.act.' + w.rule.act)) + '</td><td>' + esc(x.why.map(function (y) { return R().ruleText(y.rule, S.data); }).join(' / ')) + '</td></tr>'; }).join('') +
+        '<div class="tablebox m5ptb"><table class="m5tbl m5mist"><colgroup><col class="c-code"><col class="c-name"><col class="c-type"><col class="c-bin"><col class="c-n"><col class="c-act"><col></colgroup><thead><tr><th>Part</th><th>' + esc(t('m5.col.name')) + '</th><th>' + esc(t('m5.wk.type')) + '</th><th>' + esc(t('m5.mis.now')) + '</th><th class="num">' + esc(t('m5.mis.n')) + '</th><th>' + esc(t('m5.col.kind')) + '</th><th>' + esc(t('m5.mis.rule')) + '</th></tr></thead><tbody>' +
+        shown.slice(0, 200).map(function (x) { var tp = S.data.partType[x.code], w = x.why[0]; return '<tr><td><span class="code">' + esc(x.code) + '</span></td><td>' + esc(S.names.get(x.code) || '–') + '</td><td>' + (tp ? '<span class="m5tchip">' + esc(typeName(tp)) + '</span>' : '<span class="sub2">' + esc(t('m5.t.notype')) + '</span>') + '</td><td>' + loc(x.pick.bin) + '</td><td class="num">' + nf(x.n) + '</td><td>' + chip(CHIP[w.rule.kind], t('m5.k4.' + w.rule.kind)) + '</td><td>' + esc(x.why.map(function (y) { return R().ruleText(y.rule, S.data); }).join(' / ')) + '</td></tr>'; }).join('') +
         '</tbody></table></div>'
         : '<p class="empty-note">' + esc(t('m5.mis.none')) + '</p>') + '</section>';
   }
@@ -286,8 +344,8 @@
   // ---------- tester, history ----------
   function testCard() {
     var T = S.test || {}, res = '';
-    if (T.res) res = T.res.length ? '<div class="m5res bad"><b>' + esc(t('m4.rule.fail')) + '</b><ul>' + T.res.map(function (w) { return '<li>' + esc(R().reasonText(w, S.data)) + '</li>'; }).join('') + '</ul></div>' : '<div class="m5res ok"><b>&#10003; ' + esc(t('m5.test.ok')) + '</b></div>';
-    var li = ['m5.rule.swap', 'm5.rule.own', 'm5.rule.special', 'm5.rule.deny', 'm5.rule.size', 'm5.rule.sim'].map(function (k) { return '<li>' + esc(t(k)) + '</li>'; }).join('');
+    if (T.res) res = T.res.length ? '<div class="m5res bad"><b>' + esc(t('m4.rule.fail')) + '</b><ul>' + T.res.map(function (w) { return '<li>' + esc(R().reasonText(w, S.data)) + '</li>'; }).join('') + '</ul></div>' : '<div class="m5res ok"><b>&#10003; ' + esc(t('m5.test.ok4')) + '</b></div>';
+    var li = ['m5.rule4.both', 'm5.rule4.lock', 'm5.rule4.all', 'm5.rule4.none', 'm5.rule.special', 'm5.rule4.size', 'm5.rule.sim'].map(function (k) { return '<li>' + esc(t(k)) + '</li>'; }).join('');
     return '<section class="panel"><div class="chd"><div class="chd-l"><h2>' + esc(t('m5.test.title')) + '</h2><p class="sub">' + esc(t('m5.test.sub')) + '</p></div></div>' +
       '<form class="m5testf" id="m5test" autocomplete="off"><label><span>Part A</span><input id="m5ta" list="m5parts" value="' + esc(T.a || '') + '" required></label><span class="m4x">⇄</span><label><span>Part B</span><input id="m5tb" list="m5parts" value="' + esc(T.b || '') + '" required></label><button class="btn" type="submit">' + esc(t('m5.test.btn')) + '</button></form>' + (T.info || '') + res +
       '<details class="m5fixed"><summary>' + esc(t('m5.rules.title')) + '</summary><ol class="m5rules">' + li + '</ol></details></section>';
@@ -308,17 +366,26 @@
   }
 
   // ---------- map drawing ----------
-  function picked(id) {
-    var f = S.form, r = S.match && S.match.rackById.get(id); if (!f || !r) return 0;
-    var a = f.area;
-    if (a.rows.indexOf(R().zoneOf(id)) >= 0 || a.floors.indexOf(r.floor) >= 0 || a.racks.indexOf(id) >= 0) return 2;
+  function areaHit(a, id) {   // 2 = the whole rack is in the area, 1 = some of its levels, 0 = none
+    var r = S.match && S.match.rackById.get(id); if (!r || !a) return 0;
+    a = R().fixArea(a);
+    if (a.rows.indexOf(R().zoneOf(id)) >= 0 || a.floors.indexOf(r.floor) >= 0 || a.racks.indexOf(id) >= 0 || a.bins.indexOf(id) >= 0) return 2;
     return a.bins.some(function (b) { return b.indexOf(id + '-') === 0; }) ? 1 : 0;
   }
-  function ruleHit(rule, id) {
-    var r = S.match.rackById.get(id); if (!r) return 0;
-    var a = R().fixArea(rule.area);
-    if (a.rows.indexOf(R().zoneOf(id)) >= 0 || a.floors.indexOf(r.floor) >= 0 || a.racks.indexOf(id) >= 0) return 2;
-    return a.bins.some(function (b) { return b.indexOf(id + '-') === 0; }) || a.bins.indexOf(id) >= 0 ? 1 : 0;
+  function lockHit(rule, id) {
+    var lb = rule.lockBins || {}, hit = 0;
+    (rule.who.parts || []).forEach(function (c) {
+      var b = lb[c], pk = pickFor(c), bins = b && b.length ? b : (pk && pk.bins || []).map(function (x) { return x.bin; });
+      bins.forEach(function (bn) { if (bn === id || bn.indexOf(id + '-') === 0) hit = 2; });
+    });
+    return hit;
+  }
+  function tintFor(rule, id) {
+    if (!rule || rule.kind === 'pair') return TINT.off;
+    if (rule.kind === 'lock') return lockHit(rule, id) ? TINT.lock : TINT.off;
+    var d = areaHit(rule.dest, id), sx = rule.src && !R().areaEmpty(rule.src) ? areaHit(rule.src, id) : 0, col = rule.kind === 'deny' ? TINT.deny : TINT.keep;
+    if (d === 2) return col; if (sx) return TINT.src; if (d === 1) return TINT.some;
+    return TINT.off;
   }
   function mountMap() {
     var K = S.kit || (S.kit = PWH.mapKit('pwh-m5'));
@@ -326,14 +393,15 @@
     K.M.floor = Math.min(S.floor, S.L.floors.length - 1); K.M.sel = null; K.M.focus = null; K.M.hl = null; K.M.overlay = null;
     var m = mapMode(), D = m === 'view' ? viewData() : null, rule = m === 'rule' ? S.data.rules.filter(function (x) { return x.id === S.selRule; })[0] : null;
     K.M.rackTint = function (r) {
-      if (m === 'pick') { var p = picked(r.id); return p === 2 ? TINT[S.form.act] : p === 1 ? TINT.some : TINT.off; }
-      if (m === 'rule') { if (!rule || NOAREA[rule.act]) return TINT.off; var h = ruleHit(rule, r.id); return h === 2 ? TINT[rule.act] : h === 1 ? TINT.some : TINT.off; }
+      if (m === 'pick') return tintFor(toRule(S.form), r.id);
+      if (m === 'idle' && S.form && S.form.kind === 'lock') return tintFor(toRule(S.form), r.id);
+      if (m === 'rule') return tintFor(rule, r.id);
       if (m === 'view' && D) { if (D.cur && D.cur.rack === r.id) return TINT.here; var x = D.byRack.get(r.id); if (!x) return TINT.off; return !x.no ? TINT.keep : !x.ok ? TINT.deny : TINT.some; }
       return TINT.off;
     };
     K.M.onSelect = function (id) {
       K.M.sel = null; if (!id || mapMode() !== 'pick') return;
-      var a = S.form.area, rk = S.match.rackById.get(id);
+      var a = curArea(S.form), rk = S.match.rackById.get(id);
       function tog(list, v) { var i = list.indexOf(v); if (i >= 0) list.splice(i, 1); else list.push(v); }
       if (S.pmode === 'row') tog(a.rows, R().zoneOf(id));
       else if (S.pmode === 'floor') { if (rk) tog(a.floors, rk.floor); }
@@ -342,12 +410,14 @@
     };
     K.wireMap(); K.resize(); K.fit(); K.draw();
   }
-  function refreshSel() {   // picked list, sentence and map, without rebuilding the page (keeps zoom)
-    var el = $('#m5sel'); if (el) el.innerHTML = selSummary(S.form);
-    var lw = $('#m5lvw'); if (lw) lw.innerHTML = levelPanel(S.form);
-    var pv = $('#m5prev'); if (pv) pv.textContent = preview(S.form);
+  function refreshSel() {   // picked lists, levels, sentence, legend and map, without rebuilding the page (keeps zoom)
+    var f = S.form;
+    S.root.querySelectorAll('.m5sel[data-side]').forEach(function (el) { var side = el.getAttribute('data-side'); el.innerHTML = selSummary(side === 'src' ? f.src : f.dest, side); });
+    S.root.querySelectorAll('.m5lvw').forEach(function (el) { el.innerHTML = levelPanel(f); });
+    var pv = $('#m5prev'); if (pv) pv.textContent = preview(f);
+    var lg = $('#m5leg'); if (lg) lg.innerHTML = legHtml(mapMode());
     var cur = S.L.floors[S.floor] ? S.L.floors[S.floor].id : null, wb = $('[data-m5=wholefloor]');
-    if (wb) { var on = S.form.area.floors.indexOf(cur) >= 0; wb.setAttribute('aria-pressed', on); wb.textContent = t(on ? 'm5.map.unwhole' : 'm5.map.whole', { f: floorTxt(cur) }); }
+    if (wb) { var on = curArea(f).floors.indexOf(cur) >= 0; wb.setAttribute('aria-pressed', on); wb.textContent = t(on ? 'm5.map.unwhole' : 'm5.map.whole', { f: floorTxt(cur) }); }
     if (S.kit) S.kit.draw();
   }
 
@@ -375,6 +445,7 @@
   function wire() {
     var tf = $('#m5test'); if (tf) tf.addEventListener('submit', function (e) { e.preventDefault(); runTest(); });
     var rs = $('#m5reason'); if (rs) rs.addEventListener('input', function () { S.form.reason = rs.value; });
+    var sf = $('#m5samefloor'); if (sf) sf.addEventListener('change', function () { S.form.sameFloor = sf.checked; refreshSel(); });
     S.root.querySelectorAll('[data-m5r=off]').forEach(function (cb) { cb.addEventListener('change', function () { var r = S.data.rules.filter(function (x) { return x.id === cb.getAttribute('data-id'); })[0]; if (!r) return; r.off = !cb.checked; save(r.off ? 'pause' : 'resume', { name: R().ruleText(r, S.data) }).then(render); }); });
     suggest('m5part', function (code) { if (S.form.who.parts.indexOf(code) < 0) S.form.who.parts.push(code); S.msg = null; render(); var n = $('#m5part'); if (n) n.focus(); });
     suggest('m5vpart', function (code) { S.view.code = code; S.mode = 'view'; S.selRule = null; S.viewCache = null; var pk = pickFor(code); if (pk && pk.status === 'ok') S.floor = floorIndex(pk.floor); render(); });
@@ -408,26 +479,31 @@
     var a = el.getAttribute('data-m5'), v = el.getAttribute('data-v'), f = S.form;
     if (a !== 'save') S.msg = null;
     // --- rule form
-    if (a === 'new') { S.form = newForm(); S.lastRack = null; }
+    if (a === 'new') { S.form = newForm('deny'); S.ptarget = 'dest'; S.lastRack = null; }
     else if (a === 'cancel') { S.form = null; }
-    else if (a === 'wkind') { f.who.kind = v; if (v === 'all' && f.act === 'lock') f.act = 'deny'; }
+    else if (a === 'kind') { var keep = f; S.form = newForm(v); S.form.reason = keep.reason; if (v !== 'lock' && v !== 'pair' && keep.who.kind !== 'part') S.form.who = keep.who; if (keep.who.kind === 'part' && keep.who.parts.length) { S.form.who = { kind: 'part', parts: keep.who.parts.slice(), types: [] }; } if (v === 'pair' && keep.who.kind === 'type') S.form.who = keep.who; S.ptarget = 'dest'; S.lastRack = null; }
+    else if (a === 'wkind') { f.who.kind = v; }
     else if (a === 'wtype') { var wi = f.who.types.indexOf(v); if (wi >= 0) f.who.types.splice(wi, 1); else f.who.types.push(v); }
-    else if (a === 'delpart') { f.who.parts.splice(+el.getAttribute('data-i'), 1); }
-    else if (a === 'act') { f.act = v; }
+    else if (a === 'partner') { var pi = f.partners.indexOf(v); if (pi >= 0) f.partners.splice(pi, 1); else f.partners.push(v); }
+    else if (a === 'delpart') { var dc = f.who.parts.splice(+el.getAttribute('data-i'), 1)[0]; delete f.lockBins[dc]; }
+    else if (a === 'lkall') { f.lockBins[v] = []; }
+    else if (a === 'lkbin') { var lb = f.lockBins[v] || [], bb = el.getAttribute('data-b'), bi0 = lb.indexOf(bb); if (bi0 >= 0) lb.splice(bi0, 1); else lb.push(bb); var pk0 = pickFor(v); if (pk0 && pk0.bins && lb.length === pk0.bins.length) lb = []; f.lockBins[v] = lb; }
+    else if (a === 'srcon') { f.srcOn = v === 'some'; S.ptarget = f.srcOn ? 'src' : 'dest'; S.lastRack = null; }
+    else if (a === 'ptarget') { S.ptarget = v; S.lastRack = null; }
     else if (a === 'pmode') { S.pmode = v; S.lastRack = null; }
     else if (a === 'floor') { S.floor = +v; }
-    else if (a === 'wholefloor') { var cur = S.L.floors[S.floor].id, fi = f.area.floors.indexOf(cur); if (fi >= 0) f.area.floors.splice(fi, 1); else f.area.floors.push(cur); refreshSel(); return; }
-    else if (a === 'clear') { f.area = R().emptyArea(); S.lastRack = null; refreshSel(); return; }
-    else if (a === 'unrow') { f.area.rows = f.area.rows.filter(function (x) { return x !== v; }); refreshSel(); return; }
-    else if (a === 'unfloor') { f.area.floors = f.area.floors.filter(function (x) { return x !== v; }); refreshSel(); return; }
-    else if (a === 'unrack') { f.area.racks = f.area.racks.filter(function (x) { return x !== v; }); if (S.lastRack === v) S.lastRack = null; refreshSel(); return; }
-    else if (a === 'unbin') { f.area.bins = f.area.bins.filter(function (x) { return x !== v; }); refreshSel(); return; }
-    else if (a === 'lvall') { var id0 = S.lastRack; f.area.bins = f.area.bins.filter(function (b) { return b.indexOf(id0 + '-') !== 0; }); if (f.area.racks.indexOf(id0) < 0) f.area.racks.push(id0); refreshSel(); return; }
+    else if (a === 'wholefloor') { var ca = curArea(f), cur = S.L.floors[S.floor].id, fi = ca.floors.indexOf(cur); if (fi >= 0) ca.floors.splice(fi, 1); else ca.floors.push(cur); refreshSel(); return; }
+    else if (a === 'clear') { var cl = R().emptyArea(); if (S.ptarget === 'src' && f.srcOn) f.src = cl; else f.dest = cl; S.lastRack = null; refreshSel(); return; }
+    else if (a === 'unrow' || a === 'unfloor' || a === 'unrack' || a === 'unbin') {
+      var ar = el.getAttribute('data-k') === 'src' ? f.src : f.dest, key0 = { unrow: 'rows', unfloor: 'floors', unrack: 'racks', unbin: 'bins' }[a];
+      ar[key0] = ar[key0].filter(function (x) { return x !== v; }); if (a === 'unrack' && S.lastRack === v) S.lastRack = null; refreshSel(); return;
+    }
+    else if (a === 'lvall') { var ca0 = curArea(f), id0 = S.lastRack; ca0.bins = ca0.bins.filter(function (b) { return b.indexOf(id0 + '-') !== 0; }); if (ca0.racks.indexOf(id0) < 0) ca0.racks.push(id0); refreshSel(); return; }
     else if (a === 'lv') {
-      var id1 = S.lastRack, bn = id1 + '-' + pad2(+v), n1 = Math.max(1, (S.match.rackById.get(id1) || {}).levels || 1);
-      if (f.area.racks.indexOf(id1) >= 0) { f.area.racks = f.area.racks.filter(function (x) { return x !== id1; }); f.area.bins.push(bn); }   // whole rack -> only the level clicked
-      else { var bi = f.area.bins.indexOf(bn); if (bi >= 0) f.area.bins.splice(bi, 1); else f.area.bins.push(bn); }
-      if (f.area.bins.filter(function (b) { return b.indexOf(id1 + '-') === 0; }).length === n1) { f.area.bins = f.area.bins.filter(function (b) { return b.indexOf(id1 + '-') !== 0; }); f.area.racks.push(id1); }
+      var ca1 = curArea(f), id1 = S.lastRack, bn = id1 + '-' + pad2(+v), n1 = Math.max(1, (S.match.rackById.get(id1) || {}).levels || 1);
+      if (ca1.racks.indexOf(id1) >= 0) { ca1.racks = ca1.racks.filter(function (x) { return x !== id1; }); ca1.bins.push(bn); }   // whole rack -> only the level clicked
+      else { var bi = ca1.bins.indexOf(bn); if (bi >= 0) ca1.bins.splice(bi, 1); else ca1.bins.push(bn); }
+      if (ca1.bins.filter(function (b) { return b.indexOf(id1 + '-') === 0; }).length === n1) { ca1.bins = ca1.bins.filter(function (b) { return b.indexOf(id1 + '-') !== 0; }); ca1.racks.push(id1); }
       refreshSel(); return;
     }
     else if (a === 'zoom') { var K = S.kit; if (!K || !K.M.canvas) return; if (v === 'fit') { K.fit(); K.draw(); } else { var c = K.M.canvas; K.zoomAt(c.clientWidth / 2, c.clientHeight / 2, v === 'in' ? 1.25 : 0.8); } return; }
@@ -438,11 +514,11 @@
       S.form = null; S.selRule = r.id; S.mode = 'rule'; flash('ok', t(idx >= 0 ? 'm5.ok.edited' : 'm5.ok.saved', { name: name }));
       save(idx >= 0 ? 'edit' : 'add', { name: name }).then(render); return;
     }
-    else if (a === 'selrule') { var sr = lookIn(el.getAttribute('data-id')); if (!sr || S.form) return; S.selRule = sr.id; S.mode = 'rule'; if (!NOAREA[sr.act]) { var fl1 = areaFloor(R().fixArea(sr.area)); if (fl1) S.floor = floorIndex(fl1); } }
+    else if (a === 'selrule') { var sr = lookIn(el.getAttribute('data-id')); if (!sr || S.form) return; S.selRule = sr.id; S.mode = 'rule'; var fl1 = sr.kind === 'lock' ? lockFloor(sr) : (sr.dest || sr.src) ? areaFloor(R().fixArea(R().areaEmpty(sr.dest) ? sr.src : sr.dest)) : null; if (fl1) S.floor = floorIndex(fl1); }
     else if (a === 'backview') { S.mode = 'view'; S.selRule = null; }
     else if (a === 'edit') {
       var rr = lookIn(el.getAttribute('data-id'));
-      if (rr) { S.form = formOf(rr); S.lastRack = null; var fl0 = areaFloor(S.form.area); if (fl0) S.floor = floorIndex(fl0); }
+      if (rr) { S.form = formOf(rr); S.ptarget = 'dest'; S.lastRack = null; var fl0 = rr.kind === 'lock' ? lockFloor(rr) : areaFloor(R().areaEmpty(S.form.dest) ? S.form.src : S.form.dest); if (fl0) S.floor = floorIndex(fl0); }
       render(); toForm(); return;
     }
     else if (a === 'del') {
