@@ -1163,6 +1163,14 @@
   "m5.col.kind": "ประเภทกติกา",   // Kind
   "m5.col.src": "ต้นทาง",   // Source
   "m5.col.dest": "ปลายทาง / เงื่อนไข",   // Destination / condition
+  "m5.cf.title": "กติกานี้ขัดกับกติกาเดิม จึงบันทึกไม่ได้:",   // This rule contradicts rules already in use, so it cannot be saved:
+  "m5.cf.resume": "เปิดใช้กติกานี้ไม่ได้ เพราะขัดกับกติกาที่ใช้อยู่:",   // Turning this rule back on would contradict rules in use:
+  "m5.cf.dup": "ซ้ำกับกติกาเดิม: {rules}",   // The same rule already exists: {rules}
+  "m5.cf.dead": "{who} จะไม่มีพื้นที่ปลายทางให้ย้ายไปได้เลย เมื่อรวมกับ {rules}",   // {who} would have no destination left anywhere, together with {rules}
+  "m5.cf.pair": "{who} จะไม่มีกลุ่มคู่สลับที่ผ่านทุกกติกาเลย เมื่อรวมกับ {rules}",   // {who} would have no allowed swap partner left, together with {rules}
+  "m5.log.last": "ล่าสุด: {a} · {w}",   // latest: {a} · {w}
+  "m5.log.all": "แสดงทั้งหมด {n} รายการ",   // Show all {n}
+  "m5.log.less": "แสดงน้อยลง",   // Show fewer
   "m5.intro2": "กำหนดว่า Part ใด จากตรงไหน ย้ายไปที่ใดได้หรือไม่ได้ คำแนะนำและ Simulation ในโมดูล 4 จะใช้เฉพาะคู่ที่ผ่านทุกกติกาในหน้านี้",   // Set which Parts may move from where to where. Module 4 suggests and simulates only swaps that pass every rule here.
   "m5.new.title": "สร้างกติกาใหม่",   // New rule
   "m5.new.sub": "เลือกประเภท Part และพื้นที่ ไม่ต้องพิมพ์เงื่อนไข",   // Pick the type, the Parts and the areas. No conditions to type.

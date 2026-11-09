@@ -190,6 +190,62 @@
     return out;
   }
 
+  /* conflicts(data, rule, places): would saving this rule (new or edited) contradict the rules in use?
+   *   dup   the same rule already exists
+   *   dead  some Part or group would be left with no destination at all (deny / allow together)
+   *   pair  some Part or group would be left with no allowed swap partner (partner lists that never meet)
+   * Returns [] when the rule can be saved. */
+  function sameRule(a, b) {
+    function key(r) {
+      var w = r.who || {};
+      return JSON.stringify([r.kind, w.kind, (w.parts || []).slice().sort(), (w.types || []).slice().sort(), r.kind === 'lock' ? r.lockBins || {} : null,
+        r.src && !areaEmpty(r.src) ? normArea(r.src) : null, r.dest ? normArea(r.dest) : null, !!r.sameFloor, (r.partners || []).slice().sort()]);
+    }
+    return key(a) === key(b);
+  }
+  function normArea(a) { a = fixArea(a); return [a.rows.slice().sort(), a.floors.slice().sort(), a.racks.slice().sort(), a.bins.slice().sort()]; }
+  function conflicts(data, rule, places) {
+    var out = [], rules = ((data && data.rules) || []).filter(function (r) { return r.id !== rule.id; });
+    if (rule.off) return out;
+    rules.filter(function (r) { return !r.off && sameRule(r, rule); }).forEach(function (r) { out.push({ code: 'dup', rules: [r] }); });
+    if (out.length) return out;
+    var d2 = Object.assign({}, data, { rules: rules.concat([rule]) });
+    // the subjects this rule touches: its Parts, its types (and Parts of those types named in rules), or everybody
+    var w = rule.who || {}, subj = [], seen = {};
+    function addPart(c) { if (!seen['p' + c]) { seen['p' + c] = 1; subj.push({ code: c, label: c }); } }
+    function addType(id) { if (!seen['t' + id]) { seen['t' + id] = 1; subj.push({ type: id, label: typeName(data, id), isType: 1 }); } }
+    var named = []; rules.forEach(function (r) { if (r.who && r.who.kind === 'part') named = named.concat(r.who.parts || []); });
+    if (w.kind === 'part') (w.parts || []).forEach(addPart);
+    else if (w.kind === 'type') { (w.types || []).forEach(addType); named.forEach(function (c) { if ((w.types || []).indexOf(typeOf(data, c)) >= 0) addPart(c); }); }
+    else { (data.types || []).forEach(function (tp) { addType(tp.id); }); subj.push({ type: '_none', label: '', all: 1 }); named.forEach(addPart); }
+    // sources to try: the rule's own source area (a sample of its bins), or "any source"
+    var srcs = [null];
+    if (rule.src && !areaEmpty(rule.src) && places) { var inSrc = places.filter(function (p) { return inArea(rule.src, p); }); var step = Math.max(1, Math.floor(inSrc.length / 30)); srcs = inSrc.filter(function (p, i) { return i % step === 0; }).slice(0, 30); if (!srcs.length) srcs = [null]; }
+    if ((rule.kind === 'deny' || rule.kind === 'allow') && places && places.length) {
+      subj.forEach(function (s) {
+        var list = rulesFor(d2, s).filter(function (r) { return r.kind === 'deny' || r.kind === 'allow'; });
+        var dead = srcs.some(function (X) {
+          var cand = X && rule.sameFloor ? places.filter(function (p) { return p.floor === X.floor; }) : places;
+          return !cand.some(function (p) { return !destWhy(list, X, p, !X).length; });
+        });
+        if (dead) out.push({ code: 'dead', subj: s, rules: list.filter(function (r) { return r !== rule; }) });
+      });
+    }
+    if (rule.kind === 'pair') {
+      subj.forEach(function (s) {
+        var tp = s.code ? typeOf(data, s.code) : s.type, list = rules.concat([rule]).filter(function (r) { return !r.off && r.kind === 'pair' && covers(r, s.code, tp); });
+        var ok = null; list.forEach(function (r) { var ps = r.partners || []; ok = ok === null ? ps.slice() : ok.filter(function (x) { return ps.indexOf(x) >= 0; }); });
+        if (list.length > 1 && ok && !ok.length) out.push({ code: 'pair', subj: s, rules: list.filter(function (r) { return r !== rule; }) });
+      });
+    }
+    return out;
+  }
+  function conflictText(c, data) {
+    var t = PWH.t; data = data || CUR;
+    var who = c.subj ? (c.subj.code ? c.subj.code : c.subj.all ? t('m5.w.all') : t('m5.w.type', { v: c.subj.label })) : '';
+    return t('m5.cf.' + c.code, { who: who, rules: (c.rules || []).map(function (r) { return '“' + ruleText(r, data) + '”'; }).join(', ') || '–' });
+  }
+
   // ---------- words ----------
   function typeName(data, id) { var x = ((data && data.types) || []).filter(function (tp) { return tp.id === id; })[0]; return x ? x.name : '?'; }
   function list(a, n) { n = n || 4; return a.length > n ? a.slice(0, n).join(', ') + ' ' + PWH.t('m5.a.more', { n: a.length - n }) : a.join(', '); }
@@ -239,6 +295,6 @@
     return t('m4.rule.' + w.code, { v: w.v || '' });
   }
   PWH.rules = { KINDS: KINDS, reasonText: reasonText, ruleText: ruleText, areaText: areaText, whoText: whoText, destText: destText, lockText: lockText, typeName: typeName, typeOf: typeOf,
-    load: load, save: save, checkMove: checkMove, checkSwap: checkSwap, frozen: frozen, misplaced: misplaced, destOk: destOk, deadEnds: deadEnds, rulesFor: rulesFor,
+    load: load, save: save, checkMove: checkMove, checkSwap: checkSwap, frozen: frozen, misplaced: misplaced, conflicts: conflicts, conflictText: conflictText, destOk: destOk, deadEnds: deadEnds, rulesFor: rulesFor,
     zoneOf: zoneOf, inArea: inArea, placeOf: placeOf, emptyArea: emptyArea, fixArea: fixArea, areaEmpty: areaEmpty };
 })(window);

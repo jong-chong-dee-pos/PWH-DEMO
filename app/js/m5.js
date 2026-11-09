@@ -171,10 +171,11 @@
     html += slot(n, t('m5.reason2'), '<input id="m5reason" class="m5in" value="' + esc(f.reason) + '" placeholder="' + esc(t('m5.ph.reason')) + '" aria-label="' + esc(t('m5.reason2')) + '">');
     return '<div class="m5fbox" id="m5form"><div class="m5fh"><h3>' + esc(t(f.edit ? 'm5.edit.title' : 'm5.new.title')) + '</h3><button type="button" class="btn sm" data-m5="cancel">' + esc(t('m5.cancel')) + '</button></div>' + html +
       '<div class="m5sum"><span class="sub2">' + esc(t('m5.preview')) + '</span> <b id="m5prev">' + esc(preview(f)) + '</b></div>' +
-      (S.msg && S.msg[0] === 'bad' ? '<div class="msg bad" role="status"><span>' + esc(S.msg[1]) + '</span></div>' : '') +
+      (S.msg && S.msg[0] === 'bad' ? msgBad() : '') +
       '<div class="m4acts"><button type="button" class="btn primary" data-m5="save">' + esc(t(f.edit ? 'm5.save.edit' : 'm5.save')) + '</button><button type="button" class="btn" data-m5="cancel">' + esc(t('m5.cancel')) + '</button></div></div>';
   }
 
+  function msgBad() { return '<div class="msg bad m5cf" role="alert"><div><b>' + esc(S.msg[1]) + '</b>' + (S.msg[2] ? '<ul>' + S.msg[2].map(function (x) { return '<li>' + esc(x) + '</li>'; }).join('') + '</ul>' : '') + '</div></div>'; }
   // ---------- rule table ----------
   function whoCell(r) {
     var w = r.who || {};
@@ -212,7 +213,7 @@
         '<td><label class="m5mini" data-stop="1"><input type="checkbox" data-m5r="off" data-id="' + esc(r.id) + '"' + (r.off ? '' : ' checked') + ' aria-label="' + esc(t('m5.col.state')) + '"><span class="m5sw" aria-hidden="true"></span></label></td>' +
         '<td class="num"><div class="m5rowacts" data-stop="1"><button type="button" class="btn sm" data-m5="edit" data-id="' + esc(r.id) + '">' + esc(t('m5.edit')) + '</button><button type="button" class="btn sm danger' + (c ? ' confirm' : '') + '" data-m5="del" data-id="' + esc(r.id) + '">' + esc(t(c ? 'm5.del.confirm' : 'm5.del')) + '</button></div></td></tr>';
     }).join('');
-    return (S.msg && S.msg[0] === 'ok' ? '<div class="msg ok" role="status"><span>' + esc(S.msg[1]) + '</span></div>' : '') +
+    return (S.msg && S.msg[0] === 'ok' ? '<div class="msg ok" role="status"><span>' + esc(S.msg[1]) + '</span></div>' : '') + (S.msg && S.msg[0] === 'bad' && !S.form ? msgBad() : '') +
       ((S.data.dropped || []).length ? '<div class="msg warn" role="status"><span>' + esc(t('m5.dropped', { n: S.data.dropped.join(', ') })) + '</span></div>' : '') +
       (dead.length ? '<div class="msg bad" role="status"><span>' + esc(t('m5.dead', { n: dead.map(function (x) { return x.subj.code ? x.subj.label : x.subj.label ? t('m5.w.type', { v: x.subj.label }) : t('m5.w.all'); }).join(', ') })) + '</span></div>' : '') +
       (rules.length ? '<div class="tablebox"><table class="m5tbl m5rtab"><colgroup><col class="c-act"><col class="c-who"><col class="c-src"><col class="c-where"><col class="c-why"><col class="c-on"><col class="c-btn"></colgroup><thead><tr><th>' + esc(t('m5.col.kind')) + '</th><th>' + esc(t('m5.col.who')) + '</th><th>' + esc(t('m5.col.src')) + '</th><th>' + esc(t('m5.col.dest')) + '</th><th>' + esc(t('m5.reason')) + '</th><th>' + esc(t('m5.col.state')) + '</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div><p class="sub2 m5hint">' + esc(t('m5.list.click')) + '</p>'
@@ -351,9 +352,12 @@
       '<details class="m5fixed"><summary>' + esc(t('m5.rules.title')) + '</summary><ol class="m5rules">' + li + '</ol></details></section>';
   }
   function logCard() {
-    var log = S.data.log.slice(-200).reverse();
-    return '<section class="panel"><div class="chd"><div class="chd-l"><h2>' + esc(t('m5.log.title')) + ' <span class="chip info">' + nf(S.data.log.length) + '</span></h2></div></div>' + (log.length ? '<ul class="m5log">' +
-      log.map(function (x) { return '<li>' + chip(x.act === 'del' || x.act === 'tdel' ? 'ok' : 'warn', t('m5.act2.' + x.act)) + ' <span>' + esc(x.name || x.code || '') + '</span> <span class="sub2">' + esc(x.by) + ' · ' + fmt(x.at) + '</span></li>'; }).join('') + '</ul>' : '<p class="empty-note">–</p>') + '</section>';
+    var log = S.data.log.slice().reverse(), n = log.length, last = log[0];
+    var shown = S.logAll ? log.slice(0, 300) : log.slice(0, 8);
+    function li(x) { return '<li>' + chip(x.act === 'del' || x.act === 'tdel' ? 'ok' : 'warn', t('m5.act2.' + x.act)) + '<span class="m5lgt">' + esc(x.name || x.code || '') + '</span><span class="sub2">' + esc(x.by) + ' · ' + fmt(x.at) + '</span></li>'; }
+    return '<section class="panel m5logp"><details' + (S.logOpen ? ' open' : '') + ' id="m5logd"><summary><span class="m5lgh"><b>' + esc(t('m5.log.title')) + '</b> <span class="chip info">' + nf(n) + '</span></span>' +
+      (last ? '<span class="sub2 m5lgl">' + esc(t('m5.log.last', { a: t('m5.act2.' + last.act), w: fmt(last.at) })) + '</span>' : '') + '</summary>' +
+      (n ? '<ul class="m5log">' + shown.map(li).join('') + '</ul>' + (n > 8 ? '<button type="button" class="btn sm m5lgmore" data-m5="logall">' + esc(S.logAll ? t('m5.log.less') : t('m5.log.all', { n: nf(n) })) + '</button>' : '') : '<p class="empty-note">–</p>') + '</details></section>';
   }
   function render() {
     var held = window.scrollY;
@@ -443,10 +447,18 @@
   }
   function keepFocus(sel, key) { var el = $(sel); if (!el) return; el.addEventListener('input', function () { var pos = el.selectionStart; S[key] = el.value; if (key === 'tq') S.tpick = new Set(); render(); var n = $(sel); if (n) { n.focus(); n.setSelectionRange(pos, pos); } }); }
   function wire() {
+    var ld = $('#m5logd'); if (ld) ld.addEventListener('toggle', function () { S.logOpen = ld.open; });
     var tf = $('#m5test'); if (tf) tf.addEventListener('submit', function (e) { e.preventDefault(); runTest(); });
     var rs = $('#m5reason'); if (rs) rs.addEventListener('input', function () { S.form.reason = rs.value; });
     var sf = $('#m5samefloor'); if (sf) sf.addEventListener('change', function () { S.form.sameFloor = sf.checked; refreshSel(); });
-    S.root.querySelectorAll('[data-m5r=off]').forEach(function (cb) { cb.addEventListener('change', function () { var r = S.data.rules.filter(function (x) { return x.id === cb.getAttribute('data-id'); })[0]; if (!r) return; r.off = !cb.checked; save(r.off ? 'pause' : 'resume', { name: R().ruleText(r, S.data) }).then(render); }); });
+    S.root.querySelectorAll('[data-m5r=off]').forEach(function (cb) { cb.addEventListener('change', function () {
+      var r = S.data.rules.filter(function (x) { return x.id === cb.getAttribute('data-id'); })[0]; if (!r) return;
+      if (cb.checked) {   // resuming a paused rule must not contradict the rules in use either
+        var cf = R().conflicts(S.data, Object.assign({}, r, { off: false }), S.L ? places() : null);
+        if (cf.length) { cb.checked = false; S.msg = ['bad', t('m5.cf.resume'), cf.map(function (c) { return R().conflictText(c, S.data); })]; render(); return; }
+      }
+      S.msg = null; r.off = !cb.checked; save(r.off ? 'pause' : 'resume', { name: R().ruleText(r, S.data) }).then(render);
+    }); });
     suggest('m5part', function (code) { if (S.form.who.parts.indexOf(code) < 0) S.form.who.parts.push(code); S.msg = null; render(); var n = $('#m5part'); if (n) n.focus(); });
     suggest('m5vpart', function (code) { S.view.code = code; S.mode = 'view'; S.selRule = null; S.viewCache = null; var pk = pickFor(code); if (pk && pk.status === 'ok') S.floor = floorIndex(pk.floor); render(); });
     var vt = $('#m5vtype'); if (vt) vt.addEventListener('change', function () { S.view.type = vt.value || null; S.mode = 'view'; S.selRule = null; S.viewCache = null; render(); });
@@ -509,6 +521,8 @@
     else if (a === 'zoom') { var K = S.kit; if (!K || !K.M.canvas) return; if (v === 'fit') { K.fit(); K.draw(); } else { var c = K.M.canvas; K.zoomAt(c.clientWidth / 2, c.clientHeight / 2, v === 'in' ? 1.25 : 0.8); } return; }
     else if (a === 'save') {
       var err = formOk(f); if (err) { flash('bad', err); render(); return; }
+      var cf = R().conflicts(S.data, toRule(f), S.L ? places() : null);
+      if (cf.length) { S.msg = ['bad', t('m5.cf.title'), cf.map(function (c) { return R().conflictText(c, S.data); })]; render(); var mb = $('#m5form .msg.bad'); if (mb) mb.scrollIntoView({ block: 'center' }); return; }
       var r = toRule(f), idx = S.data.rules.map(function (x) { return x.id; }).indexOf(r.id), name = R().ruleText(r, S.data);
       if (idx >= 0) S.data.rules[idx] = r; else S.data.rules.push(r);
       S.form = null; S.selRule = r.id; S.mode = 'rule'; flash('ok', t(idx >= 0 ? 'm5.ok.edited' : 'm5.ok.saved', { name: name }));
@@ -549,6 +563,7 @@
       save('tdel', { name: tn }).then(render); return;
     }
     // --- map viewer
+    else if (a === 'logall') { S.logAll = !S.logAll; S.logOpen = true; }
     else if (a === 'vkind') { S.view.kind = v; S.mode = 'view'; S.selRule = null; S.viewCache = null; }
     else return;
     render();

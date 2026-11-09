@@ -1869,3 +1869,23 @@ span.loc { width: auto !important; display: inline-flex !important; margin: 0 !i
 
 .m5srcn { margin: 0 0 2px; }
 .m5rtab td:nth-child(4) .m5rnar:not(.m5srcn) { margin-top: 4px; }
+
+/* v47 — Module 5: bigger map, collapsible history, conflict message */
+.m5rgrid { grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr); }
+@media (max-width: 1250px) { .m5rgrid { grid-template-columns: minmax(0, 1fr); } }
+.m5mapc { top: 64px; }
+.m5mapc .m2canvas { height: clamp(520px, calc(100vh - 250px), 820px) !important; }
+.m5cf ul { margin: 6px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.m5cf b { font-weight: 600; }
+.m5logp summary { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; cursor: pointer; list-style: none; }
+.m5logp summary::-webkit-details-marker { display: none; }
+.m5logp summary::before { content: "▸"; color: var(--muted); margin-right: 6px; transition: transform .15s; }
+.m5logp details[open] summary::before { transform: rotate(90deg); }
+.m5lgh { display: inline-flex; align-items: center; gap: 8px; flex: 1; }
+.m5lgh b { font-size: var(--fs-section); font-weight: 600; }
+.m5logp .m5log { margin-top: var(--sp-3); max-height: 420px; overflow-y: auto; }
+.m5log li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 6px 0; border-top: 1px solid var(--line); }
+.m5log li:first-child { border-top: 0; }
+.m5lgt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m5lgmore { margin-top: var(--sp-2); }
+.m5cols { align-items: start; }
