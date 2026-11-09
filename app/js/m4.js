@@ -373,16 +373,17 @@
     if (!R) return scope + '<section class="panel"><p class="empty-note">' + esc(t('m4.busy.recs')) + '</p></section>';
     if (!R.list.length) return scope + '<section class="panel"><h2>' + esc(t('m4.norec.title')) + '</h2><p>' + esc(t('m4.norec.' + (R.why || 'nogain'), { c: nf(R.candidates), f: nf(R.failed), n: nf(R.tried) })) + '</p></section>';
     var sum = R.list.reduce(function (s, r) { return s + r.save; }, 0);
-    var head = scope + '<div class="m4note m4rhead"><span>' + esc(t('m4.recs.head2', { n: R.list.length, m: m(sum) })) + '</span><button type="button" class="btn primary" data-m4="simall">' + esc(t('m4.recs.simall', { n: R.list.length })) + '</button></div>';
+    var nfix = R.list.filter(function (r) { return r.fix; }).length;
+    var head = scope + (R.misplaced ? '<div class="msg warn m4mis" role="status"><span>' + esc(t('m4.recs.misplaced', { n: nf(R.misplaced), f: nfix })) + '</span></div>' : '') + '<div class="m4note m4rhead"><span>' + esc(t('m4.recs.head2', { n: R.list.length, m: m(sum) })) + '</span><button type="button" class="btn primary" data-m4="simall">' + esc(t('m4.recs.simall', { n: R.list.length })) + '</button></div>';
     function side(p) { return '<span class="code">' + esc(p.code) + '</span><div class="sub2">' + esc(p.name || partName(p.code) || '–') + '</div><div class="m4swl">' + locTag(p.pick.bin) + '<span class="sub2">' + esc(floorTxt(p.pick.floor)) + ' · ' + esc(t('m4.times', { n: nf(p.n || 0) })) + '</span></div>'; }
     var detail = '';
     var rows = R.list.map(function (r, i) {
       var open = S.recOpen === i, sim = r.sim; sim.pairs = sim.pairs || [{ a: r.a, b: r.b }];
       var topA = Array.from(r.a.products.entries()).sort(function (x, y) { return y[1] - x[1]; }).slice(0, 2);
-      var reason = t('m4.recs.reason2', { a: r.a.code, na: nf(r.a.n), prods: topA.map(function (e) { return e[0] + ' (' + e[1] + ')'; }).join(', ') || '–', ca: m(r.a.c), b: r.b.code, nb: nf(r.b.n), cb: m(r.b.c) });
+      var reason = r.fix ? t('m4.recs.reasonfix', { a: r.a.code, why: r.fix.map(function (w) { return PWH.rules.ruleText(w.rule); }).join(' / '), b: r.b.code }) : t('m4.recs.reason2', { a: r.a.code, na: nf(r.a.n), prods: topA.map(function (e) { return e[0] + ' (' + e[1] + ')'; }).join(', ') || '–', ca: m(r.a.c), b: r.b.code, nb: nf(r.b.n), cb: m(r.b.c) });
       var tr = '<tr class="m4r' + (open ? ' open' : '') + '" data-m4="ropen" data-v="' + i + '" tabindex="0" aria-expanded="' + open + '"><td class="num m4rank">' + (i + 1) + '</td><td class="m4pn"><span class="m4tag a">A</span>' + side(r.a) + '</td><td class="m4pn"><span class="m4tag b">B</span>' + side(r.b) + '</td>' +
         '<td><b>' + esc(t('m4.rc.affect', { n: sim.byProd.length })) + '</b><div class="sub2">' + esc(t('m4.k.updown', { a: sim.better.length, b: sim.worse.length })) + '</div></td>' +
-        '<td>' + (r.rules && r.rules.length ? chip('error', t('m4.rule.fail')) : chip('ok', '✓ ' + t('m4.rule.ok'))) + '</td>' +
+        '<td>' + (r.rules && r.rules.length ? chip('error', t('m4.rule.fail')) : chip('ok', '✓ ' + t('m4.rule.ok'))) + (r.fix ? '<div class="m4fixc">' + chip('warn', t('m4.recs.fixchip')) + '</div>' : '') + '</td>' +
         '<td class="m4act"><button type="button" class="btn sm primary" data-m4="tosim" data-v="' + i + '">' + esc(t('m4.btn.tosim2')) + '</button></td></tr>';
       if (open) detail = '<section class="panel m4card m4recdp" id="m4recd"><div class="chd"><div class="chd-l"><h2>' + esc(t('m4.rc.detail', { n: i + 1, a: r.a.code, b: r.b.code })) + '</h2></div><button type="button" class="btn sm" data-m4="ropen" data-v="' + i + '">' + esc(t('m4.close')) + '</button></div><div class="m4recd"><p class="m4why">' + esc(reason) + '</p>' + ruleBlock(r.rules) +
         '<h3>' + esc(t('m4.cmp.byprod')) + '</h3><p class="sub2">' + esc(t('m4.recs.used_v', { u: nf(sim.roundsUsed), x: nf(sim.roundsOut) })) + ' · ' + esc(t('m4.cmp.click')) + '</p>' + prodCmp(sim.byProd) +
@@ -777,5 +778,5 @@
     if (!S.root || !document.body.contains(S.root) || !S.d) return;
     PWH.freq.keyNow().then(function (k) { if (k !== S.d.key && !S.stale) { S.stale = true; render(); } });
   }
-  PWH.m4 = { mount: mount, refresh: refresh };
+  PWH.m4 = { mount: mount, refresh: refresh, base: function () { return S.base; } };
 })(window);

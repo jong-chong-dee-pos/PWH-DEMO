@@ -870,7 +870,7 @@
   "m5.ok.unlocked": "ปลดล็อก {code} แล้ว",   // {code} unlocked.
   "m5.log.title": "ประวัติ",   // History
   "m5.log.n": "{n} รายการ",   // {n} changes
-  "m5.act.lock": "ล็อก",   // Locked
+  "m5.act.lock": "ห้ามย้ายเลย",   // Never moves
   "m5.act.unlock": "ปลดล็อก",   // Unlocked
   "m5.who.local": "เครื่องนี้",   // this computer
   "m5.k.pick": "ประเภทกติกา",   // Rule type
@@ -894,13 +894,13 @@
   "m5.map.clear": "ล้างที่เลือก",   // Clear selection
   "m5.map.aria": "แผนที่คลังสำหรับเลือกแถว",   // Warehouse map for picking rows
   "m5.leg.area": "ที่เลือก (ห้ามแตะ)",   // Selected (off-limits)
-  "m5.leg.keep": "ที่เลือก (พื้นที่ที่อยู่ได้)",   // Selected (allowed area)
+  "m5.leg.keep": "ที่เลือก (อยู่ได้)",   // Selected (allowed)
   "m5.leg.off": "ไม่ได้เลือก",   // Not selected
   "m5.a.picked": "ที่เลือก:",   // Selected:
   "m5.a.none": "ยังไม่ได้เลือก",   // Nothing selected yet
   "m5.a.wholefloor": "ทั้ง{f}",   // All of {f}
-  "m5.a.rows": "แถว {v}",   // rows {v}
-  "m5.a.bins": "ช่อง {v}",   // bins {v}
+  "m5.a.rows": "โซน {v}",   // zones {v}
+  "m5.a.bins": "Bin {v}",   // bins {v}
   "m5.a.more": "และอีก {n} รายการ",   // and {n} more
   "m5.reason2": "เหตุผล (ไม่บังคับ)",   // Reason (optional)
   "m5.err.area": "เลือกแถวหรือชั้นบนแผนที่อย่างน้อย 1 รายการ",   // Select at least one row or floor on the map
@@ -912,22 +912,138 @@
   "m5.same.title": "ห้ามย้ายข้ามชั้น (ทุก Part)",   // No swaps across floors (all Parts)
   "m5.same.on": "เปิด: โมดูล 4 แนะนำเฉพาะการสลับภายในชั้นเดียวกัน",   // On: Module 4 suggests only swaps within one floor
   "m5.same.off": "ปิด: สลับข้ามชั้นได้",   // Off: swaps may cross floors
-  "m5.s.lock": "Part {p} ห้ามย้าย",   // Part {p} never moves
+  "m5.s.lock": "{who} ห้ามย้าย",   // {who} never moves
   "m5.s.area.out": "{a} ห้ามย้ายของออก",   // {a}: nothing moves out
   "m5.s.area.in": "{a} ห้ามย้ายของเข้า",   // {a}: nothing moves in
   "m5.s.area.both": "{a} ห้ามย้ายเข้าและออก",   // {a}: nothing moves in or out
-  "m5.s.keep": "Part {p} ต้องอยู่ใน{a}",   // Part {p} must stay in {a}
+  "m5.s.keep": "{who} ต้องอยู่ใน {a} เท่านั้น",   // {who} must stay in {a} only
   "m5.why.areaout": "{p}: ต้นทางเป็นพื้นที่ห้ามแตะ — {rule}",   // {p}: its place is off-limits — {rule}
   "m5.why.areain": "{p}: ปลายทางเป็นพื้นที่ห้ามแตะ — {rule}",   // {p}: destination is off-limits — {rule}
-  "m5.why.keep": "{p}: ปลายทางอยู่นอกพื้นที่ที่กำหนด — {rule}",   // {p}: destination is outside its area — {rule}
+  "m5.why.keep": "{p}: ปลายทางอยู่นอกที่ที่กำหนด — {rule}",   // {p}: destination is outside its allowed place — {rule}
   "m5.why.crossfloor": "การสลับนี้ข้ามชั้น (เปิดสวิตช์ \"ห้ามย้ายข้ามชั้น\" อยู่)",   // The swap crosses floors (switch "No swaps across floors" is on)
   "m5.act.convert": "แปลงเป็นกติกาแบบใหม่",   // Converted to the new rule types
   "m5.act.same_on": "เปิด",   // Switched on
   "m5.act.same_off": "ปิด",   // Switched off
+  "m4.recs.fixchip": "แก้ Part ที่อยู่ผิดกติกา",   // Fixes a misplaced Part
+  "m4.recs.misplaced": "มี {n} Part ที่เก็บอยู่ในที่ที่กติกาโมดูล 5 ห้าม คำแนะนำ {f} คู่ด้านล่างย้ายไปที่ที่ผ่านกติกา (แสดงก่อน)",   // {n} Parts are stored where a Module 5 rule says they may not be. {f} suggestions below move them to a place that passes (listed first).
+  "m4.recs.reasonfix": "{a} เก็บอยู่ผิดกติกา “{why}” สลับกับ {b} แล้วจะอยู่ในที่ที่ผ่านทุกกติกา",   // {a} is stored against the rule “{why}”. Swapping with {b} puts it in a place that passes every rule.
+  "m5.intro3": "กำหนดว่า Part หรือประเภทของแต่ละแบบไปที่ไหนได้หรือไม่ได้ คำแนะนำและ Simulation ในโมดูล 4 ใช้เฉพาะคู่ที่ผ่านทุกกติกาในหน้านี้",   // Set where each Part or item type may and may not go. Module 4 suggests and simulates only swaps that pass every rule here.
+  "m5.new.sub3": "กติกาคือประโยคเดียว: ใคร → ทำอะไร → ที่ไหน",   // A rule is one sentence: who → what → where.
+  "m5.slot.who": "ใคร",   // Who
+  "m5.slot.act": "ทำอะไร",   // What
+  "m5.slot.where": "ที่ไหน — คลิกบนแผนที่",   // Where — click on the map
+  "m5.wk.part": "Part",   // Part
+  "m5.wk.type": "ประเภท",   // Item type
+  "m5.wk.all": "ทุก Part",   // All Parts
+  "m5.wk.all.sub": "ใช้กับทุก Part ไม่ว่าเป็นประเภทใด",   // Applies to every Part, whatever its type.
+  "m5.act.keep": "ต้องอยู่ที่นี่เท่านั้น",   // Must stay here only
+  "m5.act.keep.sub": "ย้ายได้เฉพาะเข้าที่ที่เลือก",   // Moves only into the selected places
+  "m5.act.deny": "ห้ามย้ายไปที่นี่",   // May not move here
+  "m5.act.deny.sub": "ที่ที่เลือกเป็นที่ห้ามเข้า",   // The selected places are off-limits
+  "m5.act.out": "ห้ามย้ายออกจากที่นี่",   // May not move out of here
+  "m5.act.out.sub": "ของที่เก็บอยู่ที่นี่ต้องอยู่ที่เดิม",   // What is stored here stays
+  "m5.act.lock.sub": "อยู่ที่เดิมเสมอ ไม่ต้องเลือกพื้นที่",   // Stays wherever it is now
+  "m5.pm.rack": "ช่อง",   // Rack
+  "m5.pm.row": "โซน (แถว)",   // Zone (row)
+  "m5.pm.floor": "ทั้งชั้น",   // Whole floor
+  "m5.map.hint.rack": "คลิกช่องเพื่อเลือก ถ้าต้องการเฉพาะบางชั้นเก็บ เลือกใต้แผนที่",   // Click a rack to select it; to narrow it to some levels, pick them below the map.
+  "m5.map.hint.row": "คลิกช่องใดก็ได้เพื่อเลือกทั้งแถว (โซน) คลิกซ้ำเพื่อเอาออก",   // Click any rack to select its whole row (zone); click again to remove it.
+  "m5.map.hint.floor": "คลิกช่องใดก็ได้ หรือกดปุ่ม เพื่อเลือกทั้งชั้น",   // Click any rack, or the button, to select the whole floor.
+  "m5.leg.deny": "ที่เลือก (ห้ามเข้า)",   // Selected (off-limits)
+  "m5.leg.out": "ที่เลือก (ห้ามออก)",   // Selected (nothing leaves)
+  "m5.leg.lock": "ที่เลือก",   // Selected
+  "m5.a.zone": "โซน",   // zone
+  "m5.a.alllv": "ทุกชั้นเก็บ",   // all levels
+  "m5.a.racks": "ช่อง {v}",   // racks {v}
+  "m5.lv": "ชั้นเก็บ {n}",   // Level {n}
+  "m5.lv.all": "ทุกชั้นเก็บ",   // All levels
+  "m5.lv.sub": "เลือกเฉพาะบางชั้นเก็บได้",   // narrow to some storage levels
+  "m5.err.types": "เลือกประเภทอย่างน้อย 1 รายการ",   // Pick at least one item type
+  "m5.err.lockall": "\"ห้ามย้ายเลย\" ใช้กับทุก Part ไม่ได้",   // "Never moves" cannot apply to all Parts
+  "m5.w.all": "ทุก Part",   // All Parts
+  "m5.w.part": "Part {v}",   // Part {v}
+  "m5.w.type": "ประเภท {v}",   // Type {v}
+  "m5.s.deny": "{who} ห้ามย้ายไป {a}",   // {who} may not move into {a}
+  "m5.s.out": "{who} ห้ามย้ายออกจาก {a}",   // {who} may not move out of {a}
+  "m5.why.out": "{p}: ต้นทางห้ามย้ายออก — {rule}",   // {p}: its place is locked — {rule}
+  "m5.why.type": "คนละประเภท ({a} ↔ {b}) และเปิดสวิตช์ \"สลับเฉพาะประเภทเดียวกัน\"",   // Different item types ({a} ↔ {b}) and "Swap only the same type" is on
+  "m5.list.sub2": "กติกาที่พักไว้ยังอยู่แต่ไม่ถูกใช้ กติกาของ Part รายตัวชนะกติกาของประเภท",   // Paused rules are kept but not used. A Part's own rule beats its type's rule.
+  "m5.col.act": "ทำอะไร",   // What
+  "m5.col.state": "ใช้งาน",   // In use
+  "m5.active": "ใช้งาน",   // In use
+  "m5.paused": "พักไว้",   // Paused
+  "m5.none2": "ยังไม่มีกติกา กด สร้างกติกา ด้านบน",   // No rules yet. Press Create rule above.
+  "m5.dead": "กติกาของรายการเหล่านี้ทำให้ไม่มีที่ไปเลย: {n} ตรวจกติกาที่ขัดกัน",   // These rules leave nowhere to move to: {n}. Check for rules that contradict each other.
+  "m5.stype.title": "สลับเฉพาะ Part ประเภทเดียวกัน",   // Swap only Parts of the same type
+  "m5.stype.on": "เปิด: Part ที่มีประเภทสลับได้เฉพาะกับประเภทเดียวกัน (ไม่มีประเภท = สลับได้)",   // On: a Part with a type swaps only with a Part of the same type (no type = free)
+  "m5.stype.off": "ปิด: ประเภทไม่จำกัดการสลับ",   // Off: types do not limit swaps
+  "m5.t.title": "ประเภทของที่จัดเก็บ",   // Item types
+  "m5.t.sub": "แก้ชื่อ เพิ่ม หรือลบประเภทได้ กำหนดประเภทเฉพาะ Part ที่จำเป็น",   // Rename, add or remove types. Give a type only to the Parts that need one.
+  "m5.t.add": "เพิ่มประเภท",   // Add type
+  "m5.t.newname": "ประเภทใหม่",   // New type
+  "m5.t.name": "ชื่อประเภท",   // Type name
+  "m5.t.save": "บันทึก",   // Save
+  "m5.t.count": "{n} Part · {r} กติกา",   // {n} Parts · {r} rules
+  "m5.t.assign": "กำหนด Part",   // Parts
+  "m5.t.rename": "แก้ชื่อ",   // Rename
+  "m5.t.delc": "ยืนยันลบ? ({n} Part, {r} กติกา)",   // Delete? ({n} Parts, {r} rules)
+  "m5.t.none": "ยังไม่มีประเภท",   // No item types yet.
+  "m5.t.notype": "ไม่มีประเภท",   // no type
+  "m5.t.tab.search": "ค้นหา",   // Search
+  "m5.t.tab.freq": "หยิบบ่อย ยังไม่มีประเภท",   // Picked often, no type
+  "m5.t.tab.in": "ในประเภทนี้ ({n})",   // In this type ({n})
+  "m5.t.typeq": "พิมพ์บางส่วนของรหัสหรือชื่อเพื่อแสดงรายการ Part",   // Type part of a code or name to list Parts.
+  "m5.t.needm4": "คำนวณในโมดูล 4 ก่อนเพื่อดูความถี่การหยิบ",   // Run the calculation in Module 4 first to see pick frequency.
+  "m5.t.freqsub": "Part ที่หยิบบ่อยที่สุดจากการคำนวณโมดูล 4 ครั้งล่าสุด ที่ยังไม่มีประเภท",   // Most-picked Parts in the last Module 4 calculation that have no type yet.
+  "m5.t.all": "เลือกทั้งหมด ({n})",   // Select all ({n})
+  "m5.t.set": "ใส่ประเภท {t} ให้ {n} รายการ",   // Set type {t} for {n} Parts
+  "m5.t.unset": "เอาประเภทออกจาก {n} รายการ",   // Remove type from {n} Parts
+  "m5.t.logset": "{n} Part → {t}",   // {n} Parts → {t}
+  "m5.t.logunset": "{n} Part ออกจาก {t}",   // {n} Parts removed from {t}
+  "m5.v.title": "ย้ายไปที่ไหนได้บ้าง",   // Where can it go?
+  "m5.v.sub": "เลือก Part หรือประเภท: เขียว = ย้ายไปได้ แดง = ห้าม เหลือง = ได้บางชั้นเก็บ ใช้ทุกกติกาที่เกี่ยวข้องรวมกัน",   // Pick a Part or an item type: green = may move there, red = may not, yellow = only some levels. Every rule that counts is applied.
+  "m5.v.pickpart": "ค้นหา Part เพื่อแสดงสีบนแผนที่",   // Search a Part to colour the map.
+  "m5.v.picktype": "เลือกประเภทเพื่อแสดงสีบนแผนที่",   // Pick an item type to colour the map.
+  "m5.v.type": "ประเภท: {t}",   // Type: {t}
+  "m5.v.now": "อยู่ที่ {b}",   // now in {b}
+  "m5.v.ok": "ไปได้ {n} ช่อง",   // {n} racks allowed
+  "m5.v.some": "บางชั้นเก็บ {n} ช่อง",   // {n} some levels
+  "m5.v.no": "ห้าม {n} ช่อง",   // {n} not allowed
+  "m5.v.cannot": "Part นี้ย้ายออกไม่ได้:",   // This Part cannot move out:
+  "m5.v.rules": "กติกาที่ใช้",   // Rules that count
+  "m5.v.norules": "ไม่มีกติกาจำกัด ไปได้ทุกช่อง",   // No rule limits it — every rack is allowed.
+  "m5.v.ownwins": "Part นี้มีกติกาของตัวเอง จึงไม่ใช้กติกาของประเภท",   // This Part has its own rules, so its type's rules are not used.
+  "m5.v.samefloor": "เปิด \"ห้ามย้ายข้ามชั้น\": เขียวได้เฉพาะชั้นที่อยู่ตอนนี้",   // "No swaps across floors" is on: only its own floor can be green.
+  "m5.v.leg.ok": "ย้ายไปได้",   // May move here
+  "m5.v.leg.some": "ได้บางชั้นเก็บ",   // Some levels only
+  "m5.v.leg.no": "ห้าม",   // May not
+  "m5.v.leg.here": "ตำแหน่งปัจจุบัน",   // Where it is now
+  "m5.mis.title": "Part ที่อยู่ผิดกติกาตอนนี้",   // Parts that break a rule now
+  "m5.mis.sub": "เก็บอยู่ในที่ที่กติกาห้าม โมดูล 4 จะแนะนำย้ายตัวที่หยิบบ่อยก่อน",   // Stored where a rule says they may not be. Module 4 suggests fixing the most-picked first.
+  "m5.mis.now": "อยู่ที่",   // Now in
+  "m5.mis.n": "ครั้งหยิบ",   // Picks
+  "m5.mis.rule": "กติกาที่ผิด",   // Rule broken
+  "m5.mis.none": "ทุก Part อยู่ในที่ที่กติกาอนุญาต",   // Every Part is stored where the rules allow.
+  "m5.mis.more": "อีก {n} รายการ — พิมพ์ค้นหาเพื่อกรอง",   // {n} more — search to narrow the list
+  "m5.test.info2": "{a} ({ta}) อยู่ที่ {x} · {b} ({tb}) อยู่ที่ {y}",   // {a} ({ta}) is in {x} · {b} ({tb}) is in {y}
+  "m5.rule.own": "กติกาของ Part รายตัวชนะกติกาของประเภท ส่วนกติกาทุก Part ใช้เสมอ",   // A Part's own rule beats its type's rule; rules for all Parts always count.
+  "m5.act2.add": "เพิ่ม",   // Added
+  "m5.act2.edit": "แก้ไข",   // Edited
+  "m5.act2.del": "ลบ",   // Deleted
+  "m5.act2.pause": "พัก",   // Paused
+  "m5.act2.resume": "ใช้งาน",   // Resumed
+  "m5.act2.on": "เปิด",   // Switched on
+  "m5.act2.off": "ปิด",   // Switched off
+  "m5.act2.tadd": "เพิ่มประเภท",   // Type added
+  "m5.act2.tren": "แก้ชื่อประเภท",   // Type renamed
+  "m5.act2.tset": "ใส่ประเภท",   // Type set
+  "m5.act2.tunset": "เอาประเภทออก",   // Type removed
+  "m5.act2.tdel": "ลบประเภท",   // Type deleted
+  "m5.act2.convert": "แปลงเป็นกติกาแบบใหม่",   // Converted to the new rule format
   "m5.intro2": "กำหนดว่า Part ใด จากตรงไหน ย้ายไปที่ใดได้หรือไม่ได้ คำแนะนำและ Simulation ในโมดูล 4 จะใช้เฉพาะคู่ที่ผ่านทุกกติกาในหน้านี้",   // Set which Parts may move from where to where. Module 4 suggests and simulates only swaps that pass every rule here.
   "m5.new.title": "สร้างกติกาใหม่",   // New rule
   "m5.new.sub": "เลือกประเภท Part และพื้นที่ ไม่ต้องพิมพ์เงื่อนไข",   // Pick the type, the Parts and the areas. No conditions to type.
-  "m5.new.btn": "สร้างกติกา",   // New rule
+  "m5.new.btn": "สร้างกติกา",   // Create rule
   "m5.edit.title": "แก้ไขกติกา",   // Edit rule
   "m5.step.kind": "ประเภทกติกา",   // Rule type
   "m5.step.parts": "Part",   // Parts
@@ -998,8 +1114,8 @@
   "m5.test.btn": "ตรวจ",   // Check
   "m5.test.ok": "คู่นี้ผ่านทุกกติกา",   // This swap passes every rule.
   "m5.test.info": "{a} อยู่ที่ {x} · {b} อยู่ที่ {y}",   // {a} is in {x}, {b} is in {y}.
-  "m5.why.lock": "{p}: เป็น Part ห้ามย้าย",   // {p}: this Part never moves
-  "m5.why.deny": "{p}: ปลายทางถูกห้ามโดย “{name}”",   // {p}: destination forbidden by “{name}”
+  "m5.why.lock": "{p}: {rule}",   // {p}: {rule}
+  "m5.why.deny": "{p}: ปลายทางเป็นที่ห้ามเข้า — {rule}",   // {p}: destination is off-limits — {rule}
   "m5.why.notallowed": "{p}: ปลายทางไม่อยู่ในรายการที่อนุญาตของ {names}",   // {p}: destination is not in the allowed list of {names}
   "m5.why.floor": "{p}: ชั้นปลายทางไม่อยู่ในชั้นที่จัดเก็บได้ตาม {names}",   // {p}: destination floor is not allowed by {names}
   "m5.rule.floor2": "สลับข้ามชั้นได้ เว้นแต่มีกติกาชั้นที่จัดเก็บได้",   // Swaps may cross floors unless a storage-floor rule says otherwise.

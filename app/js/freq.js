@@ -302,6 +302,21 @@
       if (pk.status !== 'ok' || !isFinite(cost(pk.rack))) return;
       pool.push({ code: code, n: f ? f.nRoute : 0, pick: pk, c: cost(pk.rack), products: f ? f.products : new Map(), name: d.text.get(code) || '' });
     });
+    // Parts stored where a Module 5 rule says they may not be: find each one a swap that puts it right
+    var fixPairs = [], fixUsed = new Set();
+    var bad = pool.filter(function (p) { var w = PWH.rules.misplaced(d.rules, p.code, p.pick); if (w.length) p.bad = w; return w.length > 0; });
+    out.misplaced = bad.length;
+    bad.sort(function (x, y) { return y.n - x.n; }).slice(0, 8).forEach(function (a) {
+      if (fixPairs.length >= 5 || PWH.rules.frozen(d.rules, a.code, a.pick)) return;
+      var best = null, be = -Infinity;
+      pool.forEach(function (b) {
+        if (b === a || b.bad || b.pick.bin === a.pick.bin || fixUsed.has(b.code) || fixUsed.has('bin:' + b.pick.bin)) return;
+        var e = (a.n - b.n) * (a.c - b.c); if (e <= be) return;
+        if (checkSwap(d, a, b).length) return;
+        best = b; be = e;
+      });
+      if (best) { fixUsed.add(best.code); fixUsed.add('bin:' + best.pick.bin); fixUsed.add(a.code); fixUsed.add('bin:' + a.pick.bin); fixPairs.push({ a: a, b: best, fix: true }); }
+    });
     var busy = pool.filter(function (p) { return p.n > 0; }).sort(function (a, b) { return b.n * b.c - a.n * a.c; }).slice(0, 40);
     var near = pool.slice().sort(function (a, b) { return a.c - b.c; }).slice(0, 160);
     var est = [];
@@ -313,31 +328,32 @@
         est.push({ a: a, b: b, e: (a.n - b.n) * (a.c - b.c) });
       });
     });
-    if (!out.candidates) { out.why = 'nocand'; return Promise.resolve(out); }
-    if (!est.length) { out.why = 'rules'; return Promise.resolve(out); }
+    if (!out.candidates && !fixPairs.length) { out.why = 'nocand'; return Promise.resolve(out); }
+    if (!est.length && !fixPairs.length) { out.why = 'rules'; return Promise.resolve(out); }
     est.sort(function (x, y) { return y.e - x.e; });
-    var tried = [], usedA = new Set(), usedB = new Set();
-    for (var i = 0; i < est.length && tried.length < 24; i++) {
-      var s = est[i]; if (usedA.has(s.a.code) || usedB.has(s.b.code) || usedB.has('bin:' + s.b.pick.bin)) continue;
+    var tried = fixPairs.slice(), usedA = new Set(), usedB = new Set();
+    fixPairs.forEach(function (s) { usedA.add(s.a.code); usedB.add(s.b.code); usedB.add('bin:' + s.b.pick.bin); usedB.add('bin:' + s.a.pick.bin); });
+    for (var i = 0; i < est.length && tried.length < 24 + fixPairs.length; i++) {
+      var s = est[i]; if (usedA.has(s.a.code) || usedB.has(s.b.code) || usedB.has('bin:' + s.b.pick.bin) || usedB.has('bin:' + s.a.pick.bin)) continue;
       usedA.add(s.a.code); usedB.add(s.b.code); usedB.add('bin:' + s.b.pick.bin); tried.push(s);
     }
     var res = [], k = 0;
     function next() {
       if (k >= tried.length) return null;
       var s = tried[k++]; if (progress) progress(k, tried.length);
-      return simulate(d, base, [s]).then(function (sim) {
-        if (sim.save > 0.5) res.push({ a: s.a, b: s.b, sim: sim, before: sim.before, after: sim.after, save: sim.save, pct: sim.pct, rules: [] });
+      return simulate(d, base, [{ a: s.a, b: s.b }]).then(function (sim) {
+        if (s.fix || sim.save > 0.5) res.push({ a: s.a, b: s.b, sim: sim, before: sim.before, after: sim.after, save: sim.save, pct: sim.pct, rules: [], fix: s.fix ? s.a.bad : null });
         return tick().then(next);
       });
     }
     return Promise.resolve(next()).then(function () {
       out.tried = tried.length;
-      res.sort(function (x, y) { return y.save - x.save; });
+      res.sort(function (x, y) { return (y.fix ? 1 : 0) - (x.fix ? 1 : 0) || y.save - x.save; });   // putting a Part right comes first
       // one Part and one bin in at most one suggestion, so all suggestions can be applied together
       var seen = new Set();
       res.forEach(function (r) {
         var keys = [r.a.code, r.b.code, 'bin:' + r.a.pick.bin, 'bin:' + r.b.pick.bin];
-        if (out.list.length >= n || keys.some(function (x) { return seen.has(x); })) return;
+        if (out.list.length >= n + (r.fix ? 5 : 0) || keys.some(function (x) { return seen.has(x); })) return;
         keys.forEach(function (x) { seen.add(x); }); out.list.push(r);
       });
       if (!out.list.length) out.why = 'nogain';
