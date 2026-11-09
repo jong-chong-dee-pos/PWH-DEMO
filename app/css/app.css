@@ -1634,3 +1634,43 @@ a { text-underline-offset: 3px; }
 @media (max-width: 1100px) { .m4hbody > .m4hside { max-height: none; } }
 .m4hbox.fs .m4hbody > .m4hside { max-height: none; }
 .m4hmeta { align-items: start; } .m4hmeta dt { line-height: 20px; }
+
+/* v43 — Module 5 simplified: 3 rule kinds, map picker, floor switch */
+.m5new, .m5form2 { margin-bottom: var(--sp-4); }
+.m5kinds { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--sp-3); }
+@media (max-width: 900px) { .m5kinds { grid-template-columns: minmax(0, 1fr); } }
+.m5kind { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; text-align: left; padding: 14px 16px; border: 1px solid var(--line); border-left: 4px solid var(--k, var(--accent)); border-radius: 10px; background: var(--surface); color: var(--ink); cursor: pointer; font: inherit; }
+.m5kind b { font-size: var(--fs-card); font-weight: 600; }
+.m5kind span { font-size: var(--fs-label); color: var(--muted); }
+.m5kind:hover { border-color: var(--k); background: var(--surface-2); }
+.m5kind[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--k); box-shadow: inset 0 0 0 1px var(--k); }
+.m5kind:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.m5kind.k-lock { --k: #d08700; } .m5kind.k-area { --k: #dc2626; } .m5kind.k-keep { --k: #16a34a; }
+.m5form2 .m5kinds { margin-bottom: var(--sp-2); }
+.m5step > .sub2 { margin: -4px 0 0; }
+.m5sugw { max-width: 560px; }
+.m5sugw input { min-height: 38px; }
+.m5chip .sub2 { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m5map { padding: var(--sp-3); border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+.m5map .m4htool { margin-bottom: var(--sp-2); }
+.m5map .m2canvas { height: 460px !important; margin: 0; border-radius: 10px; }
+.m5leg { display: flex; gap: var(--sp-4); margin-top: var(--sp-2); font-size: var(--fs-label); color: var(--muted); }
+.m5leg span { display: inline-flex; align-items: center; gap: 6px; }
+.m5leg i { width: 16px; height: 12px; border-radius: 3px; display: inline-block; }
+.m5selw { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+.m5selw > .sub2 { flex: none; }
+.m5none { margin: 0; }
+.m5form2 .m5f input { max-width: 560px; }
+.m5switch { display: flex; align-items: center; gap: var(--sp-3); padding: 12px 14px; margin-bottom: var(--sp-3); border: 1px solid var(--line); border-radius: 10px; cursor: pointer; }
+.m5switch > span:last-child { display: flex; flex-direction: column; gap: 2px; }
+.m5switch input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.m5sw { flex: none; position: relative; width: 40px; height: 22px; border-radius: 999px; background: #c5cdd9; transition: background .15s; }
+.m5sw::after { content: ""; position: absolute; left: 3px; top: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.25); transition: transform .15s; }
+.m5switch input:checked + .m5sw { background: var(--accent); }
+.m5switch input:checked + .m5sw::after { transform: translateX(18px); }
+.m5switch input:focus-visible + .m5sw { outline: 2px solid var(--accent); outline-offset: 2px; }
+.m5conv { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; }
+.m5rowacts { margin: 0; justify-content: flex-end; flex-wrap: nowrap; }
+.m5tbl td:first-child { white-space: nowrap; }
+.m5kind[aria-pressed="true"] { background: color-mix(in srgb, var(--k) 7%, var(--surface)); }
+.msg.warn { background: var(--warn-soft, #fdf3dc); color: var(--warn, #8a5a00); }
