@@ -260,17 +260,18 @@
     var rows = [];
     if (h) h.bins.forEach(function (b) { b.parts.forEach(function (n, code) { rows.push({ bin: b.bin, level: b.level, code: code, n: n }); }); });
     rows.sort(function (a, b) { return b.n - a.n || (a.bin < b.bin ? -1 : 1); });
-    var html = '<div class="m4hsh"><h3>' + esc(t('m4.h.rack', { r: rid })) + '</h3><p class="sub2">' + esc(rk ? floorTxt(rk.floor) + ' · ' + t('m4.h.levels', { n: rk.levels }) : '') + '</p>' +
-      '<p class="m4hsn"><b>' + nf(h ? h.n : 0) + '</b> ' + esc(t('m4.h.times')) + '</p></div>';
+    var html = '<div class="m4hsh"><div class="m4hsh1"><h3>' + esc(t('m4.h.rack', { r: rid })) + '</h3><span class="m4hsn"><b>' + nf(h ? h.n : 0) + '</b> ' + esc(t('m4.h.times')) + '</span></div>' +
+      '<p class="sub2">' + esc((rk ? floorTxt(rk.floor) + ' · ' + t('m4.h.levels', { n: rk.levels }) + ' · ' : '') + t('m4.h.parts', { n: rows.length })) + '</p></div>';
     if (rows.length) html += '<ul class="m4hlist">' + rows.map(function (r) {
-      var p = pmap.get(r.code), prods = p ? Array.from(p.products.entries()).sort(function (a, b) { return b[1] - a[1]; }).slice(0, 3) : [];
-      return '<li><div class="m4hl1"><span class="code">' + esc(r.code) + '</span><b>' + nf(r.n) + '</b></div><div class="sub2">' + esc(partName(r.code) || '–') + '</div>' +
-        '<div class="m4hl2">' + locTag(r.bin) + '<span class="sub2">' + esc(t('m4.level', { n: r.level })) + '</span></div>' +
-        (prods.length ? '<div class="sub2">' + esc(t('m4.h.prods')) + ' ' + prods.map(function (e) { return esc(e[0]) + ' (' + e[1] + ')'; }).join(', ') + '</div>' : '') +
+      var p = pmap.get(r.code), prods = p ? Array.from(p.products.entries()).sort(function (a, b) { return b[1] - a[1]; }) : [], nm = partName(r.code) || '–';
+      var pc = prods.slice(0, 3).map(function (e) { return '<span class="m4pc"><span>' + esc(e[0]) + '</span><i>×' + e[1] + '</i></span>'; }).join('') + (prods.length > 3 ? '<span class="m4pc more" title="' + esc(prods.slice(3).map(function (e) { return e[0] + ' ×' + e[1]; }).join('\n')) + '">' + esc(t('m4.h.more', { n: prods.length - 3 })) + '</span>' : '');
+      return '<li><div class="m4hl1"><span class="code">' + esc(r.code) + '</span><span class="m4hn"><b>' + nf(r.n) + '</b> ' + esc(t('m4.h.times')) + '</span></div><div class="m4hnm" title="' + esc(nm) + '">' + esc(nm) + '</div>' +
+        '<dl class="m4hmeta"><dt>' + esc(t('m4.h.bin')) + '</dt><dd>' + locTag(r.bin) + '<span class="sub2">' + esc(t('m4.level', { n: r.level })) + '</span></dd>' +
+        (prods.length ? '<dt>' + esc(t('m4.h.prod')) + '</dt><dd class="m4pcs">' + pc + '</dd>' : '') + '</dl>' +
         (slot.id === 'f' ? '<div class="m4hl3"><button type="button" class="btn sm" data-m4="gopart" data-v="' + esc(r.code) + '">' + esc(t('m4.act.part')) + '</button><button type="button" class="btn sm" data-m4="simA" data-v="' + esc(r.code) + '">' + esc(t('m4.act.sim')) + '</button><button type="button" class="btn sm" data-m4="gorecs">' + esc(t('m4.act.recs')) + '</button></div>' : '') + '</li>';
     }).join('') + '</ul>';
     var idle = stored.filter(function (s) { return !rows.some(function (r) { return r.code === s.code && r.bin === s.bin; }); });
-    if (idle.length) html += '<details class="m4idle"' + (rows.length ? '' : ' open') + '><summary>' + esc(t('m4.h.idle', { n: idle.length })) + '</summary><ul class="m4hlist">' + idle.map(function (s) { return '<li><div class="m4hl1"><span class="code">' + esc(s.code) + '</span><b>0</b></div><div class="sub2">' + esc(partName(s.code) || '–') + '</div><div class="m4hl2">' + locTag(s.bin) + '<span class="sub2">' + esc(t('m4.level', { n: s.level })) + '</span></div></li>'; }).join('') + '</ul></details>';
+    if (idle.length) html += '<details class="m4idle"' + (rows.length ? '' : ' open') + '><summary>' + esc(t('m4.h.idle', { n: idle.length })) + '</summary><ul class="m4hlist">' + idle.map(function (s) { var nm = partName(s.code) || '–'; return '<li><div class="m4hl1"><span class="code">' + esc(s.code) + '</span><span class="m4hn"><b>0</b> ' + esc(t('m4.h.times')) + '</span></div><div class="m4hnm" title="' + esc(nm) + '">' + esc(nm) + '</div><dl class="m4hmeta"><dt>' + esc(t('m4.h.bin')) + '</dt><dd>' + locTag(s.bin) + '<span class="sub2">' + esc(t('m4.level', { n: s.level })) + '</span></dd></dl></li>'; }).join('') + '</ul></details>';
     if (!rows.length && !idle.length) html += '<p class="sub">' + esc(t('m4.h.empty')) + '</p>';
     el.innerHTML = html;
   }
@@ -494,7 +495,7 @@
     if (R.byProd.length) {
       html += '<h3>' + esc(t('m4.sim.byprod')) + '</h3><p class="sub2">' + esc(t('m4.cmp.click')) + '</p>' + prodCmp(R.byProd);
       html += routePair(R, 'sim');
-    } else html += '<p class="empty-note">' + esc(t('m4.sim.nochange')) + '</p>';
+    } else html += noChange(R);
     return html + '</section>';
   }
 
@@ -564,6 +565,35 @@
       }).join('') + '</tbody></table></div>';
     return html;
   }
+  // no Product route changed: say why, and still show where the Parts sit before and after the swap
+  function noChange(R) {
+    var B = S.base, pm = new Map(); B.parts.forEach(function (p) { pm.set(p.code, p); });
+    var many = R.pairs.length > 1, labels = {}, before = { res: { order: [], legs: [], total: 0 }, picks: {}, labels: labels, swapped: {} }, after = { res: { order: [], legs: [], total: 0 }, picks: {}, labels: labels, swapped: {} };
+    var lines = [], hint = null, anyIn = false;
+    R.pairs.forEach(function (s, i) {
+      [['A', s.a, s.b], ['B', s.b, s.a]].forEach(function (x) {
+        var tag = x[0] + (many ? i + 1 : ''), code = x[1].code, own = x[1].pick, to = x[2].pick, p = pm.get(x[1].code);
+        var n = p ? Array.from(p.products.values()).reduce(function (a, b) { return a + b; }, 0) : 0;
+        labels[code] = tag; before.swapped[code] = after.swapped[code] = x[0] === 'A' ? '#f2b705' : '#22d3ee';
+        before.picks[code] = own; after.picks[code] = { status: 'ok', bin: to.bin, rack: to.rack, level: to.level, floor: to.floor };
+        before.res.order.push({ key: code }); after.res.order.push({ key: code });
+        if (!hint) hint = own.floor; if (n) anyIn = true;
+        lines.push('<li><span class="m4tag ' + x[0].toLowerCase() + '">' + esc(tag) + '</span><span class="code">' + esc(code) + '</span> ' + locTag(own.bin) + ' <span aria-hidden="true">→</span> ' + locTag(to.bin) + ' <span class="sub2">' + esc(n ? t('m4.nc.inrounds', { n: nf(n) }) : t('m4.nc.norounds')) + '</span></li>');
+      });
+    });
+    S.rcache = { key: '\u0000loc', R: R, before: before, after: after };
+    return '<div class="msg warn m4nc" role="status"><span>' + esc(t(anyIn ? 'm4.nc.same' : S.product ? 'm4.nc.why_p' : 'm4.nc.why', { n: nf(R.roundsUsed), p: S.product || '' })) + '</span></div>' +
+      '<h3>' + esc(t('m4.nc.title')) + '</h3><ul class="m4nclist">' + lines.join('') + '</ul>' +
+      '<div class="m4rpair">' + locCard('before', before, hint) + locCard('after', after, hint) + '</div>';
+  }
+  function locCard(side, sd, hint) {
+    var V = S.rp[side], fl = S.d.L.floors, fi = V.floor == null ? Math.max(0, fl.map(function (f) { return f.id; }).indexOf(hint)) : V.floor;
+    V.floor = fi;
+    return '<div class="m4rp" id="m4rp-' + side + '"><div class="m2mapcard m4rpbox" data-fsbox><div class="m4rph"><div class="m4rph1"><b class="m4rpt">' + esc(t(side === 'before' ? 'm4.before' : 'm4.after')) + '</b><span class="m4dl none">' + esc(t(side === 'before' ? 'm4.nc.now' : 'm4.nc.swapped')) + '</span></div></div>' +
+      '<div class="m4htool">' + seg(fl.map(function (f, i) { return [String(i), floorTxt(f.id)]; }), String(fi), 'rfloor', ' data-k="' + side + '"') + seg([['2d', '2D'], ['3d', '3D']], V.mode, 'rmode', ' data-k="' + side + '"') +
+      '<span class="grow"></span><button type="button" class="btn sm" data-m4="rz" data-k="' + side + '" data-v="out" aria-label="' + esc(t('m4.h.zout')) + '">−</button><button type="button" class="btn sm" data-m4="rz" data-k="' + side + '" data-v="in" aria-label="' + esc(t('m4.h.zin')) + '">+</button><button type="button" class="btn sm" data-m4="rz" data-k="' + side + '" data-v="fit">' + esc(t('m4.h.fit')) + '</button><button type="button" class="btn sm" data-m4="rfs" data-k="' + side + '">' + esc(t('m4.h.fs')) + '</button></div>' +
+      '<div class="m2canvas" id="m2wrap"><canvas id="m2cv" tabindex="0" aria-label="' + esc(t('m4.map.aria')) + '"></canvas><div id="m2tip" class="m2tip" hidden></div></div></div></div>';
+  }
   function drawPair(side) {
     var root = $('#m4rp-' + side), sd = side === 'pv' ? S.pvRoute && S.pvRoute.sd : S.rcache && S.rcache[side]; if (!root || !sd) return;
     var V = S.rp[side], res = sd.res, swapped = sd.swapped || {};
@@ -584,7 +614,7 @@
       var placed = [];   // badges of neighbouring racks must not cover each other
       Object.keys(byRack).sort(function (x, y) { return byRack[x][0].n - byRack[y][0].n; }).forEach(function (rid) {
         var r = S.d.match.rackById.get(rid); if (!r) return;
-        var H = o.d3 ? r.levels * o.lp : 0, q = Pj(r.x + r.w / 2, r.y + r.h / 2, H), list = byRack[rid], txt = list.map(function (x) { return x.n; }).join(','), col = null;
+        var H = o.d3 ? r.levels * o.lp : 0, q = Pj(r.x + r.w / 2, r.y + r.h / 2, H), list = byRack[rid], txt = list.map(function (x) { return sd.labels ? sd.labels[x.code] : x.n; }).join(','), col = null;
         list.forEach(function (x) { if (swapped[x.code]) col = swapped[x.code]; });
         var w = Math.max(22, c.measureText(txt).width + 12), ax = q[0], ay = q[1], tries = 0;
         function hit() { return placed.some(function (b) { return Math.abs(b[0] - q[0]) < (b[2] + w) / 2 + 2 && Math.abs(b[1] - q[1]) < 24; }); }

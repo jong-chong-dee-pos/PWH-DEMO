@@ -648,6 +648,18 @@
   "m4.h.levels": "{n} ชั้นเก็บ",   // {n} levels
   "m4.h.times": "ครั้ง",   // picks
   "m4.h.prods": "Product:",   // Products:
+  "m4.h.parts": "มีการหยิบ {n} Part",   // {n} Parts picked
+  "m4.h.bin": "Bin",   // Bin
+  "m4.h.prod": "Product",   // Product
+  "m4.h.more": "+{n}",   // +{n}
+  "m4.nc.why": "Part ทั้งสองไม่อยู่ใน {n} รอบที่นำมาคำนวณ เส้นทางจึงไม่เปลี่ยน แผนที่ด้านล่างแสดงตำแหน่งก่อนและหลังสลับเท่านั้น",   // Neither Part is in the {n} rounds used, so no route changes. The maps show only where the Parts sit before and after the swap.
+  "m4.nc.why_p": "Part ทั้งสองไม่อยู่ใน {n} รอบของ Product {p} เส้นทางจึงไม่เปลี่ยน ล้างตัวกรอง Product เพื่อคำนวณทุกรอบ แผนที่ด้านล่างแสดงตำแหน่งก่อนและหลังสลับเท่านั้น",   // Neither Part is in the {n} rounds of Product {p}, so no route changes. Clear the Product filter to include every round. The maps show only where the Parts sit before and after the swap.
+  "m4.nc.same": "การสลับนี้ไม่ทำให้ระยะทางของ Product ใดใน {n} รอบเปลี่ยน แผนที่ด้านล่างแสดงตำแหน่งก่อนและหลังสลับ",   // The swap does not change the route distance of any Product in the {n} rounds used. The maps show where the Parts sit before and after the swap.
+  "m4.nc.title": "ตำแหน่งก่อนและหลังสลับ",   // Locations before and after the swap
+  "m4.nc.inrounds": "หยิบ {n} ครั้งในรอบเหล่านี้",   // picked {n} times in these rounds
+  "m4.nc.norounds": "ไม่อยู่ในรอบเหล่านี้",   // not in these rounds
+  "m4.nc.now": "ตำแหน่งปัจจุบัน",   // current locations
+  "m4.nc.swapped": "หลังสลับ",   // after swapping
   "m4.h.idle": "Part ในช่องนี้ที่ไม่ถูกหยิบ ({n})",   // Parts here with 0 picks ({n})
   "m4.h.empty": "ไม่มี Part ในช่องนี้ใน Material–Location",   // No Part is stored in this rack in Material–Location.
   "m4.level": "ชั้นเก็บ {n}",   // level {n}
