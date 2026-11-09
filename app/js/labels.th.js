@@ -1040,6 +1040,59 @@
   "m5.act2.tunset": "เอาประเภทออก",   // Type removed
   "m5.act2.tdel": "ลบประเภท",   // Type deleted
   "m5.act2.convert": "แปลงเป็นกติกาแบบใหม่",   // Converted to the new rule format
+  "m5.act.samefloor": "ห้ามย้ายข้ามชั้น",   // No swap across floors
+  "m5.act.samefloor.sub": "สลับได้เฉพาะในชั้นเดียวกัน",   // Swaps stay on one floor
+  "m5.act.sametype": "สลับเฉพาะประเภทเดียวกัน",   // Swap only with the same type
+  "m5.act.sametype.sub": "สลับได้กับ Part ประเภทเดียวกันเท่านั้น",   // Only with a Part of the same item type
+  "m5.s.samefloor": "{who} ห้ามย้ายข้ามชั้น",   // {who} may not move to another floor
+  "m5.s.sametype": "{who} สลับได้เฉพาะกับ Part ประเภทเดียวกัน",   // {who} swaps only with Parts of the same type
+  "m5.why.samefloor": "{p}: การสลับนี้ข้ามชั้น — {rule}",   // {p}: the swap crosses floors — {rule}
+  "m5.why.sametype": "{p} ({a}) กับอีก Part ({b}) คนละประเภท — {rule}",   // {p} ({a}) and the other Part ({b}) are different types — {rule}
+  "m5.leg.some": "บางชั้นเก็บ",   // Some levels
+  "m5.a.none2": "ยังไม่ได้เลือก — คลิกบนแผนที่ด้านขวา",   // Nothing selected yet — click on the map on the right
+  "m5.noarea": "กติกาแบบนี้ไม่ต้องเลือกพื้นที่",   // This kind of rule needs no area.
+  "m5.map.hint2.rack": "คลิกช่องบนแผนที่ด้านขวา ถ้าต้องการเฉพาะบางชั้นเก็บ เลือกด้านล่าง",   // Click racks on the map on the right. To narrow a rack to some levels, pick them below.
+  "m5.map.hint2.row": "คลิกช่องใดก็ได้บนแผนที่ด้านขวาเพื่อเลือกทั้งโซน (แถว) คลิกซ้ำเพื่อเอาออก",   // Click any rack on the map on the right to select its whole zone (row); click again to remove it.
+  "m5.map.hint2.floor": "คลิกช่องใดก็ได้บนแผนที่ด้านขวา หรือกดปุ่ม เพื่อเลือกทั้งชั้น",   // Click any rack on the map on the right, or the button, to select the whole floor.
+  "m5.slot.where0": "ที่ไหน",   // Where
+  "m5.slot.where2": "ที่ไหน — เลือกบนแผนที่",   // Where — pick on the map
+  "m5.col.who": "ใคร",   // Who
+  "m5.col.where": "ที่ไหน",   // Where
+  "m5.col.name": "ชื่อ Part",   // Part name
+  "m5.wh.floor": "ชั้น",   // Floor
+  "m5.wh.zone": "โซน",   // Zone
+  "m5.wh.rack": "ช่อง",   // Rack
+  "m5.wh.bin": "Bin",   // Bin
+  "m5.list.click": "คลิกที่กติกาเพื่อดูพื้นที่บนแผนที่",   // Click a rule to see its area on the map.
+  "m5.list.sub3": "กติกาของ Part รายตัวชนะกติกาของประเภท กติกาทุก Part ใช้เสมอ กติกาที่พักไว้ยังอยู่แต่ไม่ถูกใช้",   // A Part's own rule beats its type's rule; rules for all Parts always count. Paused rules are kept but not used.
+  "m5.v.pick2": "เลือกประเภทหรือ Part ด้านบนเพื่อดูว่าย้ายไปที่ไหนได้",   // Pick an item type or a Part above to see where it may go.
+  "m5.v.nowhere": "ไม่อยู่ในผัง",   // not on the layout
+  "m5.v.rules2": "กติกาที่ใช้ ({n})",   // Rules that count ({n})
+  "m5.v.choose": "— เลือก —",   // — choose —
+  "m5.v.leg.free": "ไม่มีกติกา",   // No rule here
+  "m5.map.t.pick": "เลือกพื้นที่ของกติกา",   // Pick the area of the rule
+  "m5.map.t.rule": "พื้นที่ของกติกาที่เลือก",   // Area of the selected rule
+  "m5.map.t.view": "ย้ายไปที่ไหนได้บ้าง",   // Where can it go?
+  "m5.map.back": "กลับไปดูย้ายไปที่ไหนได้",   // Back to where-can-it-go
+  "m5.map.picking": "คลิกช่องบนแผนที่ รายการที่เลือกแสดงในฟอร์มด้านซ้าย",   // Click racks on the map; the selection is listed in the form on the left.
+  "m5.t.sub2": "เลือกการ์ดเพื่อดู Part ติ๊กเลือก แล้วใส่หรือย้ายประเภท",   // Pick a card to see its Parts, tick them and move them to a type.
+  "m5.t.parts": "Part",   // Parts
+  "m5.t.rules": "{n} กติกา",   // {n} rules
+  "m5.t.ungrouped": "ยังไม่จัดกลุ่ม",   // Not grouped yet
+  "m5.t.ungrouped.sub": "ยังไม่มีประเภท",   // no type
+  "m5.t.del": "ลบประเภท",   // Delete type
+  "m5.t.picked": "เลือก {n} รายการ",   // {n} selected
+  "m5.t.setto": "ใส่ประเภท",   // Set type
+  "m5.t.moveto": "ย้ายไปประเภท",   // Move to type
+  "m5.t.apply": "ใช้",   // Apply
+  "m5.t.unset2": "เอาออกจากประเภทนี้",   // Remove from this type
+  "m5.t.showing": "แสดง {n} จาก {m} รายการ",   // Showing {n} of {m}
+  "m5.t.byfreq": "เรียงตามหยิบบ่อย",   // most-picked first
+  "m5.t.needm4b": "คำนวณในโมดูล 4 เพื่อเรียงตามความถี่",   // calculate in Module 4 to sort by picks
+  "m5.t.allgrouped": "ทุก Part มีประเภทแล้ว",   // Every Part has a type.
+  "m5.t.empty": "ยังไม่มี Part ในประเภทนี้ เปิด “ยังไม่จัดกลุ่ม” เพื่อเพิ่ม",   // No Parts in this type yet. Open “Not grouped yet” to add some.
+  "m5.t.done": "ใส่ประเภท {t} ให้ {n} รายการแล้ว",   // {n} Parts set to {t}
+  "m5.ph.part3": "ค้นหาจากบางส่วนของรหัสหรือชื่อ",   // Search by part of a code or name
   "m5.intro2": "กำหนดว่า Part ใด จากตรงไหน ย้ายไปที่ใดได้หรือไม่ได้ คำแนะนำและ Simulation ในโมดูล 4 จะใช้เฉพาะคู่ที่ผ่านทุกกติกาในหน้านี้",   // Set which Parts may move from where to where. Module 4 suggests and simulates only swaps that pass every rule here.
   "m5.new.title": "สร้างกติกาใหม่",   // New rule
   "m5.new.sub": "เลือกประเภท Part และพื้นที่ ไม่ต้องพิมพ์เงื่อนไข",   // Pick the type, the Parts and the areas. No conditions to type.

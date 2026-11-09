@@ -6,13 +6,14 @@
  *          deny  = may not move here           (destination must be outside the area) red on the map
  *          out   = may not move out of here    (source inside the area cannot move)
  *          lock  = never moves                 (no area)
+ *          samefloor = swaps stay on one floor    (no area; was a page switch before v45)
+ *          sametype  = swaps only with a Part of the same item type (no area; for "all Parts" a Part with no type is free)
  *   where  bins (3G-03-03) | racks (3G-03, every level) | zones = rack rows (1A, 3G) | whole floors
  * Which rules count for a Part: rules for all Parts always; then the Part's own rules, and only when it
  * has none, the rules of its item type ("a Part's own rule beats its type").
  * Within one level, several "keep" rules add up (allowed if inside any of them); across levels each must hold.
- * Switches: sameFloor (no swap across floors) and sameType (swap only Parts of the same type; no type = free).
  * A paused rule (off) is kept but not used. Size / weight: no data yet, never treated as passed.
- * Stored as meta 'rules' = { v: 3, sameFloor, sameType, types: [{id,name}], partType: {code: typeId}, rules: [], log: [] }. */
+ * Stored as meta 'rules' = { v: 3, types: [{id,name}], partType: {code: typeId}, rules: [], log: [] }. */
 (function (g) {
   var PWH = g.PWH;
   var CUR = null;   // the rules last loaded or saved, for reason lines shown without the data at hand
@@ -61,7 +62,17 @@
   function load() {
     return Promise.all([PWH.db.getMeta('rules').catch(function () { return null; }), PWH.db.getMeta('locks').catch(function () { return null; })]).then(function (r) {
       var data = r[0];
-      if (data && data.v === 3) { CUR = data; return data; }
+      if (data && data.v === 3) {
+        CUR = data;
+        if (data.sameFloor || data.sameType) {   // the two page switches (v44) become rules for all Parts
+          [['sameFloor', 'samefloor'], ['sameType', 'sametype']].forEach(function (x) {
+            if (data[x[0]]) data.rules.push({ id: 'R' + x[1] + Date.now(), who: { kind: 'all', parts: [], types: [] }, act: x[1], area: emptyArea(), reason: '', by: 'system', at: Date.now() });
+          });
+          delete data.sameFloor; delete data.sameType;
+          return PWH.db.setMeta('rules', data).then(function () { return data; }, function () { return data; });
+        }
+        return data;
+      }
       if (!data || data.v !== 2) {
         data = data || { rules: [], zones: [], log: [] };
         var old = r[1];   // locks from the very first version of Module 5
@@ -72,6 +83,8 @@
         data = fromV1(data);
       }
       var v3 = fromV2(data); CUR = v3;
+      if (v3.sameFloor) v3.rules.push({ id: 'Rsamefloor', who: { kind: 'all', parts: [], types: [] }, act: 'samefloor', area: emptyArea(), reason: '', by: 'system', at: Date.now() });
+      delete v3.sameFloor; delete v3.sameType;
       return PWH.db.setMeta('rules', v3).then(function () { return v3; }, function () { return v3; });
     });
   }
@@ -114,20 +127,32 @@
     lv.levels.forEach(function (list) { list.forEach(function (r) { if (r.act === 'lock') why.push({ code: 'lock', rule: r }); else if (r.act === 'out' && inArea(r.area, X)) why.push({ code: 'out', rule: r }); }); });
     return why;
   }
+  function sameFloorRule(lv) { var hit = null; lv.levels.forEach(function (list) { list.forEach(function (r) { if (!hit && r.act === 'samefloor') hit = r; }); }); return hit; }
+  // "swap only with the same type" for one side of a pair: the reason, or null
+  function sameTypeWhy(data, me, other) {
+    var lv = rulesFor(data, { code: me }), tm = typeOf(data, me), to = typeOf(data, other), hit = null;
+    lv.levels.forEach(function (list) { list.forEach(function (r) {
+      if (hit || r.act !== 'sametype' || !tm || tm === to) return;
+      if (r.who.kind === 'all' && !to) return;   // for all Parts: a Part with no type is free
+      hit = { code: 'sametype', rule: r, part: me, a: tm, b: to };
+    }); });
+    return hit;
+  }
   /* checkMove(data, partCode, fromPick, toPick) -> [] when allowed, else the reasons (toPick may be null: only "may it leave?") */
   function checkMove(data, code, fromPick, toPick) {
     var lv = rulesFor(data, { code: code }), X = placeOf(fromPick), Y = placeOf(toPick);
     var why = srcWhy(lv, X);
     if (Y) why = why.concat(destWhy(lv, Y));
-    if (data && data.sameFloor && X && Y && X.floor !== Y.floor) why.push({ code: 'crossfloor' });
+    if (X && Y && X.floor !== Y.floor) { var sf = sameFloorRule(lv); if (sf) why.push({ code: 'samefloor', rule: sf }); }
     return why;
   }
   /* checkSwap: both sides of a 1:1 swap — A goes from X to Y and B from Y to X */
   function checkSwap(data, a, b) {
     var why = [];
     checkMove(data, a.code, a.pick, b.pick).forEach(function (w) { w.side = 'a'; w.part = a.code; why.push(w); });
-    checkMove(data, b.code, b.pick, a.pick).forEach(function (w) { if (w.code === 'crossfloor') return; w.side = 'b'; w.part = b.code; why.push(w); });   // the floor reason once per pair
-    if (data && data.sameType) { var ta = typeOf(data, a.code), tb = typeOf(data, b.code); if (ta && tb && ta !== tb) why.push({ code: 'type', a: ta, b: tb }); }
+    checkMove(data, b.code, b.pick, a.pick).forEach(function (w) { if (w.code === 'samefloor' && why.some(function (x) { return x.code === 'samefloor'; })) return; w.side = 'b'; w.part = b.code; why.push(w); });   // the floor reason once per pair
+    var sa = sameTypeWhy(data, a.code, b.code), sb = sameTypeWhy(data, b.code, a.code);
+    if (sa) why.push(sa); if (sb && !(sa && sa.rule === sb.rule)) why.push(sb);
     return why;
   }
   // a Part or a place that no rule lets move at all (used to skip candidates early)
@@ -137,7 +162,7 @@
   /* for the green / red map: may subject { code } or { type } end at this place? (from: current pick for the floor switch) */
   function destOk(data, subj, place, fromPick) {
     var lv = subj._lv || (subj._lv = rulesFor(data, subj)), why = destWhy(lv, place);
-    if (data && data.sameFloor && fromPick && fromPick.floor !== place.floor) why.push({ code: 'crossfloor' });
+    if (fromPick && fromPick.floor !== place.floor) { var sf = sameFloorRule(lv); if (sf) why.push({ code: 'samefloor', rule: sf }); }
     return why;
   }
   // rules that leave a subject nowhere to go: a level whose "keep" areas are all inside its "deny" areas, or two levels whose "keep" areas never meet
@@ -187,7 +212,8 @@
   function reasonText(w, data) {
     var t = PWH.t; data = data || CUR;
     if (w.code === 'lock' || w.code === 'out' || w.code === 'deny' || w.code === 'keep') return t('m5.why.' + w.code, { p: w.part, rule: ruleText(w.rule, data) });
-    if (w.code === 'crossfloor') return t('m5.why.crossfloor', { p: w.part });
+    if (w.code === 'samefloor') return t('m5.why.samefloor', { p: w.part, rule: ruleText(w.rule, data) });
+    if (w.code === 'sametype') return t('m5.why.sametype', { p: w.part, a: typeName(data, w.a), b: w.b ? typeName(data, w.b) : t('m5.t.notype'), rule: ruleText(w.rule, data) });
     if (w.code === 'type') return t('m5.why.type', { a: typeName(data, w.a), b: typeName(data, w.b) });
     return t('m4.rule.' + w.code, { v: w.v || '' });
   }
