@@ -1589,3 +1589,13 @@ a { text-underline-offset: 3px; }
 .m4rph2 { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px var(--sp-5); min-height: 30px; }
 .m4rpbox .m3flow.m4flow { flex-wrap: wrap; white-space: normal; overflow: visible; min-height: 76px; align-content: center; row-gap: 6px; }
 .m4rpbox .m4htool { flex-wrap: wrap; }
+/* toolbar: tabs on their own line, filters below, at every width */
+.m4tool { flex-direction: column; align-items: stretch; }
+.m4tool .m4tabs { align-self: flex-start; }
+.m4flt { flex: none; justify-content: flex-start; }
+.m4flt .m4f.grow { flex: 1 1 320px; }
+.m4fb { margin-left: auto; }
+.m4pvg .m3flow.m4flow { min-height: 0; }
+.m4flt { flex-wrap: nowrap; align-content: flex-start; }
+.m4flt .m4f.grow { min-width: 0; }
+@media (max-width: 900px) { .m4flt { flex-wrap: wrap; } }

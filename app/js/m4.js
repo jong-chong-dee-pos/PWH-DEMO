@@ -581,11 +581,16 @@
       // numbered stops: grouped per rack so the badge reads e.g. "6,8,9"
       var byRack = {}; res.order.forEach(function (o, i) { var pk = sd.picks[o.key]; if (!pk.rack || pk.floor !== f.id) return; (byRack[pk.rack] = byRack[pk.rack] || []).push({ n: i + 1, code: o.key }); });
       c.font = '600 12px "IBM Plex Sans Thai", sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
-      Object.keys(byRack).forEach(function (rid) {
+      var placed = [];   // badges of neighbouring racks must not cover each other
+      Object.keys(byRack).sort(function (x, y) { return byRack[x][0].n - byRack[y][0].n; }).forEach(function (rid) {
         var r = S.d.match.rackById.get(rid); if (!r) return;
         var H = o.d3 ? r.levels * o.lp : 0, q = Pj(r.x + r.w / 2, r.y + r.h / 2, H), list = byRack[rid], txt = list.map(function (x) { return x.n; }).join(','), col = null;
         list.forEach(function (x) { if (swapped[x.code]) col = swapped[x.code]; });
-        var w = Math.max(22, c.measureText(txt).width + 12);
+        var w = Math.max(22, c.measureText(txt).width + 12), ax = q[0], ay = q[1], tries = 0;
+        function hit() { return placed.some(function (b) { return Math.abs(b[0] - q[0]) < (b[2] + w) / 2 + 2 && Math.abs(b[1] - q[1]) < 24; }); }
+        while (hit() && tries < 8) { tries++; q = [ax + (tries % 2 ? 1 : -1) * Math.ceil(tries / 2) * 0, ay - Math.ceil(tries / 2) * 24 * (tries % 2 ? 1 : -1)]; }
+        if (tries) { c.strokeStyle = 'rgba(255,255,255,0.55)'; c.lineWidth = 1; c.beginPath(); c.moveTo(ax, ay); c.lineTo(q[0], q[1]); c.stroke(); }
+        placed.push([q[0], q[1], w]);
         c.fillStyle = col || '#ffffff'; c.strokeStyle = col ? '#060d19' : '#38a3ff'; c.lineWidth = 2;
         c.beginPath(); if (c.roundRect) c.roundRect(q[0] - w / 2, q[1] - 11, w, 22, 11); else c.rect(q[0] - w / 2, q[1] - 11, w, 22); c.fill(); c.stroke();
         c.fillStyle = '#060d19'; c.fillText(txt, q[0], q[1] + 0.5);
