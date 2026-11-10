@@ -2346,3 +2346,13 @@ html[data-role="user"] [data-m5="tmove"], html[data-role="user"] [data-m5="tunse
 .umx .uyes { color: var(--accent); font-weight: 700; }
 .umx .uno { color: var(--line-2); }
 @media (max-width: 1100px) { .ugrid { grid-template-columns: 1fr; } }
+.gscene .gfloor-t { fill: rgba(255, 255, 255, 0.55); font: 700 1px var(--font-ui); }
+.gscene .gglow { fill: rgba(255, 255, 255, 0.28); filter: blur(6px); }
+.gpic { overflow: hidden; -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14%); mask-image: linear-gradient(to bottom, transparent 0, #000 14%); }
+.gart { --gp: 52px; }
+.gpic { margin-left: calc(-1 * var(--gp)) !important; margin-right: calc(-1 * var(--gp)) !important; margin-bottom: 0 !important; }
+@media (max-width: 1100px) { .gart { --gp: 36px; } }
+@media (max-width: 860px) { .gart { --gp: 24px; } }
+.gscene .gtagg { transition: transform 0.6s cubic-bezier(0.3, 0.7, 0.2, 1); }
+.gscene .gl { transition: none; }
+@media (prefers-reduced-motion: reduce) { .gscene .gtagg { transition: none; } }
