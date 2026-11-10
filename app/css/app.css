@@ -2024,3 +2024,7 @@ span.loc { width: auto !important; display: inline-flex !important; margin: 0 !i
 .m6tp, .m6tp .m6top, .m6tp .m6tr { min-width: 0; max-width: 100%; }
 .m6tp .m6tn > span { display: block; max-width: 100%; }
 .m6tvv { white-space: nowrap; }
+.m4nc { color: var(--muted); font-weight: 600; }
+.m2nobin { margin-top: var(--sp-3); padding: var(--sp-3); border: 1px dashed var(--line-2); border-radius: 8px; font-size: var(--fs-label); }
+.m2nobin ul { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.m2nobin li { display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; }

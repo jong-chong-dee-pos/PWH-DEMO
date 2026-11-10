@@ -23,7 +23,7 @@
   function prodName(code) { return S.d && S.d.desc.get(code) || ''; }
   function nbar(v, max, txt) { return '<span class="nbar"><i style="width:' + (v > 0 ? Math.max(3, v / (max || 1) * 100) : 0).toFixed(1) + '%"></i><b>' + (txt || nf(v)) + '</b></span>'; }
   function chip(kind, txt) { return '<span class="chip ' + kind + '">' + esc(txt) + '</span>'; }
-  function statusChip(pk) { return pk.status === 'ok' ? chip('ok', t('m4.st.ok')) : chip('warn', t('m4.loc.' + pk.status)); }
+  function statusChip(pk) { return pk.status === 'ok' ? chip('ok', t('m4.st.ok')) : chip('warn', PWH.freq.locText(pk)); }
   function locTag(bin) { return '<span class="loc">' + esc(bin) + '</span>'; }
   function pct(x) { return x == null ? '—' : nf(x, 1) + '%'; }
   function diffTxt(before, after) { var dlt = before - after; return Math.abs(dlt) < 0.5 ? esc(t('m4.same')) : esc(t(dlt > 0 ? 'm4.down' : 'm4.up', { m: m(Math.abs(dlt)) })); }
@@ -124,23 +124,29 @@
     return '<div class="m4kpis m4k5">' +
       k(t('m4.k.rounds'), nf(B.rounds.length), esc(t('m4.k.rounds_sub2', { j: nf(jobs.size), p: nf(prods.size) }))) +
       k(t('m4.k.parts'), nf(B.parts.length), esc(t('m4.k.parts_sub2', { a: nf(withBin), b: nf(B.parts.length - withBin) }))) +
-      k(t('m4.k.plan'), nf(B.planFreq), esc(t('m4.k.plan_sub4', { a: nf(B.routeFreq), b: nf(B.planFreq - B.routeFreq) }))) +
+      k(t('m4.k.picks'), nf(B.routeFreq), esc(notCounted(B))) +
       k(t('m4.k.dist'), mm(B.totalM), esc(t('m4.k.dist_sub4', { m: nf(withRoute ? B.totalM / withRoute : 0, 1), n: nf(withRoute), h: hrs(B.totalSec) }))) +
       '<button type="button" class="m4k m4kbtn' + (nIss ? ' warnv' : '') + '" data-m4="goiss"><span class="k">' + esc(t('m4.k.issues')) + '</span><span class="v">' + nf(nIss) + '</span><span class="s">' + (issSub || esc(t('m4.none'))) + '</span></button></div>' +
       (B.consistent ? '' : '<div class="msg bad" role="status"><span>' + esc(t('m4.err.heatsum', { h: nf(B.heatSum), r: nf(B.routeFreq) })) + '</span></div>');
   }
+  // planned picks that are not counted, by reason
+  function notCounted(B) {
+    var by = {}; B.parts.forEach(function (p) { var miss = p.n - p.nRoute; if (miss > 0) { var k = p.pick.status === 'ok' ? 'unreach' : p.pick.status; by[k] = (by[k] || 0) + miss; } });
+    var parts = ['noloc', 'special', 'notonlayout', 'unreach'].filter(function (k) { return by[k]; }).map(function (k) { return t('m4.nc.' + k, { n: nf(by[k]) }); });
+    return parts.length ? t('m4.nc.head', { list: parts.join(' · ') }) : t('m4.nc.none');
+  }
   function hrs(sec) { var mn = Math.round(sec / 60); return mn < 60 ? t('m3.kpi.min', { n: mn }) : t('m4.hm', { h: Math.floor(mn / 60), m: mn % 60 }); }
   function matchQ(p) { var q = S.q.trim().toUpperCase(); return !q || p.code.toUpperCase().indexOf(q) >= 0 || (p.name || '').toUpperCase().indexOf(q) >= 0; }
   function partsTable() {
-    var B = S.base, rows = B.parts.filter(matchQ).slice();
-    var top = Math.max(1, rows.reduce(function (s, p) { return Math.max(s, p.n); }, 0)), shown = rows.slice(0, S.partsMax);
+    var B = S.base, rows = B.parts.filter(matchQ).slice().sort(function (a, b) { return b.nRoute - a.nRoute || b.n - a.n || (a.code < b.code ? -1 : 1); });
+    var top = Math.max(1, rows.reduce(function (s, p) { return Math.max(s, p.nRoute); }, 0)), shown = rows.slice(0, S.partsMax);
     var body = shown.map(function (p, i) {
       var open = S.open === p.code, prods = Array.from(p.products.entries()).sort(function (a, b) { return b[1] - a[1]; });
       var bins = (p.pick.bins || []), onl = bins.filter(function (b) { return b.loc.kind === 'rack'; });
       var tr = '<tr class="m4r' + (open ? ' open' : '') + '" data-m4="open" data-v="' + esc(p.code) + '" tabindex="0" aria-expanded="' + open + '">' +
         '<td class="num m4rank">' + (i + 1) + '</td><td class="m4pn"><span class="code">' + esc(p.code) + '</span><div class="sub2">' + esc(p.name || '–') + '</div></td>' +
-        '<td class="num">' + nbar(p.n, top) + '</td>' +
-        '<td>' + (p.pick.status === 'ok' ? locTag(p.pick.bin) + '<div class="sub2">' + esc(floorTxt(p.pick.floor)) + ' · ' + esc(t('m4.times', { n: nf(p.nRoute) })) + '</div>' : '–') + '</td>' +
+        '<td class="num">' + (p.pick.status === 'ok' ? nbar(p.nRoute, top) : '<span class="m4nc">–</span><div class="sub2">' + esc(t('m4.nocount')) + '</div>') + '</td>' +
+        '<td>' + (p.pick.status === 'ok' ? locTag(p.pick.bin) + '<div class="sub2">' + esc(floorTxt(p.pick.floor)) + '</div>' : '–') + '</td>' +
         '<td>' + statusChip(p.pick) + '</td>' +
         '<td class="m4act">' + (p.pick.status === 'ok' ? '<button type="button" class="btn sm" data-m4="onmap" data-v="' + esc(p.code) + '">' + esc(t('m4.act.map')) + '</button>' : '') +
         '<button type="button" class="btn sm" data-m4="simA" data-v="' + esc(p.code) + '">' + esc(t('m4.act.sim')) + '</button></td></tr>';
@@ -222,7 +228,7 @@
     var codes = sd.codes.slice().sort(function (a, b) { return (sd.seq[a] || 999) - (sd.seq[b] || 999); });
     var rows = codes.map(function (c) {
       var pk = sd.picks[c], q = sd.seq[c];
-      return '<tr' + (q ? '' : ' class="m4re"') + '><td class="num"><b>' + (q || '–') + '</b></td><td class="m4pn"><span class="code">' + esc(c) + '</span><div class="sub2">' + esc(partName(c) || '–') + '</div></td><td>' + (pk.status === 'ok' ? locTag(pk.bin) + ' <span class="sub2">' + esc(floorTxt(pk.floor) + ' · ' + t('m4.level', { n: pk.level })) + '</span>' : chip('warn', t('m4.loc.' + pk.status))) + '</td></tr>';
+      return '<tr' + (q ? '' : ' class="m4re"') + '><td class="num"><b>' + (q || '–') + '</b></td><td class="m4pn"><span class="code">' + esc(c) + '</span><div class="sub2">' + esc(partName(c) || '–') + '</div></td><td>' + (pk.status === 'ok' ? locTag(pk.bin) + ' <span class="sub2">' + esc(floorTxt(pk.floor) + ' · ' + t('m4.level', { n: pk.level })) + '</span>' : chip('warn', PWH.freq.locText(pk))) + '</td></tr>';
     }).join('');
     return '<div class="m4pv" id="m4pv"><div class="m4pvh"><div><h3>' + esc(t('m4.pv.title', { p: P.product })) + '</h3><p class="sub">' + esc(prodName(P.product)) + ' · Plant ' + esc(P.plant) + ' · ' + esc(t('m4.pt.jobs', { n: P.rounds })) + ' · ' + esc(t('m4.pt.total', { m: m(P.m), n: P.rounds })) + '</p></div><button type="button" class="btn sm" data-m4="prod" data-v="' + esc(P.product) + '">' + esc(t('m4.close')) + '</button></div>' +
       '<div class="m4pvg">' + routeCard('pv', sd, null) +
@@ -599,7 +605,7 @@
         var b = X.before.picks[c], a = X.after.picks[c], sb = X.before.seq[c], sa = X.after.seq[c], tag = swapped[c];
         var moved = b.bin !== a.bin, re = sb !== sa;
         var note = tag ? chip(tag === 'A' ? 'warn' : 'info', t('m4.rp.swapped', { t: tag })) : moved ? chip('info', t('m4.rp.moved')) : re ? chip('info', t('m4.rp.reorder')) : '';
-        function binTxt(pk) { return pk.status === 'ok' ? locTag(pk.bin) + ' <span class="sub2">' + esc(floorTxt(pk.floor)) + '</span>' : chip('warn', t('m4.loc.' + pk.status)); }
+        function binTxt(pk) { return pk.status === 'ok' ? locTag(pk.bin) + ' <span class="sub2">' + esc(floorTxt(pk.floor)) + '</span>' : chip('warn', PWH.freq.locText(pk)); }
         return '<tr class="' + (tag ? 'm4sw' + tag : re ? 'm4re' : '') + '"><td class="m4pn"><span class="code">' + esc(c) + '</span><div class="sub2">' + esc(partName(c) || '–') + '</div></td><td class="num">' + (sb || '–') + '</td><td>' + binTxt(b) + '</td><td class="num"><b>' + (sa || '–') + '</b></td><td>' + binTxt(a) + '</td><td>' + note + '</td></tr>';
       }).join('') + '</tbody></table></div>';
     return html;
@@ -696,7 +702,6 @@
     function dates() { var a = f1.value, b = f2.value; if (!a || !b) return; if (b < a) { var x = a; a = b; b = x; } S.from = a; S.to = b; S.prodView = null; run(); }
     if (f1) f1.addEventListener('change', dates); if (f2) f2.addEventListener('change', dates);
     var pf = $('#m4prodf'); if (pf) pf.addEventListener('change', function () { var v = pf.value.trim(); if (v === S.product) return; S.product = v; S.prodView = null; run(); });
-    var q = $('#m4q'); if (q) q.addEventListener('input', function () { S.q = q.value; var pos = q.selectionStart; var sec = $('#m4parts'); if (sec) { var tmp = document.createElement('div'); tmp.innerHTML = partsTable(); sec.replaceWith(tmp.firstChild); var q2 = $('#m4q'); q2.focus(); q2.setSelectionRange(pos, pos); wireQ(); } });
     wireQ();
     S.root.querySelectorAll('.m4hq').forEach(function (inp) {
       inp.addEventListener('input', function () { S.hq = inp.value; var K = S.kits.f; if (K) { K.M.hl = heatMatches(S.hq); K.draw(); } });
@@ -727,7 +732,11 @@
       });
     }
   }
-  function wireQ() { var q = $('#m4q'); if (q && !q.dataset.w) { q.dataset.w = 1; } }
+  // the Part search redraws only the table; the new search box gets the same listener, so typing keeps filtering
+  function wireQ() {
+    var q = $('#m4q'); if (!q || q.dataset.w) return; q.dataset.w = 1;
+    q.addEventListener('input', function () { S.q = q.value; var pos = q.selectionStart; var sec = $('#m4parts'); if (sec) { var tmp = document.createElement('div'); tmp.innerHTML = partsTable(); sec.replaceWith(tmp.firstChild); var q2 = $('#m4q'); q2.focus(); q2.setSelectionRange(pos, pos); wireQ(); } });
+  }
   // Part search for the swap form: any part of the code (e.g. 11236) or of the name; Parts with a bin first
   function partHits(q) {
     q = String(q || '').trim().toUpperCase(); if (q.length < 2) return [];

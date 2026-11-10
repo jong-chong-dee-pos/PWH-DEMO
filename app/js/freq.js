@@ -456,9 +456,16 @@
   }
   function deleteScenario(id) { return scenarios().then(function (l) { l = l.filter(function (x) { return x.id !== id; }); return PWH.db.setMeta(SCEN, { list: l }).then(function () { return l; }); }); }
 
+  // why a Part is not picked on the route, in words, with the place it is stored when it has one (agreed 10/11/2026):
+  // no bin in Material-Location -> "No BIN LOCATION"; a special place, a bin not on the layout or one with no aisle -> named
+  function locText(pk) {
+    if (!pk || pk.status === 'noloc') return PWH.t('m4.loc.noloc');
+    var where = pk.status === 'unreach' ? pk.bin : (pk.bins || []).map(function (b) { return b.bin; }).filter(function (x, i, a) { return a.indexOf(x) === i; }).slice(0, 3).join(', ');
+    return PWH.t('m4.loc.' + pk.status) + (where ? ': ' + where : '');
+  }
   // time of one pick trip, the same simulation factors as Module 3 (estimates, labelled as such)
   function timeOf(m, stops, lifts) { var S = PWH.SIM; var walk = m / S.walk, pick = stops * S.pick, lift = lifts * S.lift; return { walk: walk, pick: pick, lift: lift, sec: walk + pick + lift }; }
   PWH.freq = { timeOf: timeOf, load: load, keyNow: keyNow, analyze: analyze, simulate: simulate, recommend: recommend, checkSwap: checkSwap, pickOf: pickOf, pointOf: pointOf,
     defaultRange: defaultRange, daysIn: daysIn, addDays: addDays, plantOf: plantOf, partsOf: partsOf, makeRouter: makeRouter,
-    storeDays: storeDays, plantPicks: plantPicks, savePlantPicks: savePlantPicks, days: days, computeDays: computeDays, scenarios: scenarios, saveScenario: saveScenario, deleteScenario: deleteScenario };
+    storeDays: storeDays, locText: locText, plantPicks: plantPicks, savePlantPicks: savePlantPicks, days: days, computeDays: computeDays, scenarios: scenarios, saveScenario: saveScenario, deleteScenario: deleteScenario };
 })(window);

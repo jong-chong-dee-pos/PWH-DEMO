@@ -415,6 +415,9 @@
       if (rack) M.hl.add(rack.id);
     });
     M.results.sort(function (a, b2) { return a.mat < b2.mat ? -1 : a.mat > b2.mat ? 1 : a.bin < b2.bin ? -1 : 1; });
+    // Parts of the BOM that match but are not in Material-Location: say so instead of "nothing found"
+    var found = new Set(M.results.map(function (x) { return x.mat; })); M.noBin = [];
+    if (M.partNames && q.length >= 3) M.partNames.forEach(function (nm, code) { if (M.noBin.length < 20 && !found.has(code) && String(code).toUpperCase().indexOf(q) >= 0) M.noBin.push(code); });
   }
   // move + zoom the view so these racks fill the map; switches floor when none is on the current one
   function zoomToRacks(ids) {
@@ -441,7 +444,8 @@
   function searchPanel() {
     var R = M.results, MAX = 150;
     var html = dHead(t('m2.res.caption'), t('m2.res.head') + ' “' + M.q + '”', R.length ? t('m2.res.sub', { r: M.hl.size }) : t('m2.res.none'), '<span class="chip info">' + esc(t('m2.res.count', { n: R.length })) + '</span>', true);
-    if (!R.length) return html;
+    var nb = (M.noBin || []).length ? '<div class="m2nobin"><b>' + esc(t('m2.nobin.title', { n: M.noBin.length })) + '</b><ul>' + M.noBin.map(function (c) { return '<li>' + partCell(c) + '<span class="chip warn">' + esc(t('m4.loc.noloc')) + '</span></li>'; }).join('') + '</ul></div>' : '';
+    if (!R.length) return html + nb;
     if (M.fs) {
       html += '<div class="m2dbody"><ul class="m2cards">' + R.slice(0, MAX).map(function (x, i) {
         var right = x.mat ? '<b class="m2pq">' + nf(x.stock) + '</b>' : '';
@@ -449,15 +453,15 @@
         return x.mat ? partCard(x.mat, x.plant, right, extra).replace('<li class="m2pc"', '<li class="m2pc m2go' + (x.rack ? '' : ' m2off') + '" data-m2="goto" data-i="' + i + '" tabindex="0"')
           : '<li class="m2pc m2go" data-m2="goto" data-i="' + i + '"><div class="m2pc3">' + extra + '<span class="m2none">' + esc(t('m2.sel.free_bin')) + '</span></div></li>';
       }).join('') + '</ul>' + (R.length > MAX ? '<p class="sub" style="margin:8px 0 0">' + esc(t('m2.res.more', { n: MAX, t: R.length })) + '</p>' : '') + '</div>';
-      return html;
+      return html + nb;
     }
     html += '<div class="m2dbody"><table class="m2tbl m2det search"><thead><tr><th class="num">' + esc(t('m2.col.no')) + '</th><th>' + esc(t('m2.col.part')) + '</th><th>' + esc(t('m2.col.bin')) + '</th><th>' + esc(t('m2.col.floor')) + '</th><th class="num">' + esc(t('m2.col.qty')) + '</th></tr></thead><tbody>';
     R.slice(0, MAX).forEach(function (x, i) {
-      html += '<tr class="m2go' + (x.rack ? '' : ' m2off') + '" data-m2="goto" data-i="' + i + '"><td class="num m2no">' + (i + 1) + '</td><td>' + (x.mat ? partCell(x.mat) : '<span class="m2none">' + esc(t('m2.sel.free_bin')) + '</span>') + '</td><td><span class="loc">' + esc(x.bin) + '</span></td><td class="m2lv">' + (x.floor ? esc(x.floor.slice(1)) : '–') + '</td><td class="num">' + (x.mat ? nf(x.stock) : '') + '</td></tr>';
+      html += '<tr class="m2go' + (x.rack ? '' : ' m2off') + '" data-m2="goto" data-i="' + i + '"><td class="num m2no">' + (i + 1) + '</td><td>' + (x.mat ? partCell(x.mat) : '<span class="m2none">' + esc(t('m2.sel.free_bin')) + '</span>') + '</td><td><span class="loc">' + esc(x.bin) + '</span>' + (x.rack ? '' : '<div class="sub2">' + esc(t(PWH.layout.binInfo(x.bin) ? 'm4.loc.notonlayout' : 'm4.loc.special')) + '</div>') + '</td><td class="m2lv">' + (x.floor ? esc(x.floor.slice(1)) : '–') + '</td><td class="num">' + (x.mat ? nf(x.stock) : '') + '</td></tr>';
     });
     html += '</tbody></table>';
     if (R.length > MAX) html += '<p class="sub" style="margin:8px 0 0">' + esc(t('m2.res.more', { n: MAX, t: R.length })) + '</p>';
-    return html + '</div>';
+    return html + nb + '</div>';
   }
   function side(scroll) {
     var el = $('#m2side'); if (!el) return;

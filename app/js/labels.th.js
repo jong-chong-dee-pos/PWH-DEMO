@@ -464,7 +464,7 @@
   "lookup.qty_per": "จำนวนต่อ Product",   // Qty per product
   "lookup.bin": "Bin",   // Bin
   "lookup.stock": "สต็อก",   // Stock
-  "lookup.nobin": "ไม่มี Bin",   // No bin
+  "lookup.nobin": "ไม่มี BIN LOCATION",   // No BIN LOCATION
   "lookup.used_in": "ใช้ใน {n} Product",   // Used in {n} products
   "lookup.bins": "Bin ที่เก็บ {code}",   // Bins holding {code}
   "lookup.more": "และอีก {n} รายการ",   // +{n} more
@@ -509,7 +509,7 @@
   "m4.k.rounds": "รอบจัด Part ตามแผน",   // Pick rounds planned
   "m4.k.rounds_of": "จาก {n} รอบในแผน",   // of {n} in the plans
   "m4.k.parts": "Part ไม่ซ้ำ",   // Different Parts
-  "m4.k.picks": "รวม {n} ครั้ง",   // {n} picks in total
+  "m4.k.picks": "ความถี่หยิบ (มี Bin)",   // Picks with a bin
   "m4.k.dist": "ระยะเข็นจำลอง",   // Simulated cart distance
   "m4.k.per": "เฉลี่ย {m} ม./รอบ",   // {m} m per round
   "m4.k.bad": "คำนวณไม่ได้",   // Not computable
@@ -548,10 +548,9 @@
   "m4.why.noloc": "ไม่มี Location (ไม่มีใน Material–Location)",   // Part has no location (not in Material–Location)
   "m4.why.notonlayout": "Location นี้ไม่มีบนผัง",   // Location is not on the layout
   "m4.why.special": "อยู่เฉพาะ Bin พิเศษ (PRINTER, NEW, AS CUT …) ไม่ใช่จุดเดินหยิบ",   // Only in special bins (PRINTER, NEW, AS CUT …), not a pick point
-  "m4.loc.unreach": "ไม่มีทางเดินถึง",   // No aisle to it
-  "m4.why.unreach": "Bin ไม่มีทางเดินรถเข็นติดในผัง (เช่น แถว K ด้านหลัง) จึงเดินไปหยิบไม่ได้",   // Bin has no cart aisle next to it on the layout (e.g. back row K), so it cannot be walked to
-  "m4.loc.noloc": "ไม่มี Location",   // No location
-  "m4.loc.notonlayout": "ไม่มีบนผัง",   // Not on layout
+  "m4.loc.unreach": "Bin ไม่มีทางเดินถึง",   // No aisle to the bin
+  "m4.loc.noloc": "ไม่มี BIN LOCATION",   // No BIN LOCATION
+  "m4.loc.notonlayout": "Bin ไม่อยู่บนผัง",   // Bin not on the layout
   "m4.loc.special": "Bin พิเศษ",   // Special bin
   "m4.recs.none": "ไม่พบคู่สลับที่ช่วยลดระยะเข็นในช่วงนี้",   // No swap shortens the walk in this period.
   "m4.recs.head": "พบ {n} คู่สลับ ช่วง {from}–{to} รวมลดระยะเข็นประมาณ {m} ม. (คิดทีละคู่)",   // {n} swaps found for {from}–{to}: together about {m} m less cart walking (each is counted on its own).
@@ -664,11 +663,11 @@
   "m4.h.empty": "ไม่มี Part ในช่องนี้ใน Material–Location",   // No Part is stored in this rack in Material–Location.
   "m4.level": "ชั้นเก็บ {n}",   // level {n}
   "m4.stock": "สต็อก {n}",   // stock {n}
-  "m4.parts.sub2": "ตามแผน = จำนวนรอบที่มี Part · จัดเส้นทางได้ = รอบที่มีจุดหยิบที่เข้าถึงได้ · คลิกแถวเพื่อดู Product และ Bin",   // Planned = rounds that list the Part. Routed = rounds where it has a reachable pick point. Click a row for its Products and bins.
+  "m4.parts.sub2": "ความถี่ = จำนวนรอบที่หยิบ Part จาก Bin บนเส้นทาง · Part ที่ไม่มี BIN LOCATION, Bin พิเศษ หรือ Bin ไม่อยู่บนผัง แสดง – และไม่นับความถี่ · คลิกแถวเพื่อดู Product และ Bin",   // Picks = rounds that pick the Part from a bin on the route. Parts with no BIN LOCATION, a special bin or a bin not on the layout show – and are not counted. Click a row to see its Products and bins.
   "m4.q.part": "ค้นหา Part ด้วยรหัสหรือชื่อ",   // Find a Part by code or name
   "m4.q.note": "กรองเฉพาะตารางนี้ เส้นทางยังคิดครบทุก Part",   // only narrows this table; routes still use every Part
   "m4.sort": "เรียงตาม",   // Sort by
-  "m4.col.plan": "ตามแผน",   // Planned
+  "m4.col.plan": "ความถี่ (มี Bin)",   // Picks
   "m4.col.route": "จัดเส้นทางได้",   // Routed
   "m4.col.chosen": "Location ที่ถูกเลือก",   // Bin used
   "m4.col.status": "สถานะ",   // Status
@@ -707,7 +706,7 @@
   "m4.iss.plant": "ข้อมูล Order เชื่อมได้หลายรายการ กรุณาตรวจสอบ",   // Order links to more than one Plant; please check
   "m4.iss.nobom": "ไม่พบรายการ Part ของ Product (ไม่มี BOM)",   // No BOM for the Product
   "m4.iss.noparts": "ไม่พบรายการ Part ของ Product ใน Plant นี้",   // BOM has no Parts for this Plant
-  "m4.iss.loc_noloc": "ไม่มี Location",   // No location (not in Material–Location)
+  "m4.iss.loc_noloc": "ไม่มี BIN LOCATION (ไม่อยู่ใน Material–Location)",   // No BIN LOCATION (not in Material–Location)
   "m4.iss.loc_notonlayout": "Location นี้ไม่มีบนผัง",   // Location is not on the layout
   "m4.iss.loc_unreach": "ไม่พบเส้นทางรถเข็นเข้าถึง Location",   // No cart route reaches the location
   "m4.iss.loc_special": "ตำแหน่งพักในระบบ ไม่ใช้เป็นจุดหยิบ",   // Holding bin in the system, not a pick point
@@ -815,7 +814,7 @@
   "m4.issshort.plant": "ไม่รู้ Plant",   // Plant unknown
   "m4.issshort.nobom": "ไม่มี BOM",   // no BOM
   "m4.issshort.noparts": "ไม่มี Part",   // no Parts
-  "m4.issshort.loc_noloc": "ไม่มี Location",   // no location
+  "m4.issshort.loc_noloc": "ไม่มี BIN LOCATION",   // no BIN LOCATION
   "m4.issshort.loc_notonlayout": "ไม่มีบนผัง",   // not on layout
   "m4.issshort.loc_unreach": "เข้าถึงไม่ได้",   // no aisle
   "m4.issshort.loc_special": "Bin พิเศษ",   // special bin
@@ -1130,7 +1129,7 @@
   "m5.a.row": "แถว",   // row
   "m5.lk.all": "ทุกช่องที่อยู่",   // every bin it is in
   "m5.lk.all2": "ทุกช่อง ({n})",   // Every bin ({n})
-  "m5.lk.nobin": "Part นี้ไม่มีช่องในข้อมูล Material–Location",   // This Part has no bin in the Material–Location data.
+  "m5.lk.nobin": "Part นี้ไม่มี BIN LOCATION ในข้อมูล Material–Location",   // This Part has no BIN LOCATION in Material–Location.
   "m5.partners.sub": "Part ที่ไม่มีประเภทไม่นับเป็นสมาชิกกลุ่มใด และช่องปลายทางของทั้งสอง Part ยังต้องผ่านกติกาพื้นที่ด้วย",   // A Part with no item type never counts as a member. The bins of both Parts must still pass the area rules.
   "m5.err.src": "เลือกพื้นที่ต้นทางบนแผนที่ หรือเลือก ทุกต้นทาง",   // Pick the source area on the map, or choose Any source
   "m5.err.allow": "เลือกปลายทางที่อนุญาตบนแผนที่ หรือติ๊ก ชั้นอาคารเดียวกับต้นทาง",   // Pick the allowed destination on the map, or tick Same building floor as the source
@@ -1302,8 +1301,8 @@
   "m3.nostock": "ไม่มีสต็อก",   // No stock
   "m3.group.off": "ไม่อยู่ในเส้นทางเดิน",   // Not on the walking route
   "m3.group.off_help": "Part เหล่านี้อยู่ใน Bin ที่ไม่อยู่บนผัง หรือเป็น Bin ชื่อพิเศษ จึงไม่ถูกนำมาจัดเส้นทาง",   // These parts sit in bins that are not on the layout, or have special names. They are not in the route.
-  "m3.group.nobin": "ไม่มีตำแหน่งเก็บ",   // No storage location
-  "m3.group.nobin_help": "Part เหล่านี้ไม่มี Bin ใน Material–Location",   // These parts have no bin in Material–Location.
+  "m3.group.nobin": "ไม่มี BIN LOCATION",   // No BIN LOCATION
+  "m3.group.nobin_help": "Part เหล่านี้ไม่อยู่ในไฟล์ Material–Location จึงไม่อยู่ในเส้นทางหยิบ",   // These Parts are not in Material–Location, so they are not on the route.
   "m3.empty.title": "ค้นหา Product เพื่อดูเส้นทางหยิบ",   // Search a Product to get its pick route
   "m3.empty.help": "พิมพ์รหัส Product บางส่วน หรือเลข JOB รายการจะแสดงแต่ละ Part พร้อม Bin เรียงตามลำดับการเดิน และแผนที่แสดงเส้นทาง",   // Type part of a Product code or a JOB number. The list shows each Part and its bin in walking order, and the map shows the route.
   "m3.legend.route": "เส้นทางเดิน",   // Walking route
@@ -1468,10 +1467,10 @@
   "m6.g.order.n": "{n} Order",   // {n} Orders
   "m6.g.nobom": "Product ไม่มี BOM",   // Products without a BOM
   "m6.g.nobom.n": "{n} Product",   // {n} Products
-  "m6.g.noloc": "Part ไม่มี Location",   // Parts without a location
+  "m6.g.noloc": "Part ไม่มี BIN LOCATION",   // Parts with no BIN LOCATION
   "m6.g.noloc.n": "{n} Part",   // {n} Parts
-  "m6.g.layout": "Location ไม่มีบนผัง/เข้าถึงไม่ได้",   // Locations not on the layout or not reachable
-  "m6.g.layout.n": "{n} Location",   // {n} Locations
+  "m6.g.layout": "Bin พิเศษ / ไม่อยู่บนผัง / ไม่มีทางเดินถึง",   // Special bins, bins not on the layout or with no aisle
+  "m6.g.layout.n": "{n} Bin",   // {n} bins
   "m6.g.rule": "Part อยู่ผิดกติกา",   // Parts stored against a rule
   "m6.g.rule.n": "{n} Part",   // {n} Parts
   "m6.g.stale": "ผลวิเคราะห์ล้าสมัย",   // Analysis out of date
@@ -1506,7 +1505,7 @@
   "m4.sv.cur": "ปัจจุบัน",   // Current
   "m4.sv.load": "เปิด",   // Open
   "m4.sv.del": "ลบ",   // Delete
-  "m6.c.freq.s2": "ตามแผน {a} ครั้ง · ไม่มี Bin {b} ครั้ง",   // {a} in the plan · {b} without a bin
+  "m6.c.freq.s2": "ตามแผน {a} ครั้ง · ไม่นับ {b} ครั้ง (ไม่มี BIN LOCATION หรือ Bin ไม่อยู่บนเส้นทาง)",   // {a} in the plan · {b} not counted (no BIN LOCATION or bin off the route)
   "m6.c.freq.s3": "ทุกครั้งตามแผนมี Bin",   // every planned pick has a bin
   "m6.c.dist.s2": "จาก {a} รอบ · เส้นทางครบทุก Part {b} รอบ",   // from {a} rounds · {b} with every Part on the route
   "m6.c.avg.s2": "หารด้วย {n} รอบที่มีเส้นทาง",   // ÷ {n} rounds with a route
@@ -1529,6 +1528,14 @@
   "m6.st.plants": "Plant ที่เลือกให้ Product",   // Plants chosen for Products
   "m6.st.plantsn": "{n} Product เลือกไว้ในโมดูล 4 และใช้คำนวณที่นี่ด้วย",   // {n} Products, chosen in Module 4 and used here too
   "m6.st.plants0": "ยังไม่ได้เลือก",   // none chosen
+  "m4.nocount": "ไม่นับความถี่",   // not counted
+  "m4.nc.head": "ไม่นับ: {list}",   // Not counted: {list}
+  "m4.nc.none": "ทุกครั้งตามแผนมี Bin",   // every planned pick has a bin
+  "m4.nc.noloc": "ไม่มี BIN LOCATION {n}",   // no BIN LOCATION {n}
+  "m4.nc.special": "Bin พิเศษ {n}",   // special bin {n}
+  "m4.nc.notonlayout": "ไม่อยู่บนผัง {n}",   // not on layout {n}
+  "m4.nc.unreach": "ไม่มีทางเดินถึง {n}",   // no aisle {n}
+  "m2.nobin.title": "Part ใน BOM ที่ตรงกับคำค้น แต่ไม่มี BIN LOCATION ({n})",   // {n} Parts in the BOM match but have no BIN LOCATION
   "soon.m6": "อ่านผลลัพธ์ของ Module 1 ถึง 5",   // Reads the results of modules 1 to 5.
   };
 })(window);

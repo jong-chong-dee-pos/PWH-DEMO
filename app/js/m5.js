@@ -34,7 +34,7 @@
   function freqMap() {
     var B = PWH.m4 && PWH.m4.base && PWH.m4.base(); if (!B) return null;
     if (S.fq && S.fq.B === B) return S.fq.m;
-    var m = new Map(); B.parts.forEach(function (p) { m.set(p.code, p.nRoute || p.n || 0); }); S.fq = { B: B, m: m }; return m;
+    var m = new Map(); B.parts.forEach(function (p) { m.set(p.code, p.nRoute || 0); });   // Parts without a bin are not counted S.fq = { B: B, m: m }; return m;
   }
 
   function load() {
@@ -320,7 +320,7 @@
     return '<div class="m5cardp"><div class="m5cph">' + head + '</div>' +
       '<div class="m5cpt"><input id="m5tq" type="search" value="' + esc(S.tq) + '" placeholder="' + esc(t('m5.ph.part3')) + '" aria-label="' + esc(t('m5.ph.part3')) + '"><span class="sub2">' + esc(t('m5.t.showing', { n: nf(shown.length), m: nf(list.length) })) + (fq ? ' · ' + esc(t('m5.t.byfreq')) : ' · ' + esc(t('m5.t.needm4b'))) + '</span></div>' + bar +
       (shown.length ? '<div class="tablebox m5ptb"><table class="m5tbl m5parts"><colgroup><col class="c-chk"><col class="c-code"><col><col class="c-bin"><col class="c-n"></colgroup><thead><tr><th><input type="checkbox" data-m5all="1"' + (allOn ? ' checked' : '') + ' aria-label="' + esc(t('m5.t.all', { n: shown.length })) + '"></th><th>Part</th><th>' + esc(t('m5.col.name')) + '</th><th>Bin</th><th class="num">' + esc(t('m5.mis.n')) + '</th></tr></thead><tbody>' +
-        shown.map(function (c) { var pk = pickFor(c); return '<tr><td><input type="checkbox" data-m5c="' + esc(c) + '"' + (S.tpick.has(c) ? ' checked' : '') + ' aria-label="' + esc(c) + '"></td><td><span class="code">' + esc(c) + '</span></td><td>' + esc(S.names.get(c) || '–') + '</td><td>' + (pk && pk.bin ? loc(pk.bin) : '<span class="sub2">–</span>') + '</td><td class="num">' + (fq ? nf(fq.get(c) || 0) : '–') + '</td></tr>'; }).join('') +
+        shown.map(function (c) { var pk = pickFor(c); return '<tr><td><input type="checkbox" data-m5c="' + esc(c) + '"' + (S.tpick.has(c) ? ' checked' : '') + ' aria-label="' + esc(c) + '"></td><td><span class="code">' + esc(c) + '</span></td><td>' + esc(S.names.get(c) || '–') + '</td><td>' + (pk && pk.status === 'ok' ? loc(pk.bin) : '<span class="chip warn">' + esc(PWH.freq.locText(pk)) + '</span>') + '</td><td class="num">' + (fq && pk && pk.status === 'ok' ? nf(fq.get(c) || 0) : '–') + '</td></tr>'; }).join('') +
         '</tbody></table></div>' : '<p class="empty-note">' + esc(t(q ? 'm4.sim.nohit' : isNone ? 'm5.t.allgrouped' : 'm5.t.empty')) + '</p>') + '</div>';
   }
 
