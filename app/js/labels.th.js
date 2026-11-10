@@ -1552,6 +1552,9 @@
   "ul.prod": "{n} Product",   // {n} Product
   "ul.noline": "(ไม่ระบุไลน์)",   // (no U-line)
   "ul.none": "ไม่มีแผนรายวันในช่วงนี้",   // No daily plan in this period.
+  "m4.k.rounds_sub3": "JOB ไม่ซ้ำ {j} · {p} Product",   // {j} different JOBs · {p} Products
+  "m4.k.rep_days": "{n} JOB อยู่ในแผนมากกว่า 1 วัน",   // {n} JOBs are planned on more than one day
+  "m4.k.rep_lines": "{n} JOB อยู่หลาย U-line ในวันเดียวกัน",   // {n} JOBs are on more than one U-line the same day
   "soon.m6": "อ่านผลลัพธ์ของ Module 1 ถึง 5",   // Reads the results of modules 1 to 5.
   };
 })(window);

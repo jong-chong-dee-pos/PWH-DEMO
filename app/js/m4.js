@@ -122,12 +122,20 @@
     var withRoute = B.identified.filter(function (r) { return r.m > 0; }).length;   // the divisor of the average, as on the dashboard
     var issSub = gs.map(function (gp) { return esc(t('m4.issshort.' + gp.why)) + ' ' + nf(gp.items.length); }).join(' · ');
     return '<div class="m4kpis m4k5">' +
-      k(t('m4.k.rounds'), nf(B.rounds.length), esc(t('m4.k.rounds_sub2', { j: nf(jobs.size), p: nf(prods.size) }))) +
+      k(t('m4.k.rounds'), nf(B.rounds.length), esc(t('m4.k.rounds_sub3', { j: nf(jobs.size), p: nf(prods.size) })) + repeatNote(B)) +
       k(t('m4.k.parts'), nf(B.parts.length), esc(t('m4.k.parts_sub2', { a: nf(withBin), b: nf(B.parts.length - withBin) }))) +
       k(t('m4.k.picks'), nf(B.routeFreq), esc(notCounted(B))) +
       k(t('m4.k.dist'), mm(B.totalM), esc(t('m4.k.dist_sub4', { m: nf(withRoute ? B.totalM / withRoute : 0, 1), n: nf(withRoute), h: hrs(B.totalSec) }))) +
       '<button type="button" class="m4k m4kbtn' + (nIss ? ' warnv' : '') + '" data-m4="goiss"><span class="k">' + esc(t('m4.k.issues')) + '</span><span class="v">' + nf(nIss) + '</span><span class="s">' + (issSub || esc(t('m4.none'))) + '</span></button></div>' +
       (B.consistent ? '' : '<div class="msg bad" role="status"><span>' + esc(t('m4.err.heatsum', { h: nf(B.heatSum), r: nf(B.routeFreq) })) + '</span></div>');
+  }
+  // why rounds can outnumber JOBs: a round is date + U-line + JOB, so a JOB planned on several days (or lines) is several rounds
+  function repeatNote(B) {
+    var days = new Map(), lines = new Map();
+    B.rounds.forEach(function (r) { var d = days.get(r.job) || new Set(); d.add(r.date); days.set(r.job, d); var k = r.job + '|' + r.date, l = lines.get(k) || new Set(); l.add(r.line); lines.set(k, l); });
+    var nd = 0, nl = new Set(); days.forEach(function (d) { if (d.size > 1) nd++; }); lines.forEach(function (l, k) { if (l.size > 1) nl.add(k.split('|')[0]); });
+    var bits = []; if (nd) bits.push(t('m4.k.rep_days', { n: nf(nd) })); if (nl.size) bits.push(t('m4.k.rep_lines', { n: nf(nl.size) }));
+    return bits.length ? '<br>' + esc(bits.join(' · ')) : '';
   }
   // planned picks that are not counted, by reason
   function notCounted(B) {

@@ -1399,6 +1399,9 @@
     'ul.prod': "{n} Product",
     'ul.noline': "(no U-line)",
     'ul.none': "No daily plan in this period.",
+    'm4.k.rounds_sub3': "{j} different JOBs · {p} Products",
+    'm4.k.rep_days': "{n} JOBs are planned on more than one day",
+    'm4.k.rep_lines': "{n} JOBs are on more than one U-line the same day",
     'soon.m6': 'Reads the results of modules 1 to 5.'
   };
   var lang = 'th';
