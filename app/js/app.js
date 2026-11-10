@@ -13,7 +13,7 @@
   var S = {
     module: 1, tab: 'bom', files: [], sel: {}, checks: null, checking: false,
     settings: { plantOrder: ['5212', '5213'] }, msgs: [], confirm: null, confirmUse: null, ask: null, showAll: {}, openList: {},
-    pv: { id: null, rows: null, lc: null, filter: '', page: 0, view: null }, mf: '', mrows: true, v1: 'files', dt: 'sum'
+    pv: { id: null, rows: null, lc: null, filter: '', page: 0, view: null }, mf: '', mrows: true, v1: 'files', dt: 'sum', ul: {}
   };
   try { var v1s = localStorage.getItem('pwh-v1'); if (['files', 'checks', 'lookup'].indexOf(v1s) >= 0) S.v1 = v1s; } catch (e) {}
   try { var mfs = localStorage.getItem('pwh-mf'); if (/^\d{4}-\d{2}$/.test(mfs || '')) S.mf = mfs; } catch (e) {}
@@ -459,7 +459,8 @@
     el.hidden = false;
     var st = fileStatus(f), iss = issuesOf(f);
     var lineStat = null;
-    var facts = '<dl class="facts row">' + (f.stats || []).filter(function (s) { if (s[0] === 'stat.lines') { lineStat = s[1]; return false; } return true; }).map(function (s) { return '<div><dt>' + esc(t(s[0])) + '</dt><dd>' + (typeof s[1] === 'number' ? nf(s[1]) : esc(s[1])) + '</dd></div>'; }).join('') + '</dl>' + ulineBox(lineStat);
+    var facts = '<dl class="facts row">' + (f.stats || []).filter(function (s) { if (s[0] === 'stat.lines') { lineStat = s[1]; return false; } return true; }).map(function (s) { return '<div><dt>' + esc(t(s[0])) + '</dt><dd>' + (typeof s[1] === 'number' ? nf(s[1]) : esc(s[1])) + '</dd></div>'; }).join('') + '</dl>' +
+      (f.type === 'daily' && f.planDate ? '<div class="ulbox" id="ulbox"></div>' : ulineBox(lineStat));
     var n = { error: 0, warning: 0, info: 0 }; iss.forEach(function (i) { n[i.level] = (n[i.level] || 0) + 1; });
     var parts = []; if (n.error) parts.push(t('sum.err', { n: n.error })); if (n.warning) parts.push(t('sum.warn', { n: n.warning })); if (n.info) parts.push(t('sum.info', { n: n.info }));
     var checks = iss.length
@@ -472,6 +473,51 @@
       '<div class="dacts"><span class="chip ' + (st === 'ok' ? 'ok' : st === 'warn' ? 'warn' : 'error') + '">' + esc(t('status.' + st)) + '</span>' + (S.tab === 'daily' ? fileActs(f) : '') + '</div></div>' + facts + checks + '<div class="chg-line">' + changeBox(f) + '</div>';
     ensureRows(f, function () { renderPreview(); renderBomQ(); });
     renderRawShell(f); renderBomQ();
+    if (f.type === 'daily' && f.planDate) { if (S.ul.file !== f.id) S.ul = { file: f.id, from: f.planDate, to: f.planDate }; renderUline(); }
+  }
+
+  // ---------- JOBs per U-line over a period (agreed 10/11/2026) ----------
+  // The plan file in use for each date in the period. JOB = counted once per day it is planned (date + U-line + JOB,
+  // the same "round" Modules 4 and 6 count). Product = distinct codes per U-line over the whole period.
+  var ulRows = new Map();
+  function rowsOf(f) { if (ulRows.has(f.id)) return Promise.resolve(ulRows.get(f.id)); return PWH.db.getRows(f.id).then(function (r) { ulRows.set(f.id, r || []); return r || []; }); }
+  function renderUline() {
+    var box = $('#ulbox'); if (!box) return;
+    var U = S.ul, from = U.from <= U.to ? U.from : U.to, to = U.from <= U.to ? U.to : U.from;
+    var files = activeFiles('daily').filter(function (x) { return x.planDate >= from && x.planDate <= to; });
+    var nDays = Math.round((Date.parse(to) - Date.parse(from)) / 864e5) + 1, f = selFile();
+    var head = '<div class="ulh"><b>' + esc(t('ul.title')) + '</b>' +
+      '<label class="ulf"><span>' + esc(t('ul.from')) + '</span><input type="date" id="ulfrom" value="' + esc(from) + '"></label>' +
+      '<label class="ulf"><span>' + esc(t('ul.to')) + '</span><input type="date" id="ulto" value="' + esc(to) + '"></label>' +
+      (f && (from !== f.planDate || to !== f.planDate) ? '<button type="button" class="btn sm" data-act="ul-day">' + esc(t('ul.day', { d: fmtDate(f.planDate) })) + '</button>' : '') + '</div>';
+    box.innerHTML = head + '<p class="sub2 ulwait">' + esc(t('ul.loading')) + '</p>';
+    wireUl();
+    var id = U.n = (U.n || 0) + 1;
+    Promise.all(files.map(function (x) { return rowsOf(x).then(function (r) { return { date: x.planDate, rows: r }; }); })).then(function (days) {
+      if (id !== S.ul.n || !document.body.contains(box)) return;
+      var by = new Map(), jobs = 0, prods = new Set();
+      days.forEach(function (d) {
+        var seen = new Set();
+        d.rows.forEach(function (r) {
+          var job = String(r[0] == null ? '' : r[0]).trim(), prod = String(r[1] == null ? '' : r[1]).trim(), line = String(r[4] == null ? '' : r[4]).trim() || t('ul.noline');
+          var L = by.get(line); if (!L) by.set(line, (L = { line: line, jobs: 0, prods: new Set() }));
+          if (job && !seen.has(line + '|' + job)) { seen.add(line + '|' + job); L.jobs++; jobs++; }
+          if (prod) { L.prods.add(prod); prods.add(prod); }
+        });
+      });
+      var list = Array.from(by.values()).sort(function (a, b) { return a.line < b.line ? -1 : a.line > b.line ? 1 : 0; });
+      var sum = t('ul.sum2', { n: list.length, j: nf(jobs), p: nf(prods.size) }) + ' · ' + t('ul.days', { a: files.length, b: nDays });
+      box.innerHTML = head + '<p class="sub2 ulsum">' + esc(sum) + '</p>' +
+        (list.length ? '<ul class="ulg ulg2">' + list.map(function (L) { return '<li><span class="uln">' + esc(L.line) + '</span><span class="ulv"><b class="ulc">' + nf(L.jobs) + '</b><small>' + esc(t('ul.job')) + '</small><span class="ulp">' + esc(t('ul.prod', { n: nf(L.prods.size) })) + '</span></span></li>'; }).join('') + '</ul>'
+          : '<p class="empty-note">' + esc(t('ul.none')) + '</p>');
+      wireUl();
+    });
+  }
+  function wireUl() {
+    ['#ulfrom', '#ulto'].forEach(function (sel) {
+      var el = $(sel); if (!el) return;
+      el.addEventListener('change', function () { var a = $('#ulfrom').value, b = $('#ulto').value; if (!a || !b) return; S.ul.from = a; S.ul.to = b; renderUline(); });
+    });
   }
 
   // ---------- BOM search: Product -> first-level Parts (+ Bin, stock); Part -> where it is used ----------
@@ -656,6 +702,7 @@
     var act = el.getAttribute('data-act'), id = el.getAttribute('data-id');
     if (el.tagName === 'SELECT') return;
     if (act === 'module') { S.module = +el.getAttribute('data-m'); renderShell(); }
+    else if (act === 'ul-day') { var fd = selFile(); if (fd) { S.ul.from = S.ul.to = fd.planDate; renderUline(); } }
     else if (act === 'lang') { PWH.setLang(el.getAttribute('data-l')); renderShell(); }
     else if (act === 'tab') { if (S.module !== 1 || S.v1 !== 'files') { S.module = 1; S.v1 = 'files'; renderShell(); } setTab(el.getAttribute('data-t')); }
     else if (act === 'v1') { S.v1 = el.getAttribute('data-v'); try { localStorage.setItem('pwh-v1', S.v1); } catch (x) {} renderView(); }

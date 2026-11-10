@@ -1542,6 +1542,16 @@
   "m5.t.hide": "ซ่อนรายชื่อ",   // Hide list
   "m5.t.ungrouped.plan": "ในนั้นอยู่ในแผน {n} Part",   // {n} of them are in the plan
   "m5.t.ungrouped.done": "จัดกลุ่มครบแล้ว",   // every Part has a type
+  "ul.from": "ตั้งแต่",   // From
+  "ul.to": "ถึง",   // To
+  "ul.day": "เฉพาะวันที่ {d}",   // Only {d}
+  "ul.loading": "กำลังรวมแผน…",   // Adding up the plans…
+  "ul.sum2": "{n} ไลน์ · รวม {j} JOB · {p} Product",   // {n} lines · {j} JOB · {p} Product
+  "ul.days": "มีแผน {a}/{b} วัน",   // plans for {a}/{b} days
+  "ul.job": "JOB",   // JOB
+  "ul.prod": "{n} Product",   // {n} Product
+  "ul.noline": "(ไม่ระบุไลน์)",   // (no U-line)
+  "ul.none": "ไม่มีแผนรายวันในช่วงนี้",   // No daily plan in this period.
   "soon.m6": "อ่านผลลัพธ์ของ Module 1 ถึง 5",   // Reads the results of modules 1 to 5.
   };
 })(window);

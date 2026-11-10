@@ -1389,6 +1389,16 @@
     'm5.t.hide': "Hide list",
     'm5.t.ungrouped.plan': "{n} of them are in the plan",
     'm5.t.ungrouped.done': "every Part has a type",
+    'ul.from': "From",
+    'ul.to': "To",
+    'ul.day': "Only {d}",
+    'ul.loading': "Adding up the plans…",
+    'ul.sum2': "{n} lines · {j} JOB · {p} Product",
+    'ul.days': "plans for {a}/{b} days",
+    'ul.job': "JOB",
+    'ul.prod': "{n} Product",
+    'ul.noline': "(no U-line)",
+    'ul.none': "No daily plan in this period.",
     'soon.m6': 'Reads the results of modules 1 to 5.'
   };
   var lang = 'th';

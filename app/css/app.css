@@ -2166,3 +2166,23 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
   .rail, .topbar, .m6tip, .m2tool, .m2legend, .m3glass, .m3r1, .m3kpi, .m3flowbox, .m3srch { -webkit-backdrop-filter: none; backdrop-filter: none; }
   .rail, .topbar { background: var(--surface); }
 }
+/* v54 — Module 1: JOBs per U-line over a period */
+.ulh { flex-wrap: wrap; align-items: center; }
+.ulf { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-label); color: var(--muted); }
+.ulf input { min-height: 32px; padding: 2px 8px; }
+.ulsum { margin: 0 0 8px; }
+.ulg2 li { align-items: center; padding: 8px 12px; }
+.ulv { display: flex; align-items: baseline; gap: 4px; flex-wrap: wrap; justify-content: flex-end; text-align: right; }
+.ulv small { font-size: 12px; color: var(--muted); }
+.ulp { flex-basis: 100%; font-size: 12px; color: var(--muted); }
+.ulg2 { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
+.ulg2 li { flex-direction: column; align-items: flex-start; gap: 2px; }
+.ulg2 .uln { overflow: visible; white-space: normal; overflow-wrap: anywhere; }
+.ulg2 .ulv { justify-content: flex-start; text-align: left; gap: 4px 6px; }
+.ulg2 .ulp { flex-basis: auto; }
+.ulg2 .ulp::before { content: "·"; margin-right: 6px; }
+.ulg2 { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+.ulg2 li { justify-content: flex-start; gap: 4px; }
+.ulg2 .ulv { width: 100%; flex-wrap: nowrap; white-space: nowrap; }
+.ulg2 .ulc { min-width: 0; text-align: left; }
+.ulg2 { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
