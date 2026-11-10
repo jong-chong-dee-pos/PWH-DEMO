@@ -214,7 +214,7 @@
     }
     if (PWH.auth.can('users.manage')) nav += '<span class="rsep" aria-hidden="true"></span><button class="rb" data-act="module" data-m="9"' + (S.module === 9 ? ' aria-current="page"' : '') + '><svg viewBox="0 0 24 24" aria-hidden="true">' + ICON[9] + '</svg><span>' + esc(t('nav.users')) + '</span></button>';
     $('#app').innerHTML =
-      '<div class="shell"><nav class="rail" aria-label="Modules"><div class="logo">' + esc(t('app.sub')) + '</div>' + nav + '</nav>' +
+      '<div class="shell"><nav class="rail" aria-label="Modules"><div class="logo">' + PWH.gate.logo(34, 'plogo') + '<span>' + esc(t('app.sub')) + '</span></div>' + nav + '</nav>' +
       '<div class="main"><header class="topbar"><div class="pt">' + esc(t('app.name')) + '</div><span class="sp"></span><span id="topstat"></span>' +
       '<div class="lang" role="group" aria-label="Language"><button data-act="lang" data-l="th" aria-pressed="' + (lang === 'th') + '">TH</button><button data-act="lang" data-l="en" aria-pressed="' + (lang === 'en') + '">EN</button></div><span id="um">' + userMenu() + '</span></header>' +
       (PWH.db.isPersistent() ? '' : '<div class="banner" style="margin:12px 24px 0">' + esc(t('nav.storage_mem')) + '</div>') +

@@ -1431,8 +1431,8 @@
     'au.name': "Name",
     'au.code': "Employee code (4 digits)",
     'au.code2': "Employee code again",
-    'au.login.title': "Sign in",
-    'au.login.sub': "Use your e-mail and 4-digit employee code.",
+    'au.login.title': "Welcome back",
+    'au.login.sub': "Sign in with your e-mail and 4-digit employee code.",
     'au.login.go': "Sign in",
     'au.login.foot': "Forgot your code or have no account? Ask an admin.",
     'au.setup.title': "First-time setup",
@@ -1513,6 +1513,14 @@
     'au.ro.m5': "View only. Storage types and rules are changed by admins.",
     'au.ro.m2none': "No warehouse layout yet. An admin uploads it on this page.",
     'au.ro.denied': "This page is for admins.",
+    'au.hero1': "Find every Part's place,",
+    'au.hero2': "walk less every round.",
+    'au.hero.sub': "Look up bins, plan the pick route and see how often each Part is picked, so the warehouse is easier to work in.",
+    'au.art.next': "Next pick",
+    'au.forgot': "Forgot your code?",
+    'au.forgot.tip': "Ask an admin to set a new code for you on the Users page.",
+    'au.noacc': "No account yet?",
+    'au.noacc.who': "Ask an admin.",
     'soon.m6': 'Reads the results of modules 1 to 5.'
   };
   var lang = 'th';

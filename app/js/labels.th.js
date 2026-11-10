@@ -1584,8 +1584,8 @@
   "au.name": "ชื่อ–นามสกุล",   // Name
   "au.code": "รหัสพนักงาน (4 หลัก)",   // Employee code (4 digits)
   "au.code2": "ยืนยันรหัสพนักงาน",   // Employee code again
-  "au.login.title": "เข้าสู่ระบบ",   // Sign in
-  "au.login.sub": "ใช้อีเมลและรหัสพนักงาน 4 หลัก",   // Use your e-mail and 4-digit employee code.
+  "au.login.title": "ยินดีต้อนรับ",   // Welcome back
+  "au.login.sub": "เข้าสู่ระบบด้วยอีเมลและรหัสพนักงาน 4 หลัก",   // Sign in with your e-mail and 4-digit employee code.
   "au.login.go": "เข้าสู่ระบบ",   // Sign in
   "au.login.foot": "ลืมรหัสหรือยังไม่มีบัญชี ติดต่อแอดมิน",   // Forgot your code or have no account? Ask an admin.
   "au.setup.title": "ตั้งค่าครั้งแรก",   // First-time setup
@@ -1666,6 +1666,14 @@
   "au.ro.m5": "ดูได้อย่างเดียว ประเภทที่จัดเก็บและกติกาแก้ไขได้เฉพาะแอดมิน",   // View only. Storage types and rules are changed by admins.
   "au.ro.m2none": "ยังไม่มีผังคลัง แอดมินเป็นผู้อัปโหลดผังที่หน้านี้",   // No warehouse layout yet. An admin uploads it on this page.
   "au.ro.denied": "หน้านี้สำหรับแอดมิน",   // This page is for admins.
+  "au.hero1": "หา Part เจอทุกตำแหน่ง",   // Find every Part's place,
+  "au.hero2": "เดินน้อยลงทุกรอบ",   // walk less every round.
+  "au.hero.sub": "ค้นหาตำแหน่ง Bin วางเส้นทางหยิบ และดูความถี่การหยิบ เพื่อจัดคลังให้ทำงานง่ายขึ้น",   // Look up bins, plan the pick route and see how often each Part is picked, so the warehouse is easier to work in.
+  "au.art.next": "จุดหยิบถัดไป",   // Next pick
+  "au.forgot": "ลืมรหัส?",   // Forgot your code?
+  "au.forgot.tip": "ติดต่อแอดมินให้ตั้งรหัสใหม่ที่หน้าผู้ใช้",   // Ask an admin to set a new code for you on the Users page.
+  "au.noacc": "ยังไม่มีบัญชี?",   // No account yet?
+  "au.noacc.who": "ติดต่อแอดมิน",   // Ask an admin.
   "soon.m6": "อ่านผลลัพธ์ของ Module 1 ถึง 5",   // Reads the results of modules 1 to 5.
   };
 })(window);

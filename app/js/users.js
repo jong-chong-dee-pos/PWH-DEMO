@@ -8,45 +8,124 @@
   function errText(e) { var c = (e && e.code) || 'fail'; return t('au.err.' + c, { n: e && e.left, s: e && e.wait }); }
   var reduce = false; try { reduce = g.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e) {}
 
-  /* ---------- the plan drawing on the sign-in screen: the 4 digits walk a pick route ---------- */
-  // stops are real-looking bins on two rack blocks; START bottom right, DROP the strip on the right
-  // bins on a 5 x 8 rack grid (two blocks); aisles run between the rows, cross aisles at the left edge and the right side
-  function bin(bx, c, r) { return [bx + c * 22 + 9.5, 66 + r * 48, r]; }
-  var STOPS = [bin(154, 3, 7), bin(40, 1, 5), bin(154, 2, 3), bin(40, 3, 1)];
-  var START = [338, 452], DROP = [352, 138];
-  function aisle(r) { return 90 + r * 48; }
-  function racks() {
-    var out = '';
-    [40, 154].forEach(function (bx) {
-      for (var r = 0; r < 8; r++) for (var c = 0; c < 5; c++) out += '<rect class="gk" x="' + (bx + c * 22) + '" y="' + (60 + r * 48) + '" width="19" height="12" rx="2.5"/>';
-    });
-    return out;
-  }
-  function legs() {
-    var d = [], P = function (pts) { return 'M' + pts.map(function (q) { return q[0] + ' ' + q[1]; }).join(' L'); };
-    var s0 = STOPS[0]; d.push(P([START, [START[0], aisle(s0[2])], [s0[0], aisle(s0[2])], s0]));
-    for (var i = 0; i < STOPS.length - 1; i++) {
-      var a = STOPS[i], b = STOPS[i + 1], ya = aisle(a[2]), yb = aisle(b[2]);
-      var V = Math.abs(a[0] - 300) + Math.abs(b[0] - 300) <= Math.abs(a[0] - 28) + Math.abs(b[0] - 28) ? 300 : 28;
-      d.push(P([a, [a[0], ya], [V, ya], [V, yb], [b[0], yb], b]));
-    }
-    var z = STOPS[STOPS.length - 1], yz = aisle(z[2]); d.push(P([z, [z[0], yz], [300, yz], [300, DROP[1]], DROP]));
-    return d.map(function (x, i) { return '<path class="gl" data-leg="' + i + '" d="' + x + '" pathLength="100"/>'; }).join('');
-  }
-  function plan() {
-    return '<svg class="gplan" viewBox="0 0 400 520" role="img" aria-label="' + esc(t('au.art')) + '">' +
-      '<rect class="gfl" x="20" y="36" width="370" height="470" rx="14"/>' + racks() +
-      '<rect class="gdrop" x="352" y="70" width="18" height="290" rx="4"/><text class="gtx" x="361" y="56" text-anchor="middle">DROP</text>' +
-      '<rect class="gstart" x="318" y="452" width="40" height="34" rx="6"/><text class="gtx" x="338" y="503" text-anchor="middle">START</text>' +
-      legs() +
-      STOPS.map(function (s, i) { return '<g class="gs" data-stop="' + i + '"><circle cx="' + s[0] + '" cy="' + s[1] + '" r="11"/><text x="' + s[0] + '" y="' + (s[1] + 4) + '" text-anchor="middle">' + (i + 1) + '</text></g>'; }).join('') +
+  /* ---------- logo: a rack with two bins in a violet disc (rail, sign-in) ---------- */
+  function logo(size, cls) {
+    return '<svg class="' + (cls || 'plogo') + '" width="' + size + '" height="' + size + '" viewBox="0 0 40 40" aria-hidden="true">' +
+      '<circle cx="20" cy="20" r="20" fill="#6d4aff"/>' +
+      '<rect x="11" y="10" width="2.6" height="20" rx="1.3" fill="#fff"/><rect x="26.4" y="10" width="2.6" height="20" rx="1.3" fill="#fff"/>' +
+      '<rect x="11" y="17.6" width="18" height="2.4" rx="1.2" fill="#fff"/><rect x="11" y="25.4" width="18" height="2.4" rx="1.2" fill="#fff"/>' +
+      '<rect x="15" y="12" width="6.4" height="5.6" rx="1.2" fill="#ffb08a"/><rect x="18.6" y="20" width="6.4" height="5.4" rx="1.2" fill="#7dd3fc"/>' +
       '</svg>';
+  }
+
+  /* ---------- the sign-in picture: an isometric part-picking scene, drawn from boxes ----------
+   * a pallet rack with cartons and blue part bins, a picker pushing a cart, and the pick route on the floor:
+   * each digit of the code lights the next stop, the fourth one reaches the bin marked on the shelf */
+  var S0 = 30, OX = 0, OY = 0, BB = null;
+  function P(x, y, z) { var p = [(x - y) * 0.866 * S0 + OX, (x + y) * 0.5 * S0 - z * S0 + OY]; if (BB) { BB[0] = Math.min(BB[0], p[0]); BB[1] = Math.min(BB[1], p[1]); BB[2] = Math.max(BB[2], p[0]); BB[3] = Math.max(BB[3], p[1]); } return p; }
+  function poly(pts, fill, extra) { return '<polygon points="' + pts.map(function (q) { var p = P(q[0], q[1], q[2]); return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ') + '" fill="' + fill + '"' + (extra || '') + '/>'; }
+  function box(x, y, z, w, d, h, c) {   // c = [top, front(+y), side(+x)]
+    return poly([[x, y, z + h], [x + w, y, z + h], [x + w, y + d, z + h], [x, y + d, z + h]], c[0]) +
+      poly([[x, y + d, z], [x + w, y + d, z], [x + w, y + d, z + h], [x, y + d, z + h]], c[1]) +
+      poly([[x + w, y, z], [x + w, y + d, z], [x + w, y + d, z + h], [x + w, y, z + h]], c[2]);
+  }
+  var C = {
+    post: ['#ffffff', '#e4defc', '#c9bdf8'], beam: ['#ffb08a', '#ff7a45', '#e5602d'], deck: ['#f3f0ff', '#d8cffd', '#c3b5f7'],
+    carton: ['#f4cf9c', '#dfa86c', '#c98f55'], bin: ['#9ee0fd', '#38bdf8', '#0b94d1'], binIn: '#0b6f9e',
+    cart: ['#4b3f8f', '#2e2566', '#221b4d'], wheel: ['#3a3170', '#17123a', '#100c2b'], pants: ['#3b3478', '#2a2360', '#1f1a4c'],
+    vest: ['#ffe27a', '#ffcf33', '#e9b300'], shirt: ['#ffffff', '#ebe7fb', '#d6cff5'], skin: '#f2c6a2', cap: '#ff7a45'
+  };
+  function carton(x, y, z, w, d, h) {
+    var lab = poly([[x + w * 0.55, y + d, z + h * 0.35], [x + w * 0.88, y + d, z + h * 0.35], [x + w * 0.88, y + d, z + h * 0.7], [x + w * 0.55, y + d, z + h * 0.7]], '#fff8ec');
+    var tape = poly([[x, y + d * 0.44, z + h], [x + w, y + d * 0.44, z + h], [x + w, y + d * 0.56, z + h], [x, y + d * 0.56, z + h]], '#e7b97f');
+    return box(x, y, z, w, d, h, C.carton) + tape + lab;
+  }
+  function bin(x, y, z, w, d, h) {   // open part bin: the inside shows on top
+    var r = 0.09;
+    return box(x, y, z, w, d, h, C.bin) + poly([[x + r, y + r, z + h], [x + w - r, y + r, z + h], [x + w - r, y + d - r, z + h], [x + r, y + d - r, z + h]], C.binIn) +
+      poly([[x + w * 0.18, y + d, z + h * 0.3], [x + w * 0.6, y + d, z + h * 0.3], [x + w * 0.6, y + d, z + h * 0.62], [x + w * 0.18, y + d, z + h * 0.62]], '#e8f7ff');
+  }
+  function rack() {
+    var o = '', L = [0.18, 1.55, 2.92], W = 7, D = 1.7, T = 0.16, H = 4.25, bays = [0, 3.5];
+    var back = [[0, 0], [3.5 - T / 2, 0], [W - T, 0]], front = [[0, D - T], [3.5 - T / 2, D - T], [W - T, D - T]];
+    back.forEach(function (p) { o += box(p[0], p[1], 0, T, T, H, C.post); });
+    var stock = [   // per level, per bay: [kind, x offset, width, depth, height]
+      [[['c', 0.25, 1.4, 1.3, 1.0], ['c', 1.8, 1.35, 1.3, 1.0]], [['b', 0.3, 0.95, 1.2, 0.55], ['b', 1.35, 0.95, 1.2, 0.55], ['b', 2.4, 0.8, 1.2, 0.55]]],
+      [[['b', 0.3, 0.95, 1.2, 0.55, 'pick'], ['b', 1.35, 0.95, 1.2, 0.55], ['c', 2.4, 0.85, 1.2, 0.9]], [['c', 0.3, 1.3, 1.3, 1.0], ['b', 1.8, 0.95, 1.2, 0.55]]],
+      [[['c', 0.3, 1.2, 1.2, 0.85], ['c', 1.6, 1.5, 1.3, 1.05]], [['b', 0.3, 0.95, 1.2, 0.55], ['c', 1.45, 1.2, 1.2, 0.85], ['b', 2.75, 0.55, 1.1, 0.5]]]
+    ];
+    L.forEach(function (z, li) {
+      o += box(0, 0, z - 0.06, W, D, 0.06, C.deck);
+      o += box(0, 0, z - 0.2, W, T, 0.18, C.beam);
+      bays.forEach(function (bx, bi) {
+        stock[li][bi].forEach(function (s) {
+          var x = bx + s[1], y = 0.22 + (1.3 - s[3]) / 2;
+          if (s[0] === 'c') o += carton(x, y, z, s[2], s[3], s[4]); else o += bin(x, y, z, s[2], s[3], s[4]);
+          if (s[5] === 'pick') PICK = [x + s[2] / 2, y + s[3], z + s[4]];
+        });
+      });
+      o += box(0, D - T, z - 0.2, W, T, 0.18, C.beam);
+    });
+    o += box(0, 0, H - 0.02, W, D, 0.04, ['rgba(255,255,255,0.0)', 'rgba(255,255,255,0)', 'rgba(255,255,255,0)']);
+    front.forEach(function (p) { o += box(p[0], p[1], 0, T, T, H, C.post); });
+    return o;
+  }
+  var PICK = [5.8, 1.5, 2.1];
+  function cart() {
+    var o = '', x = 7.5, y = 2.2, w = 2.2, d = 1.1;
+    [[x + 0.1, y + 0.1], [x + w - 0.3, y + 0.1], [x + 0.1, y + d - 0.3], [x + w - 0.3, y + d - 0.3]].forEach(function (p) { o += box(p[0], p[1], 0, 0.2, 0.2, 0.22, C.wheel); });
+    o += box(x, y, 0.22, w, d, 0.1, C.cart);
+    o += box(x + w - 0.12, y + 0.1, 0.32, 0.1, 0.1, 1.55, C.cart) + box(x + w - 0.12, y + d - 0.2, 0.32, 0.1, 0.1, 1.55, C.cart);
+    o += box(x, y + 0.1, 0.32, 0.1, 0.1, 0.9, C.cart) + box(x, y + d - 0.2, 0.32, 0.1, 0.1, 0.9, C.cart);
+    o += box(x, y, 1.0, w, d, 0.07, C.cart);
+    o += bin(x + 0.15, y + 0.12, 1.07, 0.95, 0.9, 0.5) + carton(x + 1.15, y + 0.15, 1.07, 0.8, 0.85, 0.62);
+    o += bin(x + 0.2, y + 0.15, 0.32, 0.9, 0.85, 0.45);
+    o += box(x + w - 0.12, y + 0.05, 1.82, 0.1, d - 0.1, 0.1, C.cart);   // handle bar
+    return o;
+  }
+  function picker() {
+    var o = '', x = 10.15, y = 2.35;
+    o += box(x, y + 0.42, 0, 0.26, 0.24, 0.95, C.pants) + box(x + 0.1, y + 0.05, 0, 0.26, 0.24, 0.95, C.pants);
+    o += box(x - 0.42, y + 0.1, 1.55, 0.55, 0.16, 0.16, C.shirt) + box(x - 0.42, y + 0.5, 1.5, 0.55, 0.16, 0.16, C.shirt);   // arms on the handle
+    o += box(x, y, 0.95, 0.5, 0.75, 0.85, C.vest);
+    o += poly([[x, y + 0.75, 1.15], [x + 0.5, y + 0.75, 1.15], [x + 0.5, y + 0.75, 1.24], [x, y + 0.75, 1.24]], '#ffffff');   // reflective stripe
+    var h = P(x + 0.25, y + 0.37, 2.15);
+    o += '<circle cx="' + h[0].toFixed(1) + '" cy="' + h[1].toFixed(1) + '" r="10.5" fill="' + C.skin + '"/>';
+    o += '<path d="M' + (h[0] - 10.8).toFixed(1) + ' ' + (h[1] - 1).toFixed(1) + ' a10.8 10.8 0 0 1 21.6 0 z" fill="' + C.cap + '"/><rect x="' + (h[0] - 15).toFixed(1) + '" y="' + (h[1] - 2.2).toFixed(1) + '" width="9" height="3.2" rx="1.6" fill="#e5602d"/>';
+    return o;
+  }
+  // floor route along the aisle in front of the rack, 4 stops; the last one sits under the marked bin
+  var STOPS = [[6.0, 2.6], [4.4, 2.6], [2.7, 2.6], [0.9, 2.6]];
+  function route() {
+    var pts = [[7.3, 2.6]].concat(STOPS), o = '';
+    for (var i = 0; i < pts.length - 1; i++) {
+      var a = P(pts[i][0], pts[i][1], 0), b = P(pts[i + 1][0], pts[i + 1][1], 0), leg = i;
+      o += '<line class="gl" data-leg="' + leg + '" x1="' + a[0].toFixed(1) + '" y1="' + a[1].toFixed(1) + '" x2="' + b[0].toFixed(1) + '" y2="' + b[1].toFixed(1) + '" pathLength="100"/>';
+    }
+    STOPS.forEach(function (s, i) {
+      var c = P(s[0], s[1], 0);
+      o += '<g class="gs" data-stop="' + i + '"><ellipse cx="' + c[0].toFixed(1) + '" cy="' + c[1].toFixed(1) + '" rx="13" ry="7.5"/><text x="' + c[0].toFixed(1) + '" y="' + (c[1] + 3.6).toFixed(1) + '" text-anchor="middle">' + (i + 1) + '</text></g>';
+    });
+    return o;
+  }
+  function scene() {
+    BB = [1e9, 1e9, -1e9, -1e9];
+    var floor = poly([[-0.6, -0.5, 0], [11.2, -0.5, 0], [11.2, 3.8, 0], [-0.6, 3.7, 0]], 'rgba(28,10,96,0.20)');
+    var rk = rack(), pk = P(PICK[0], PICK[1], PICK[2] + 0.05), tag = [pk[0] + 18, pk[1] - 58];
+    var marker = '<g class="gpin-mark"><circle class="gpulse" cx="' + pk[0].toFixed(1) + '" cy="' + pk[1].toFixed(1) + '" r="9"/><circle cx="' + pk[0].toFixed(1) + '" cy="' + pk[1].toFixed(1) + '" r="5.5" fill="#fff" stroke="#ff7a45" stroke-width="3"/></g>' +
+      '<g class="gtag"><line x1="' + pk[0].toFixed(1) + '" y1="' + (pk[1] - 6).toFixed(1) + '" x2="' + (tag[0] + 10).toFixed(1) + '" y2="' + (tag[1] + 40).toFixed(1) + '" stroke="#fff" stroke-width="1.5" stroke-dasharray="3 3"/>' +
+      '<rect x="' + tag[0].toFixed(1) + '" y="' + tag[1].toFixed(1) + '" width="128" height="42" rx="12" fill="#fff"/>' +
+      '<text x="' + (tag[0] + 14).toFixed(1) + '" y="' + (tag[1] + 17).toFixed(1) + '" class="gtag-k">' + esc(t('au.art.next')) + '</text>' +
+      '<text x="' + (tag[0] + 14).toFixed(1) + '" y="' + (tag[1] + 34).toFixed(1) + '" class="gtag-v">2K-04-03</text></g>';
+    var vb = [BB[0] - 6, Math.min(BB[1], tag[1]) - 6, BB[2] - BB[0] + 12, BB[3] - Math.min(BB[1], tag[1]) + 12].map(function (v) { return v.toFixed(0); }).join(' '); BB = null;
+    return '<svg class="gscene" viewBox="' + vb + '" role="img" aria-label="' + esc(t('au.art')) + '">' +
+      '<g class="gpl gpl-0">' + floor + route() + '</g><g class="gpl gpl-1">' + rk + '</g><g class="gpl gpl-2">' + cart() + picker() + '</g><g class="gpl gpl-3">' + marker + '</g></svg>';
   }
   function walk(n, done) {
     var root = $('.gate'); if (!root) return;
     root.querySelectorAll('.gs').forEach(function (s, i) { s.classList.toggle('on', i < n); });
-    root.querySelectorAll('.gl').forEach(function (l, i) { l.classList.toggle('on', i < n || (done && i === 4)); });
-    root.classList.toggle('done', !!done);
+    root.querySelectorAll('.gl').forEach(function (l) { l.classList.toggle('on', +l.getAttribute('data-leg') < n); });
+    root.classList.toggle('done', !!done || n >= 4);
   }
 
   /* ---------- sign-in and first-run screens ---------- */
@@ -61,25 +140,29 @@
     document.documentElement.classList.remove('pwh-m3');
     render();
   }
+  function field(id, type, label, ac, val) {
+    return '<div class="gfld"><label class="sr" for="' + id + '">' + esc(label) + '</label><input id="' + id + '" type="' + type + '" autocomplete="' + ac + '" placeholder="' + esc(label) + '" required' + (val ? ' value="' + esc(val) + '"' : '') + '></div>';
+  }
   function render() {
     var lang = PWH.getLang(), setup = G.mode === 'setup';
     var form = setup
       ? '<h1>' + esc(t('au.setup.title')) + '</h1><p class="glede">' + esc(t('au.setup.sub')) + '</p>' +
-        '<div class="gfld"><label for="gemail">' + esc(t('au.email')) + '</label><input id="gemail" type="email" autocomplete="username" required></div>' +
-        '<div class="gfld"><label for="gname">' + esc(t('au.name')) + '</label><input id="gname" type="text" autocomplete="name" required></div>' +
+        field('gemail', 'email', t('au.email'), 'username') + field('gname', 'text', t('au.name'), 'name') +
         pin('gcode', t('au.code'), 'new-password') + pin('gcode2', t('au.code2'), 'new-password') +
         '<p class="gerr" role="alert">' + esc(G.err) + '</p><button class="btn primary gbtn" type="submit"' + (G.busy ? ' disabled' : '') + '>' + esc(t('au.setup.go')) + '</button>' +
         '<p class="gfoot">' + esc(t('au.setup.foot')) + '</p>'
       : '<h1>' + esc(t('au.login.title')) + '</h1><p class="glede">' + esc(t('au.login.sub')) + '</p>' +
         (G.note ? '<p class="gnote" role="status">' + esc(G.note) + '</p>' : '') +
-        '<div class="gfld"><label for="gemail">' + esc(t('au.email')) + '</label><input id="gemail" type="email" autocomplete="username" required value="' + esc(G.email) + '"></div>' +
+        field('gemail', 'email', t('au.email'), 'username', G.email) +
         pin('gcode', t('au.code'), 'current-password') +
+        '<div class="gforgot"><button type="button" class="glink" data-g="forgot" aria-expanded="' + !!G.forgot + '">' + esc(t('au.forgot')) + '</button>' + (G.forgot ? '<p class="gtip">' + esc(t('au.forgot.tip')) + '</p>' : '') + '</div>' +
         '<p class="gerr" role="alert">' + esc(G.err) + '</p><button class="btn primary gbtn" type="submit"' + (G.busy ? ' disabled' : '') + '>' + esc(t('au.login.go')) + '</button>' +
-        '<p class="gfoot">' + esc(t('au.login.foot')) + '</p>';
+        '<p class="gfoot">' + esc(t('au.noacc')) + ' <b>' + esc(t('au.noacc.who')) + '</b></p>';
     $('#app').innerHTML = '<div class="gate">' +
-      '<aside class="gart"><div class="gbrand"><b>PWH</b><span>' + esc(t('app.name')) + '</span></div>' + plan() + '<p class="gcap">' + esc(t('au.cap')) + '</p></aside>' +
+      '<aside class="gart"><div class="gcopy"><p class="ghead"><span>' + esc(t('au.hero1')) + '</span><br><span class="gul">' + esc(t('au.hero2')) + '</span></p><p class="gsub">' + esc(t('au.hero.sub')) + '</p></div>' +
+      '<div class="gpic">' + scene() + '</div></aside>' +
       '<main class="gmain"><div class="lang" role="group" aria-label="Language"><button type="button" data-gl="th" aria-pressed="' + (lang === 'th') + '">TH</button><button type="button" data-gl="en" aria-pressed="' + (lang === 'en') + '">EN</button></div>' +
-      '<form class="gform" id="gform" novalidate>' + form + '</form></main></div>';
+      '<form class="gform" id="gform" novalidate><div class="glogo">' + logo(52) + '<span><b>PWH</b><small>Part Warehouse</small></span></div>' + form + '</form></main></div>';
     wire();
     var first = $(setup ? '#gemail' : (G.email ? '#gcode' : '#gemail')); if (first) first.focus();
   }
@@ -100,6 +183,12 @@
       paintPin(el);
     });
     var f = $('#gform'); f.addEventListener('submit', function (e) { e.preventDefault(); submit(); });
+    var fg = $('[data-g=forgot]'); if (fg) fg.addEventListener('click', function () { G.forgot = !G.forgot; G.email = $('#gemail').value; render(); });
+    var art = $('.gart');
+    if (art && !reduce) art.addEventListener('pointermove', function (e) {   // depth: the floor stays, rack, cart and tag drift by different amounts
+      var r = art.getBoundingClientRect(), dx = (e.clientX - r.left) / r.width - 0.5, dy = (e.clientY - r.top) / r.height - 0.5;
+      art.querySelectorAll('.gpl').forEach(function (gp, i) { gp.style.transform = 'translate(' + (dx * i * 5).toFixed(1) + 'px,' + (dy * i * 3).toFixed(1) + 'px)'; });
+    });
   }
   function fail(msg, focus) {
     G.busy = false; G.err = msg;
@@ -207,6 +296,6 @@
   /* a short line at the top of a module the signed-in person may only look at */
   function roNote(key) { return '<p class="ronote"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>' + esc(t(key || 'au.ro.note')) + '</p>'; }
 
-  PWH.gate = { show: show };
+  PWH.gate = { show: show, logo: logo };
   PWH.users = { mount: function (root) { U.root = root; U.edit = 'new'; U.msg = null; U.confirm = null; U.draft = null; renderUsers(); }, roNote: roNote };
 })(window);
