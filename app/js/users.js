@@ -118,7 +118,7 @@
       '<text x="' + (tag[0] + 14).toFixed(1) + '" y="' + (tag[1] + 17).toFixed(1) + '" class="gtag-k">' + esc(t('au.art.next')) + '</text>' +
       '<text x="' + (tag[0] + 14).toFixed(1) + '" y="' + (tag[1] + 34).toFixed(1) + '" class="gtag-v">2K-04-03</text></g>';
     var vb = [BB[0] - 6, Math.min(BB[1], tag[1]) - 6, BB[2] - BB[0] + 12, BB[3] - Math.min(BB[1], tag[1]) + 12].map(function (v) { return v.toFixed(0); }).join(' '); BB = null;
-    return '<svg class="gscene" viewBox="' + vb + '" role="img" aria-label="' + esc(t('au.art')) + '">' +
+    return '<svg class="gscene" viewBox="' + vb + '" preserveAspectRatio="xMidYMax meet" role="img" aria-label="' + esc(t('au.art')) + '">' +
       '<g class="gpl gpl-0">' + floor + route() + '</g><g class="gpl gpl-1">' + rk + '</g><g class="gpl gpl-2">' + cart() + picker() + '</g><g class="gpl gpl-3">' + marker + '</g></svg>';
   }
   function walk(n, done) {
