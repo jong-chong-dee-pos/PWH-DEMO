@@ -2210,3 +2210,13 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 .m6lift .v small { font-size: var(--fs-body); color: var(--muted); margin-left: 6px; font-weight: 400; }
 .m6mis { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; padding: 10px 14px; margin: 0 0 var(--sp-3); border-radius: 12px; background: var(--accent-soft); font-size: var(--fs-label); }
 .m6tp .chd { flex-wrap: wrap; }
+
+/* v55.1 — search boxes on dark map panels: keep light text (the v53 form rule had higher specificity) */
+body .m2mapcard .m2tool input.m2q1,
+body .m3right.fs .m2bar input:not([type=checkbox]):not([type=radio]):not([type=range]) {
+  background: rgba(255, 255, 255, 0.08); color: #fff; -webkit-text-fill-color: #fff;
+  border: 1px solid rgba(185, 170, 245, 0.3); border-radius: 8px; caret-color: #c9b8ff;
+}
+body .m3srch input#m3q { background: transparent; border: 0; box-shadow: none; color: #fff; -webkit-text-fill-color: #fff; caret-color: #c9b8ff; }
+body .m2mapcard .m2tool input.m2q1::placeholder, body .m3srch input#m3q::placeholder, body .m3right.fs .m2bar input::placeholder { color: #a9a3c9; -webkit-text-fill-color: #a9a3c9; opacity: 1; }
+body .m2mapcard .m2tool input.m2q1:focus { border-color: #8b6cff; box-shadow: 0 0 0 3px rgba(139, 108, 255, 0.28); }
