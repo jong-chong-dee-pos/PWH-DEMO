@@ -368,7 +368,7 @@
   }
   function render() {
     var held = window.scrollY;
-    S.root.innerHTML = '<div class="ph"><div class="ph-l"><h1>' + esc(t('nav.m5')) + '</h1><p class="lede">' + esc(t('m5.intro3')) + '</p></div></div>' +
+    S.root.innerHTML = '<div class="ph"><div class="ph-l"><h1>' + esc(t('nav.m5')) + '</h1><p class="lede">' + esc(t('m5.intro3')) + '</p></div></div>' + (PWH.auth.can('rules.edit') ? '' : PWH.users.roNote('au.ro.m5')) +
       '<datalist id="m5parts">' + S.parts.slice(0, 5000).map(function (x) { return '<option value="' + esc(x) + '">' + esc(S.names.get(x) || '') + '</option>'; }).join('') + '</datalist>' +
       typesSection() + rulesSection() + misSection() + '<div class="m5cols">' + testCard() + logCard() + '</div>';
     window.scrollTo(0, held);
@@ -454,6 +454,7 @@
   }
   function keepFocus(sel, key) { var el = $(sel); if (!el) return; el.addEventListener('input', function () { var pos = el.selectionStart; S[key] = el.value; if (key === 'tq') S.tpick = new Set(); render(); var n = $(sel); if (n) { n.focus(); n.setSelectionRange(pos, pos); } }); }
   function wire() {
+    if (!PWH.auth.can('rules.edit')) S.root.querySelectorAll('[data-m5c],[data-m5all],[data-m5r=off],#m5moveto').forEach(function (x) { x.disabled = true; });
     var ld = $('#m5logd'); if (ld) ld.addEventListener('toggle', function () { S.logOpen = ld.open; });
     var tf = $('#m5test'); if (tf) tf.addEventListener('submit', function (e) { e.preventDefault(); runTest(); });
     var rs = $('#m5reason'); if (rs) rs.addEventListener('input', function () { S.form.reason = rs.value; });
@@ -492,10 +493,12 @@
   function flash(kind, text) { S.msg = [kind, text]; }
   function lookIn(id) { return S.data.rules.filter(function (x) { return x.id === id; })[0]; }
   function toForm() { var el = $('#m5rules'); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+  var EDIT_ACTS = ['new', 'edit', 'del', 'save', 'tadd', 'tedit', 'tsave', 'tmove', 'tunset', 'tdel'];
   document.addEventListener('click', function (e) {
     var el = e.target.closest('[data-m5]'); if (!el || !S.root || !S.root.contains(el)) return;
     if (el.getAttribute('data-m5') === 'selrule' && e.target.closest('[data-stop]')) return;   // the switch and buttons inside a rule row
     var a = el.getAttribute('data-m5'), v = el.getAttribute('data-v'), f = S.form;
+    if (EDIT_ACTS.indexOf(a) >= 0 && !PWH.auth.can('rules.edit')) return;   // types and rules: admin only
     if (a !== 'save') S.msg = null;
     // --- rule form
     if (a === 'new') { S.form = newForm('deny'); S.ptarget = 'dest'; S.lastRack = null; }

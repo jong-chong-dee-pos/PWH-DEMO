@@ -478,6 +478,7 @@
     return '<div class="seg" role="group">' + items.map(function (i) { return '<button data-m2="' + act + '" data-v="' + i[0] + '" aria-pressed="' + (cur === i[0]) + '">' + esc(i[1]) + '</button>'; }).join('') + '</div>';
   }
   function importPanel(inline) {
+    if (!PWH.auth.can('layout.edit')) return M.layout ? '' : '<section class="panel"><h2>' + esc(t('m2.import.title')) + '</h2><p class="sub">' + esc(t('au.ro.m2none')) + '</p></section>';
     var has = !!M.layout, msg = '<div id="m2msg" class="msgs">' + (M.busy ? '<div class="msg busy"><span>' + esc(M.busy) + '</span></div>' : '') + '</div>';
     if (has) {
       return '<div class="m2imp" title="' + esc(t('m2.loaded', { name: M.layout.source, when: fmt(M.layout.importedAt) })) + '"><label class="btn" style="cursor:pointer">' + esc(t('m2.reimport')) + '<input type="file" id="m2file" accept=".xlsx,.xls" hidden></label><button class="btn danger' + (M.confirmRemove ? ' confirm' : '') + '" data-m2="remove">' + esc(t(M.confirmRemove ? 'm2.remove_confirm' : 'm2.remove')) + '</button><span id="m2msg" class="msgs" style="margin:0"></span></div>';
@@ -513,6 +514,7 @@
     return '<details class="m2warn"><summary><span class="m2wi" aria-hidden="true">!</span>' + esc(t('m2.warn.title', { n: nf(off) })) + '<span class="more">' + esc(t('m2.warn.open')) + '</span></summary><ul>' + items + '</ul></details>';
   }
   function adminMenu() {
+    if (!PWH.auth.can('layout.edit')) return '';
     return '<details class="m2adm"><summary class="btn">' + esc(t('m2.admin')) + ' ▾</summary><div class="m2admp"><p class="sub">' + esc(t('m2.loaded', { name: M.layout.source, when: fmt(M.layout.importedAt) })) + '</p>' +
       '<label class="btn" style="cursor:pointer">' + esc(t('m2.reimport')) + '<input type="file" id="m2file" accept=".xlsx,.xls" hidden></label> ' +
       '<button class="btn danger' + (M.confirmRemove ? ' confirm' : '') + '" data-m2="remove">' + esc(t(M.confirmRemove ? 'm2.remove_confirm' : 'm2.remove')) + '</button><div id="m2msg" class="msgs"></div></div></details>';
@@ -563,6 +565,7 @@
   }
   function say(kind, text) { var el = $('#m2msg'); if (el) el.innerHTML = '<div class="msg ' + kind + '" role="status"><span>' + esc(text) + '</span></div>'; if (kind === 'ok') setTimeout(function () { var e2 = $('#m2msg'); if (e2) e2.innerHTML = ''; }, 6000); }
   function importFile(file) {
+    if (!PWH.auth.can('layout.edit')) return;
     M.busy = t('m2.import.reading'); say('busy', M.busy);
     return new Promise(function (r) { setTimeout(r, 30); }).then(function () { return file.arrayBuffer(); }).then(function (buf) {
       var wb = XLSX.read(buf, { type: 'array', cellStyles: true, cellDates: true });
@@ -712,6 +715,7 @@
       M.sel = x.rack; side(); zoomToRacks([x.rack]);
     }
     else if (a === 'remove') {
+      if (!PWH.auth.can('layout.edit')) return;
       if (!M.confirmRemove) { M.confirmRemove = true; render(); setTimeout(function () { if (M.confirmRemove) { M.confirmRemove = false; if (PWH.app.state.module === 2) render(); } }, 4000); return; }
       M.confirmRemove = false;
       PWH.db.setMeta('layout', null).then(function () { return PWH.db.setMeta('layoutFile', null); }).then(function () {

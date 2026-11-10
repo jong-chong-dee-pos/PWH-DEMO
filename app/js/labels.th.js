@@ -1577,6 +1577,95 @@
   "m6.mis.same": "เท่ากับการอัปเดตครั้งก่อน ({d})",   // same as the last update ({d})
   "m6.mis.first": "บันทึกครั้งแรก จะเทียบเมื่ออัปโหลด Material–Location ผัง หรือแก้กติกาครั้งถัดไป",   // first count; the next upload of Material–Location, layout or rules is compared with this one
   "m6.p.share_f": "{p}% ของชั้นนี้",   // {p}% of this floor
+  "nav.users": "ผู้ใช้",   // Users
+  "au.art": "ผังคลังพร้อมเส้นทางหยิบ",   // Warehouse plan with a pick route
+  "au.cap": "ตัวเลขแต่ละหลักของรหัส พารถเข็นไปจุดหยิบถัดไป",   // Each digit of your code walks the cart to the next pick.
+  "au.email": "อีเมล",   // E-mail
+  "au.name": "ชื่อ–นามสกุล",   // Name
+  "au.code": "รหัสพนักงาน (4 หลัก)",   // Employee code (4 digits)
+  "au.code2": "ยืนยันรหัสพนักงาน",   // Employee code again
+  "au.login.title": "เข้าสู่ระบบ",   // Sign in
+  "au.login.sub": "ใช้อีเมลและรหัสพนักงาน 4 หลัก",   // Use your e-mail and 4-digit employee code.
+  "au.login.go": "เข้าสู่ระบบ",   // Sign in
+  "au.login.foot": "ลืมรหัสหรือยังไม่มีบัญชี ติดต่อแอดมิน",   // Forgot your code or have no account? Ask an admin.
+  "au.setup.title": "ตั้งค่าครั้งแรก",   // First-time setup
+  "au.setup.sub": "ยังไม่มีบัญชีในระบบ สร้างบัญชีแอดมินคนแรก แล้วใช้บัญชีนี้เพิ่มผู้ใช้คนอื่น",   // No accounts yet. Create the first admin, then use it to add everyone else.
+  "au.setup.go": "สร้างบัญชีแอดมิน",   // Create admin account
+  "au.setup.foot": "หน้านี้แสดงครั้งเดียว ตอนที่ยังไม่มีบัญชีใดเลย",   // This page shows only once, while there are no accounts.
+  "au.note.idle": "ออกจากระบบอัตโนมัติ เพราะไม่ได้ใช้งานเกิน 8 ชั่วโมง กรุณาเข้าสู่ระบบอีกครั้ง",   // You were signed out after 8 hours without use. Sign in again.
+  "au.note.out": "ออกจากระบบแล้ว",   // You signed out.
+  "au.note.other": "มีผู้ใช้อื่นเข้าสู่ระบบในเบราว์เซอร์นี้",   // Someone else signed in on this browser.
+  "au.err.email": "กรอกอีเมลให้ถูกต้อง",   // Enter a valid e-mail.
+  "au.err.name": "กรอกชื่อ",   // Enter a name.
+  "au.err.code": "รหัสพนักงานต้องเป็นตัวเลข 4 หลัก",   // The employee code is 4 digits.
+  "au.err.match": "รหัสทั้งสองช่องไม่ตรงกัน",   // The two codes differ.
+  "au.err.wrong": "อีเมลหรือรหัสไม่ถูกต้อง ลองได้อีก {n} ครั้ง ก่อนต้องรอ 1 นาที",   // E-mail or code is wrong. {n} more tries before a 1-minute wait.
+  "au.err.locked": "ใส่รหัสผิดหลายครั้ง ลองใหม่ได้ในอีก {s} วินาที",   // Too many wrong tries. Try again in {s} seconds.
+  "au.err.disabled": "บัญชีนี้ถูกปิดการใช้งาน ติดต่อแอดมิน",   // This account is switched off. Ask an admin.
+  "au.err.dup": "อีเมลนี้มีบัญชีอยู่แล้ว",   // Another account already uses this e-mail.
+  "au.err.self": "เปลี่ยนบทบาท ปิด หรือลบบัญชีของตัวเองไม่ได้",   // You cannot change the role of, switch off or delete your own account.
+  "au.err.lastadmin": "ต้องมีแอดมินที่ใช้งานอยู่อย่างน้อย 1 คน",   // At least one active admin must remain.
+  "au.err.denied": "ทำได้เฉพาะแอดมิน",   // Only admins can do this.
+  "au.err.exists": "มีบัญชีในระบบแล้ว กรุณาเข้าสู่ระบบ",   // An account already exists. Sign in instead.
+  "au.err.role": "เลือกบทบาท",   // Choose a role.
+  "au.err.missing": "ไม่พบบัญชีนี้แล้ว",   // This account no longer exists.
+  "au.err.fail": "บันทึกไม่สำเร็จ ลองอีกครั้ง",   // Could not save. Try again.
+  "au.role.admin": "แอดมิน",   // Admin
+  "au.role.user": "ผู้ใช้งาน",   // User
+  "au.menu": "บัญชีผู้ใช้",   // Account
+  "au.idle": "ออกจากระบบอัตโนมัติเมื่อไม่ใช้งาน 8 ชั่วโมง",   // Signs out after 8 hours without use
+  "au.logout": "ออกจากระบบ",   // Sign out
+  "au.cap2": "การตั้งค่า",   // Settings
+  "au.lede": "เพิ่มบัญชี กำหนดบทบาท และปิดการใช้งานบัญชี",   // Add accounts, choose each person's role, switch accounts off.
+  "au.local": "ตอนนี้บัญชีผู้ใช้เก็บในเบราว์เซอร์เครื่องนี้เหมือนข้อมูลอื่น และจะย้ายไปเก็บกลางพร้อมข้อมูลในขั้นต่อไป",   // For now the accounts are kept in this browser, like the data. They move to the central store together with the data later.
+  "au.t.title": "บัญชีผู้ใช้ ({n})",   // Accounts ({n})
+  "au.t.sub": "แอดมิน {a} คน ผู้ใช้งาน {u} คน",   // {a} admin, {u} users
+  "au.t.new": "เพิ่มบัญชี",   // Add account
+  "au.t.who": "ชื่อ",   // Name
+  "au.t.role": "บทบาท",   // Role
+  "au.t.status": "สถานะ",   // Status
+  "au.t.last": "เข้าใช้ล่าสุด",   // Last sign-in
+  "au.t.edit": "แก้ไข",   // Edit
+  "au.t.off": "ปิดใช้งาน",   // Switch off
+  "au.t.on": "เปิดใช้งาน",   // Switch on
+  "au.t.del": "ลบ",   // Delete
+  "au.t.delsure": "ยืนยันลบ",   // Confirm delete
+  "au.t.you": "คุณ",   // You
+  "au.t.active": "ใช้งานอยู่",   // Active
+  "au.t.inactive": "ปิดอยู่",   // Switched off
+  "au.f.add": "เพิ่มบัญชี",   // Add account
+  "au.f.addsub": "ผู้ใช้เข้าสู่ระบบด้วยอีเมลและรหัสนี้",   // The person signs in with this e-mail and code.
+  "au.f.edit": "แก้ไขบัญชี",   // Edit account
+  "au.f.code_new": "รหัสพนักงานใหม่",   // New employee code
+  "au.f.code_keep": "เว้นว่างไว้ถ้าไม่เปลี่ยนรหัส",   // Leave empty to keep the current code.
+  "au.f.role": "บทบาท",   // Role
+  "au.f.role_user": "ดูได้ทุกโมดูล และเลือก Plant กับบันทึกสถานการณ์ในโมดูล 4",   // Sees every module; in Module 4 can choose Plants and save scenarios.
+  "au.f.role_admin": "ทำได้ทุกอย่าง รวมถึงไฟล์ข้อมูล ผังคลัง กติกา และบัญชีผู้ใช้",   // Everything, including data files, layout, rules and accounts.
+  "au.f.selfrole": "เปลี่ยนบทบาทของตัวเองไม่ได้",   // You cannot change your own role.
+  "au.f.save": "บันทึกการแก้ไข",   // Save changes
+  "au.f.create": "เพิ่มบัญชี",   // Add account
+  "au.f.cancel": "ยกเลิก",   // Cancel
+  "au.ok.added": "เพิ่มบัญชี {name} แล้ว",   // Added {name}.
+  "au.ok.saved": "บันทึกบัญชี {name} แล้ว",   // Saved {name}.
+  "au.ok.off": "ปิดใช้งาน {name} แล้ว",   // {name} switched off.
+  "au.ok.on": "เปิดใช้งาน {name} แล้ว",   // {name} switched on.
+  "au.ok.deleted": "ลบบัญชี {name} แล้ว",   // {name} deleted.
+  "au.p.title": "สิทธิ์ของแต่ละบทบาท",   // What each role can do
+  "au.p.sub": "กำหนดไว้ในระบบ เลือกบทบาทให้แต่ละบัญชีด้านบน",   // Fixed in the system; choose a role for each account above.
+  "au.p.what": "งาน",   // Task
+  "au.p.view": "ดูทุกโมดูล ค้นหา แผนที่ และแดชบอร์ด",   // See every module, search, maps and the dashboard
+  "au.p.sim": "โมดูล 4: เลือก Plant และบันทึกสถานการณ์จำลอง",   // Module 4: choose Plants, save simulation scenarios
+  "au.p.data": "โมดูล 1: อัปโหลด เลือกใช้ และลบไฟล์ข้อมูล",   // Module 1: upload, choose and delete data files
+  "au.p.layout": "โมดูล 2: อัปโหลดหรือลบผังคลัง",   // Module 2: upload or remove the warehouse layout
+  "au.p.rules": "โมดูล 5: ประเภทที่จัดเก็บและกติกา",   // Module 5: storage types and rules
+  "au.p.users": "จัดการบัญชีผู้ใช้",   // Manage accounts
+  "au.p.yes": "อนุญาต",   // Allowed
+  "au.p.no": "ไม่อนุญาต",   // Not allowed
+  "au.ro.note": "ดูได้อย่างเดียว การแก้ไขในหน้านี้ทำได้เฉพาะแอดมิน",   // View only. Changes on this page are for admins.
+  "au.ro.m1": "ดูได้อย่างเดียว การอัปโหลด เลือกใช้ และลบไฟล์ ทำได้เฉพาะแอดมิน",   // View only. Uploading, choosing and deleting files is for admins.
+  "au.ro.m5": "ดูได้อย่างเดียว ประเภทที่จัดเก็บและกติกาแก้ไขได้เฉพาะแอดมิน",   // View only. Storage types and rules are changed by admins.
+  "au.ro.m2none": "ยังไม่มีผังคลัง แอดมินเป็นผู้อัปโหลดผังที่หน้านี้",   // No warehouse layout yet. An admin uploads it on this page.
+  "au.ro.denied": "หน้านี้สำหรับแอดมิน",   // This page is for admins.
   "soon.m6": "อ่านผลลัพธ์ของ Module 1 ถึง 5",   // Reads the results of modules 1 to 5.
   };
 })(window);

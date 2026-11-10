@@ -127,6 +127,7 @@
 
   function reasonText(r) { return t(r[0], r[1]); }
   function handleFiles(type, list) {
+    if (!PWH.auth.can('data.edit')) return Promise.resolve();
     var files = Array.prototype.slice.call(list).filter(function (f) { return /\.xlsx?$/i.test(f.name); });
     var chain = Promise.resolve();
     files.forEach(function (file) { chain = chain.then(function () { return handleOne(type, file); }); });
@@ -197,6 +198,7 @@
 
   // ---------- render: shell ----------
   var ICON = {
+    9: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.6a3.5 3.5 0 0 1 0 6.8M18 14.8c2 .7 3.2 2.4 3.6 5.2"/>',
     1: '<ellipse cx="12" cy="6" rx="7" ry="3"/><path d="M5 6v12c0 1.7 3.1 3 7 3s7-1.3 7-3V6"/><path d="M5 12c0 1.7 3.1 3 7 3s7-1.3 7-3"/>',
     2: '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 9v12M15 3v6"/>',
     3: '<circle cx="6" cy="18" r="2"/><circle cx="18" cy="6" r="2"/><path d="M8 18h6a3 3 0 0 0 0-6h-4a3 3 0 0 1 0-6h6"/>',
@@ -210,15 +212,22 @@
     for (var i = 1; i <= 6; i++) {
       nav += '<button class="rb" data-act="module" data-m="' + i + '"' + (S.module === i ? ' aria-current="page"' : '') + '><svg viewBox="0 0 24 24" aria-hidden="true">' + ICON[i] + '</svg><span>' + esc(t('nav.m' + i)) + '</span>' + '' + '</button>';
     }
+    if (PWH.auth.can('users.manage')) nav += '<span class="rsep" aria-hidden="true"></span><button class="rb" data-act="module" data-m="9"' + (S.module === 9 ? ' aria-current="page"' : '') + '><svg viewBox="0 0 24 24" aria-hidden="true">' + ICON[9] + '</svg><span>' + esc(t('nav.users')) + '</span></button>';
     $('#app').innerHTML =
       '<div class="shell"><nav class="rail" aria-label="Modules"><div class="logo">' + esc(t('app.sub')) + '</div>' + nav + '</nav>' +
       '<div class="main"><header class="topbar"><div class="pt">' + esc(t('app.name')) + '</div><span class="sp"></span><span id="topstat"></span>' +
-      '<div class="lang" role="group" aria-label="Language"><button data-act="lang" data-l="th" aria-pressed="' + (lang === 'th') + '">TH</button><button data-act="lang" data-l="en" aria-pressed="' + (lang === 'en') + '">EN</button></div></header>' +
+      '<div class="lang" role="group" aria-label="Language"><button data-act="lang" data-l="th" aria-pressed="' + (lang === 'th') + '">TH</button><button data-act="lang" data-l="en" aria-pressed="' + (lang === 'en') + '">EN</button></div><span id="um">' + userMenu() + '</span></header>' +
       (PWH.db.isPersistent() ? '' : '<div class="banner" style="margin:12px 24px 0">' + esc(t('nav.storage_mem')) + '</div>') +
       '<div id="view"></div></div></div>';
     renderTop();
     renderView();
   }
+  function userMenu() {
+    var me = PWH.auth.me(); if (!me) return '';
+    return '<details class="um"><summary aria-label="' + esc(t('au.menu')) + '"><span class="uav" aria-hidden="true">' + esc((me.name || me.email).charAt(0).toUpperCase()) + '</span><span class="umn"><b>' + esc(me.name) + '</b><span>' + esc(t('au.role.' + me.role)) + '</span></span></summary>' +
+      '<div class="ump"><div class="umi"><b>' + esc(me.name) + '</b><span class="sub2">' + esc(me.email) + '</span><span class="sub2">' + esc(t('au.idle')) + '</span></div><button class="btn" data-act="logout">' + esc(t('au.logout')) + '</button></div></details>';
+  }
+  function refreshUser() { var el = $('#um'); if (el) el.innerHTML = userMenu(); }
   // top bar chip: is the data complete, and how fresh is it
   function renderTop() {
     var el = $('#topstat'); if (!el) return;
@@ -240,6 +249,7 @@
     if (S.module === 4) { PWH.m4.mount(v); return; }
     if (S.module === 5) { PWH.m5.mount(v); return; }
     if (S.module === 6) { PWH.m6.mount(v); return; }
+    if (S.module === 9) { if (PWH.auth.can('users.manage')) { PWH.users.mount(v); return; } S.module = 1; }
     if (S.module !== 1) {
       v.innerHTML = '<div class="ph"><div class="ph-l"><div class="cap">' + esc(t('mod.cap', { n: S.module })) + '</div><h1>' + esc(t('nav.m' + S.module)) + '</h1></div></div><div class="panel soonbox"><h2>' + esc(t('soon.title')) + '</h2><p>' + esc(t('soon.body')) + '</p><p class="sub">' + esc(t('soon.m' + S.module)) + '</p></div>';
       return;
@@ -249,7 +259,7 @@
       : '<div class="tiles4" role="tablist" id="tabs"></div><div id="panel"></div>';
     v.innerHTML = '<div class="ph"><div class="ph-l"><div class="cap">' + esc(t('m1.cap')) + '</div><h1>' + esc(t('m1.title')) + '</h1><p class="lede">' + esc(t('m1.intro2')) + '</p></div>' +
       '<div class="ph-r"><div class="mbar" id="mbar"></div></div></div>' +
-      '<div class="vnav" role="tablist" id="v1nav"></div><div id="msgs" class="msgs"></div><div id="ask"></div>' + body;
+      (PWH.auth.can('data.edit') ? '' : PWH.users.roNote('au.ro.m1')) + '<div class="vnav" role="tablist" id="v1nav"></div><div id="msgs" class="msgs"></div><div id="ask"></div>' + body;
     renderV1Nav(); renderReadiness(); renderMsgs(); renderAsk(); renderPanel();
     if (S.v1 === 'lookup' && PWH.lookup) PWH.lookup.mount($('#lookup'));
   }
@@ -289,7 +299,7 @@
     else if (!S.checks.have.bom || !S.checks.have.matloc) body = '<p class="sub">' + esc(t('ready.need_more')) + '</p>';
     else body = '<div class="checks">' + S.checks.items.map(checkRow).join('') + '</div>';
     var order = S.settings.plantOrder;
-    var settings = '<div class="row-set"><label for="plantOrder">' + esc(t('ready.settings')) + '</label><select id="plantOrder" data-act="plant"><option value="5212,5213"' + (order[0] === '5212' ? ' selected' : '') + '>5212 → 5213</option><option value="5213,5212"' + (order[0] === '5213' ? ' selected' : '') + '>5213 → 5212</option></select><span class="sub" style="margin:0">' + esc(t('ready.settings_help')) + '</span></div>';
+    var settings = '<div class="row-set"><label for="plantOrder">' + esc(t('ready.settings')) + '</label><select id="plantOrder" data-act="plant"' + (PWH.auth.can('data.edit') ? '' : ' disabled') + '><option value="5212,5213"' + (order[0] === '5212' ? ' selected' : '') + '>5212 → 5213</option><option value="5213,5212"' + (order[0] === '5213' ? ' selected' : '') + '>5213 → 5212</option></select><span class="sub" style="margin:0">' + esc(t('ready.settings_help')) + '</span></div>';
     var have = { bom: filesOf('bom').some(function (f) { return use[f.id]; }), matloc: filesOf('matloc').some(function (f) { return use[f.id]; }),
       plan: filesOf('daily').concat(filesOf('monthly')).some(function (f) { return use[f.id]; }) };
     var NEEDS = { 2: ['matloc', 'layout'], 3: ['bom', 'matloc', 'layout'], 4: ['bom', 'matloc', 'plan', 'layout'], 5: ['matloc', 'layout'], 6: ['bom', 'matloc', 'plan', 'layout'] };
@@ -377,13 +387,13 @@
   }
   function renderPanel() {
     var el = $('#panel'); if (!el) return;
-    var ty = S.tab, fl = visibleFiles(ty), use = usage();
+    var ty = S.tab, fl = visibleFiles(ty), use = usage(), canEd = PWH.auth.can('data.edit');
     if (fl.length && !fl.some(function (f) { return f.id === S.sel[ty]; })) S.sel[ty] = (fl.filter(function (f) { return use[f.id]; })[0] || fl[0]).id;
     if (!fl.length) S.sel[ty] = null;
     var keyCol = ty === 'daily' ? t('col.planDate') : ty === 'monthly' ? t('col.month') : null;
     var rows = fl.map(function (f) {
       var st = fileStatus(f), inUse = use[f.id], confirming = S.confirm === f.id, confirmingUse = S.confirmUse === f.id;
-      var acts = '<td><div class="acts">' + (inUse ? '' : '<button class="btn sm' + (confirmingUse ? ' confirm' : '') + '" data-act="use" data-id="' + f.id + '">' + esc(t(confirmingUse ? 'act.use_confirm' : 'act.use_this')) + '</button>') + '<button class="btn sm" data-act="download" data-id="' + f.id + '">' + esc(t('act.download')) + '</button><button class="btn sm danger' + (confirming ? ' confirm' : '') + '" data-act="delete" data-id="' + f.id + '">' + esc(t(confirming ? 'act.confirm' : 'act.delete')) + '</button></div></td>';
+      var acts = '<td><div class="acts">' + (inUse || !canEd ? '' : '<button class="btn sm' + (confirmingUse ? ' confirm' : '') + '" data-act="use" data-id="' + f.id + '">' + esc(t(confirmingUse ? 'act.use_confirm' : 'act.use_this')) + '</button>') + '<button class="btn sm" data-act="download" data-id="' + f.id + '">' + esc(t('act.download')) + '</button>' + (PWH.auth.can('data.edit') ? '<button class="btn sm danger' + (confirming ? ' confirm' : '') + '" data-act="delete" data-id="' + f.id + '">' + esc(t(confirming ? 'act.confirm' : 'act.delete')) + '</button>' : '') + '</div></td>';
       var stChip = '<span class="chip ' + (st === 'ok' ? 'ok' : st === 'warn' ? 'warn' : 'error') + '">' + esc(t('status.' + st)) + '</span>';
       if (ty === 'daily') // compact: date + file name in one cell, status and "replaced" in one cell
         return '<tr class="file ' + (S.sel[ty] === f.id ? 'sel ' : '') + (inUse ? '' : 'old') + '" data-act="select" data-id="' + f.id + '" tabindex="0">' +
@@ -395,13 +405,13 @@
         '<td class="name"><span class="fn" title="' + esc(f.name) + '">' + esc(f.name) + '</span></td><td>' + fmtDT(f.uploadedAt) + (f.uploadedBy ? '<div class="sub2">' + esc(f.uploadedBy) + '</div>' : '') + '</td><td class="num">' + nf(f.rows) + '</td>' +
         '<td><span class="chip ' + (st === 'ok' ? 'ok' : st === 'warn' ? 'warn' : 'error') + '">' + esc(t('status.' + st)) + '</span></td>' +
         '<td><span class="chip ' + (inUse ? 'info' : 'pending') + '">' + esc(t(inUse ? 'use.active' : 'use.replaced')) + '</span></td>' +
-        '<td><div class="acts">' + (inUse ? '' : '<button class="btn sm' + (confirmingUse ? ' confirm' : '') + '" data-act="use" data-id="' + f.id + '">' + esc(t(confirmingUse ? 'act.use_confirm' : 'act.use_this')) + '</button>') + '<button class="btn sm" data-act="download" data-id="' + f.id + '">' + esc(t('act.download')) + '</button><button class="btn sm danger' + (confirming ? ' confirm' : '') + '" data-act="delete" data-id="' + f.id + '">' + esc(t(confirming ? 'act.confirm' : 'act.delete')) + '</button></div></td></tr>';
+        '<td><div class="acts">' + (inUse || !canEd ? '' : '<button class="btn sm' + (confirmingUse ? ' confirm' : '') + '" data-act="use" data-id="' + f.id + '">' + esc(t(confirmingUse ? 'act.use_confirm' : 'act.use_this')) + '</button>') + '<button class="btn sm" data-act="download" data-id="' + f.id + '">' + esc(t('act.download')) + '</button>' + (PWH.auth.can('data.edit') ? '<button class="btn sm danger' + (confirming ? ' confirm' : '') + '" data-act="delete" data-id="' + f.id + '">' + esc(t(confirming ? 'act.confirm' : 'act.delete')) + '</button>' : '') + '</div></td></tr>';
     }).join('');
     var head = ty === 'daily' ? '<th>' + esc(keyCol) + '</th><th>' + esc(t('col.uploaded')) + '</th><th class="num">' + esc(t('col.rows')) + '</th><th>' + esc(t('col.status')) + '</th>' : (keyCol ? '<th>' + esc(keyCol) + '</th>' : '') + '<th>' + esc(t('col.name')) + '</th><th>' + esc(t('col.uploaded')) + '</th><th class="num">' + esc(t('col.rows')) + '</th><th>' + esc(t('col.status')) + '</th><th>' + esc(t('col.use')) + '</th><th></th>';
     var list = fl.length ? '<div class="tablebox ftable"><table><thead><tr>' + head + '</tr></thead><tbody>' + rows + '</tbody></table></div>'
       : '<div class="fempty"><p>' + esc(S.mf && filesOf(ty).length ? t('mf.empty', { m: monthName(S.mf) }) : t('files.empty2')) + '</p>' + (S.mf ? curNote(ty, use) : '') + '</div>';
     var files = '<section class="panel fcard" id="drop"><div class="chd"><div class="chd-l"><h2>' + esc(t('files.of', { t: t('tab.' + ty) })) + (S.mf ? ' <span class="chip info">' + esc(monthName(S.mf)) + '</span>' : '') + '</h2><p class="sub">' + esc(t('help.' + ty)) + '</p></div>' +
-      '<div class="chd-r"><label class="btn primary upl">' + esc(t('upload.btn')) + '<input type="file" id="fileIn" accept=".xlsx,.xls" multiple hidden></label><span class="sub2">' + esc(t('upload.hint2')) + '</span></div></div>' +
+      (canEd ? '<div class="chd-r"><label class="btn primary upl">' + esc(t('upload.btn')) + '<input type="file" id="fileIn" accept=".xlsx,.xls" multiple hidden></label><span class="sub2">' + esc(t('upload.hint2')) + '</span></div>' : '') + '</div>' +
       (ty === 'daily' ? '<div class="dgrid"><div id="cal"></div><div class="dlist">' + list + '</div></div>' : list) + '</section>';
     el.innerHTML = files + '<section class="panel" id="detail"></section>' + (ty === 'bom' ? '<section class="panel" id="bomq"></section>' : '') + '<section class="panel" id="raw"></section>';
     wireDrop();
@@ -448,8 +458,8 @@
   }
   function fileActs(f) {
     var inUse = usage()[f.id];
-    return (inUse ? '' : '<button class="btn sm' + (S.confirmUse === f.id ? ' confirm' : '') + '" data-act="use" data-id="' + f.id + '">' + esc(t(S.confirmUse === f.id ? 'act.use_confirm' : 'act.use_this')) + '</button>') +
-      '<button class="btn sm" data-act="download" data-id="' + f.id + '">' + esc(t('act.download')) + '</button><button class="btn sm danger' + (S.confirm === f.id ? ' confirm' : '') + '" data-act="delete" data-id="' + f.id + '">' + esc(t(S.confirm === f.id ? 'act.confirm' : 'act.delete')) + '</button>';
+    return (inUse || !PWH.auth.can('data.edit') ? '' : '<button class="btn sm' + (S.confirmUse === f.id ? ' confirm' : '') + '" data-act="use" data-id="' + f.id + '">' + esc(t(S.confirmUse === f.id ? 'act.use_confirm' : 'act.use_this')) + '</button>') +
+      '<button class="btn sm" data-act="download" data-id="' + f.id + '">' + esc(t('act.download')) + '</button>' + (PWH.auth.can('data.edit') ? '<button class="btn sm danger' + (S.confirm === f.id ? ' confirm' : '') + '" data-act="delete" data-id="' + f.id + '">' + esc(t(S.confirm === f.id ? 'act.confirm' : 'act.delete')) + '</button>' : '') + '';
   }
   // file details: facts in one row, check results as a one-line summary that opens, change summary
   function renderDetail() {
@@ -687,7 +697,7 @@
 
   // ---------- events ----------
   function wireDrop() {
-    var d = $('#drop'), inp = $('#fileIn'); if (!d) return;
+    var d = $('#drop'), inp = $('#fileIn'); if (!d || !inp || !PWH.auth.can('data.edit')) return;
     inp.addEventListener('change', function () { var l = inp.files; handleFiles(S.tab, l).then(function () { inp.value = ''; }); });
     ['dragenter', 'dragover'].forEach(function (ev) { d.addEventListener(ev, function (e) { e.preventDefault(); d.classList.add('over'); }); });
     ['dragleave', 'drop'].forEach(function (ev) { d.addEventListener(ev, function (e) { e.preventDefault(); d.classList.remove('over'); }); });
@@ -702,6 +712,7 @@
     var act = el.getAttribute('data-act'), id = el.getAttribute('data-id');
     if (el.tagName === 'SELECT') return;
     if (act === 'module') { S.module = +el.getAttribute('data-m'); renderShell(); }
+    else if (act === 'logout') { PWH.auth.logout(); }
     else if (act === 'ul-day') { var fd = selFile(); if (fd) { S.ul.from = S.ul.to = fd.planDate; renderUline(); } }
     else if (act === 'lang') { PWH.setLang(el.getAttribute('data-l')); renderShell(); }
     else if (act === 'tab') { if (S.module !== 1 || S.v1 !== 'files') { S.module = 1; S.v1 = 'files'; renderShell(); } setTab(el.getAttribute('data-t')); }
@@ -716,7 +727,7 @@
     else if (act === 'ask-cancel') answerAsk(false);
     else if (act === 'showall') { var k = el.getAttribute('data-k'); S.showAll[k] = !S.showAll[k]; if (k.indexOf('c:') === 0) renderChecks(); else renderDetail(); }
     else if (act === 'use') {
-      e.stopPropagation();
+      e.stopPropagation(); if (!PWH.auth.can('data.edit')) return;
       if (S.confirmUse !== id) { S.confirmUse = id; renderPanel(); setTimeout(function () { if (S.confirmUse === id) { S.confirmUse = null; renderPanel(); } }, 4000); return; }
       S.confirmUse = null;
       var uf = S.files.filter(function (x) { return x.id === id; })[0];
@@ -738,7 +749,7 @@
       });
     }
     else if (act === 'delete') {
-      e.stopPropagation();
+      e.stopPropagation(); if (!PWH.auth.can('data.edit')) return;
       if (S.confirm !== id) { S.confirm = id; renderPanel(); setTimeout(function () { if (S.confirm === id) { S.confirm = null; renderPanel(); } }, 4000); return; }
       S.confirm = null;
       PWH.db.deleteFile(id).then(refreshFiles).then(function () { S.pv = { id: null, rows: null, lc: null, filter: '', page: 0, view: null }; renderTabs(); renderPanel(); renderReadiness(); scheduleChecks(); });
@@ -758,7 +769,7 @@
     if (e.target.id === 'pvFilter') { S.pv.filter = e.target.value; S.pv.page = 0; S.pv.view = null; renderPreview(); }
   });
   document.addEventListener('change', function (e) {
-    if (e.target.id === 'plantOrder') {
+    if (e.target.id === 'plantOrder' && PWH.auth.can('data.edit')) {
       S.settings.plantOrder = e.target.value.split(',');
       PWH.db.setMeta('settings', S.settings).catch(function () {});
       scheduleChecks();
@@ -767,6 +778,11 @@
 
   // ---------- start ----------
   function start() {
+    PWH.auth.onSignedOut(function (why) { S.module = 1; S.msgs = []; S.confirm = S.confirmUse = null; S.ask = null; PWH.gate.show('login', why); });
+    PWH.auth.ready().then(function (st) { if (st === 'in') enter(); else PWH.gate.show(st, st === 'idle' ? 'idle' : ''); })
+      .catch(function (e) { console.error(e); PWH.gate.show('login'); });
+  }
+  function enter() {
     var boot = PWH.db.getMeta('settings').then(function (s) { if (s && s.plantOrder) S.settings = s; }).catch(function () {});
     boot.then(refreshFiles).then(function () { renderShell(); scheduleChecks(); }).catch(function (e) { console.error(e); renderShell(); });
   }
@@ -778,6 +794,6 @@
   function activeFile(type) { var use = usage(); return filesOf(type).filter(function (x) { return use[x.id]; })[0] || null; }
   // open another module from inside one (e.g. the dashboard sends the date range along first)
   function go(m) { S.module = m; renderShell(); window.scrollTo(0, 0); }
-  PWH.app = { go: go, start: start, state: S, activeRows: activeRows, activeFile: activeFile, activeFiles: activeFiles, rerunChecks: scheduleChecks };
+  PWH.app = { go: go, start: start, enter: enter, refreshUser: function () { refreshUser(); var r = $('.rail'); if (r && S.module !== 9) renderShell(); }, state: S, activeRows: activeRows, activeFile: activeFile, activeFiles: activeFiles, rerunChecks: scheduleChecks };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })(window);
