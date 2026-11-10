@@ -112,7 +112,7 @@
     return Promise.all(jobs).then(function (res) {
       S.hasLayout = !!res[4];
       S.checks = PWH.checks.run({ bom: res[0], matloc: res[1], daily: res[2], monthly: res[3], layout: res[4] || null }, { plantOrder: S.settings.plantOrder });
-      S.checking = false; renderReadiness(); if (PWH.lookup) PWH.lookup.refresh(); if (PWH.m3) PWH.m3.refresh(); if (PWH.m4) PWH.m4.refresh();
+      S.checking = false; renderReadiness(); if (PWH.lookup) PWH.lookup.refresh(); if (PWH.m3) PWH.m3.refresh(); if (PWH.m4) PWH.m4.refresh(); if (PWH.m6) PWH.m6.refresh();
     }).catch(function (e) { S.checking = false; S.checks = null; console.error(e); renderReadiness(); });
   }
 
@@ -208,7 +208,7 @@
     var lang = PWH.getLang();
     var nav = '';
     for (var i = 1; i <= 6; i++) {
-      nav += '<button class="rb" data-act="module" data-m="' + i + '"' + (S.module === i ? ' aria-current="page"' : '') + '><svg viewBox="0 0 24 24" aria-hidden="true">' + ICON[i] + '</svg><span>' + esc(t('nav.m' + i)) + '</span>' + (i > 5 ? '<i class="soon" title="' + esc(t('nav.soon')) + '"></i>' : '') + '</button>';
+      nav += '<button class="rb" data-act="module" data-m="' + i + '"' + (S.module === i ? ' aria-current="page"' : '') + '><svg viewBox="0 0 24 24" aria-hidden="true">' + ICON[i] + '</svg><span>' + esc(t('nav.m' + i)) + '</span>' + '' + '</button>';
     }
     $('#app').innerHTML =
       '<div class="shell"><nav class="rail" aria-label="Modules"><div class="logo">' + esc(t('app.sub')) + '</div>' + nav + '</nav>' +
@@ -239,6 +239,7 @@
     if (S.module === 3) { PWH.m3.mount(v); return; }
     if (S.module === 4) { PWH.m4.mount(v); return; }
     if (S.module === 5) { PWH.m5.mount(v); return; }
+    if (S.module === 6) { PWH.m6.mount(v); return; }
     if (S.module !== 1) {
       v.innerHTML = '<div class="ph"><div class="ph-l"><div class="cap">' + esc(t('mod.cap', { n: S.module })) + '</div><h1>' + esc(t('nav.m' + S.module)) + '</h1></div></div><div class="panel soonbox"><h2>' + esc(t('soon.title')) + '</h2><p>' + esc(t('soon.body')) + '</p><p class="sub">' + esc(t('soon.m' + S.module)) + '</p></div>';
       return;
@@ -728,6 +729,8 @@
   }
   function activeFiles(type) { var use = usage(); return filesOf(type).filter(function (x) { return use[x.id]; }); }
   function activeFile(type) { var use = usage(); return filesOf(type).filter(function (x) { return use[x.id]; })[0] || null; }
-  PWH.app = { start: start, state: S, activeRows: activeRows, activeFile: activeFile, activeFiles: activeFiles, rerunChecks: scheduleChecks };
+  // open another module from inside one (e.g. the dashboard sends the date range along first)
+  function go(m) { S.module = m; renderShell(); window.scrollTo(0, 0); }
+  PWH.app = { go: go, start: start, state: S, activeRows: activeRows, activeFile: activeFile, activeFiles: activeFiles, rerunChecks: scheduleChecks };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
 })(window);

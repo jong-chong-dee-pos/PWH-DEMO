@@ -25,7 +25,7 @@
   }
   function daysIn(d, from, to) {
     var out = [], has = new Set(d.dates); if (!from || !to || from > to) return out;
-    for (var x = from, i = 0; x <= to && i < 400; x = addDays(x, 1), i++) out.push({ date: x, plan: has.has(x) });
+    for (var x = from, i = 0; x <= to && i < 3700; x = addDays(x, 1), i++) out.push({ date: x, plan: has.has(x) });
     return out;
   }
 
@@ -35,7 +35,7 @@
   function keyNow() {
     var A = PWH.app, ids = function (ty) { return A.activeFiles(ty).map(function (f) { return f.id; }).sort().join(','); };
     return Promise.all([PWH.db.getMeta('layout').catch(function () { return null; }), PWH.db.getMeta('rules').catch(function () { return null; })]).then(function (r) {
-      return [ids('bom'), ids('matloc'), ids('daily'), ids('monthly'), sigOf(r[0] && r[0].floors), sigOf(r[1] && [r[1].rules, r[1].zones])].join('|');
+      return [ids('bom'), ids('matloc'), ids('daily'), ids('monthly'), sigOf(r[0] && r[0].floors), sigOf([(r[1] && r[1].rules) || [], (r[1] && r[1].partType) || {}])].join('|');
     });
   }
   function load() {
@@ -361,8 +361,96 @@
     });
   }
 
+  // ---------- results per day (one store, read by Module 4 and the dashboard) ----------
+  /* A day's summary, cut from an analysis that ran without a Product filter and without Plants chosen on the page.
+   * rounds    = date + U-line + JOB.   freq = unique Parts per round, rounds whose BOM is known.
+   * m         = metres of the rounds whose route is complete (every Part routed).   mAll = every identified round.
+   * prods     = per Product: planned rounds (r), rounds with a complete route for it (c), metres of those (m).
+   * iss       = per problem: the things affected (ids) and the rounds they touch (rk).  Counted again when days are joined. */
+  var DAYS = 'days.v1';
+  function summarize(d, res) {
+    var out = new Map(), pk = new Map(), mis = new Map();
+    res.parts.forEach(function (p) { pk.set(p.code, p.pick); });
+    function bad(code) {
+      if (!mis.has(code)) { var p = pk.get(code); mis.set(code, !!(p && p.status === 'ok' && PWH.rules.misplaced(d.rules, code, p).length)); }
+      return mis.get(code);
+    }
+    function day(date) {
+      var x = out.get(date);
+      if (!x) out.set(date, (x = { date: date, key: d.key, at: res.at, rounds: 0, ident: 0, complete: 0, freq: 0, m: 0, mAll: 0, prods: {},
+        iss: { order: { ids: {}, rk: {} }, nobom: { ids: {}, rk: {} }, noloc: { ids: {}, rk: {} }, layout: { ids: {}, rk: {} }, rule: { ids: {}, rk: {} } } }));
+      return x;
+    }
+    function hit(x, kind, id, rk) { x.iss[kind].ids[id] = 1; if (rk) x.iss[kind].rk[rk] = 1; }
+    res.rounds.forEach(function (r) {
+      var x = day(r.date); x.rounds++;
+      if (r.identified) { x.ident++; x.freq += r.parts.length; x.mAll += r.m; }
+      if (r.complete) { x.complete++; x.m += r.m; }
+      r.products.forEach(function (p) {
+        var P = x.prods[p] || (x.prods[p] = { r: 0, c: 0, m: 0 }), bp = r.byProd && r.byProd[p];
+        P.r++; if (bp && bp.complete) { P.c++; P.m += bp.m; }
+      });
+      (r.parts || []).forEach(function (c) {
+        var p = pk.get(c); if (!p) return;
+        if (p.status === 'noloc') hit(x, 'noloc', c, r.key);
+        else if (p.status !== 'ok') (p.status === 'unreach' ? [p.bin] : (p.bins || []).map(function (b) { return b.bin; })).forEach(function (b) { hit(x, 'layout', b, r.key); });
+        else if (bad(c)) hit(x, 'rule', c, r.key);
+      });
+    });
+    res.issues.forEach(function (i) {
+      if (!i.date) return;
+      var x = day(i.date), rk = i.date + '|' + i.line + '|' + i.job;
+      if (i.why === 'nojob' || i.why === 'noproduct') hit(x, 'order', i.job || (i.file + ':' + i.row), i.job ? rk : i.date + '|row' + i.row);
+      else if (i.why === 'plant') hit(x, 'order', i.job, rk);
+      else if (i.why === 'nobom' || i.why === 'noparts') hit(x, 'nobom', i.product, rk);
+    });
+    // a plan day whose file has no rows still counts as "has a plan, 0 rounds"
+    d.days.forEach(function (dd) { if (dd.date >= (res.from || '') && dd.date <= (res.to || '9999')) day(dd.date); });
+    return out;
+  }
+  function readDays() { return PWH.db.getMeta(DAYS).catch(function () { return null; }).then(function (v) { return v && v.days ? v : { days: {} }; }); }
+  function storeDays(d, res) {
+    if (!res || res.product || (res.plantPick && Object.keys(res.plantPick).length)) return Promise.resolve();
+    var sm = summarize(d, res);
+    return readDays().then(function (v) { sm.forEach(function (x, date) { v.days[date] = x; }); v.at = Date.now(); return PWH.db.setMeta(DAYS, v); }).catch(function () {});
+  }
+  /* days(d, from, to) -> { list: [{date, plan, sum, stale}], missing: [dates with a plan and no result], stale: [dates] } */
+  function days(d, from, to) {
+    return readDays().then(function (v) {
+      var out = { list: [], missing: [], stale: [] };
+      daysIn(d, from, to).forEach(function (x) {
+        var s = x.plan ? v.days[x.date] || null : null, st = !!(s && s.key !== d.key);
+        out.list.push({ date: x.date, plan: x.plan, sum: s, stale: st });
+        if (x.plan && !s) out.missing.push(x.date); if (st) out.stale.push(x.date);
+      });
+      return out;
+    });
+  }
+  // calculate the given days (runs of consecutive dates are routed together) and keep their results
+  function computeDays(d, dates, progress) {
+    var list = dates.slice().sort(), runs = [];
+    list.forEach(function (x) { var r = runs[runs.length - 1]; if (r && addDays(r.to, 1) === x) r.to = x; else runs.push({ from: x, to: x }); });
+    var router = makeRouter(d), k = 0, done = 0;
+    function next() {
+      if (k >= runs.length) return null;
+      var r = runs[k++];
+      return analyze(d, { from: r.from, to: r.to, router: router, progress: function (i, n) { if (progress) progress(done + (n ? i / n : 1) * (daysIn(d, r.from, r.to).length), list.length); } })
+        .then(function (res) { done += daysIn(d, r.from, r.to).length; return storeDays(d, res); }).then(next);
+    }
+    return Promise.resolve(next());
+  }
+
+  // ---------- saved swap scenarios (Module 4 saves, the dashboard reads) ----------
+  var SCEN = 'scenarios.v1';
+  function scenarios() { return PWH.db.getMeta(SCEN).catch(function () { return null; }).then(function (v) { return (v && v.list) || []; }); }
+  function saveScenario(sc) {
+    return scenarios().then(function (l) { l = l.filter(function (x) { return x.id !== sc.id; }); l.unshift(sc); return PWH.db.setMeta(SCEN, { list: l.slice(0, 30) }).then(function () { return l; }); });
+  }
+  function deleteScenario(id) { return scenarios().then(function (l) { l = l.filter(function (x) { return x.id !== id; }); return PWH.db.setMeta(SCEN, { list: l }).then(function () { return l; }); }); }
+
   // time of one pick trip, the same simulation factors as Module 3 (estimates, labelled as such)
   function timeOf(m, stops, lifts) { var S = PWH.SIM; var walk = m / S.walk, pick = stops * S.pick, lift = lifts * S.lift; return { walk: walk, pick: pick, lift: lift, sec: walk + pick + lift }; }
   PWH.freq = { timeOf: timeOf, load: load, keyNow: keyNow, analyze: analyze, simulate: simulate, recommend: recommend, checkSwap: checkSwap, pickOf: pickOf, pointOf: pointOf,
-    defaultRange: defaultRange, daysIn: daysIn, plantOf: plantOf, partsOf: partsOf, makeRouter: makeRouter };
+    defaultRange: defaultRange, daysIn: daysIn, addDays: addDays, plantOf: plantOf, partsOf: partsOf, makeRouter: makeRouter,
+    storeDays: storeDays, days: days, computeDays: computeDays, scenarios: scenarios, saveScenario: saveScenario, deleteScenario: deleteScenario };
 })(window);

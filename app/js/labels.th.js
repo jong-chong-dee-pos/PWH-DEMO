@@ -1333,6 +1333,179 @@
   "soon.m3": "ต้องมี: BOM, Material–Location และผังคลัง",   // Needs: BOM, Material–Location and the warehouse layout.
   "soon.m4": "ต้องมี: แผนรายวันและรายเดือน, BOM, ผังคลัง และกฎการย้าย",   // Needs: daily and monthly plans, BOM, layout and relocation rules.
   "soon.m5": "ต้องมี: Material–Location และผังคลัง",   // Needs: Material–Location and the warehouse layout.
+  "m6.title": "ภาพรวมคลังชิ้นส่วน",   // Part warehouse overview
+  "m6.lede": "ภาระงาน ระยะเข็นจำลอง และความครบของข้อมูลในช่วงที่เลือก คลิกกราฟหรือ Product เพื่อวิเคราะห์ต่อในโมดูล 4",   // Workload, simulated cart distance and data coverage for the period you choose. Click a chart or a Product to look closer in Module 4.
+  "m6.yoff": "543",   // 0
+  "m6.mon": "ม.ค.,ก.พ.,มี.ค.,เม.ย.,พ.ค.,มิ.ย.,ก.ค.,ส.ค.,ก.ย.,ต.ค.,พ.ย.,ธ.ค.",   // Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec
+  "m6.v.day": "รายวัน",   // Daily
+  "m6.v.month": "รายเดือน",   // Monthly
+  "m6.v.year": "รายปี",   // Yearly
+  "m6.from": "ตั้งแต่",   // From
+  "m6.to": "ถึง",   // To
+  "m6.year": "ปี",   // Year
+  "m6.cmp": "เปรียบเทียบช่วงก่อนหน้า",   // Compare with the period before
+  "m6.recalc": "คำนวณใหม่ ({n} วัน)",   // Recalculate ({n} days)
+  "m6.reload": "อัปเดตผล",   // Update
+  "m6.reload.t": "อ่านผลคำนวณล่าสุดอีกครั้ง",   // Read the results again
+  "m6.sc.3": "3 วันล่าสุด",   // Last 3 days
+  "m6.sc.m": "เดือนล่าสุด",   // Latest month
+  "m6.sc.y": "ปีล่าสุด",   // Latest year
+  "m6.back": "← ย้อนกลับ",   // ← Back
+  "m6.range": "ช่วงข้อมูล",   // Data period
+  "m6.vs": "เทียบกับ",   // compared with
+  "m6.toolong": "มุมมองรายวันเกิน 3 เดือนอ่านยาก ใช้มุมมองรายเดือนจะชัดกว่า",   // A daily view of more than 3 months is hard to read; the monthly view is clearer.
+  "m6.days": "วัน",   // days
+  "m6.step.load": "กำลังอ่านข้อมูล…",   // Reading the data…
+  "m6.step.calc": "กำลังคำนวณเส้นทาง",   // Calculating routes
+  "m6.st.gray": "ยังไม่มีผลคำนวณ",   // No result yet
+  "m6.st.yellow": "ครบบางส่วน",   // Partly complete
+  "m6.st.green": "ข้อมูลพร้อม ผลเป็นปัจจุบัน",   // Ready and up to date
+  "m6.st.plan": "มีแผน {a}/{b} วัน",   // Plans for {a}/{b} days
+  "m6.st.route": "คำนวณเส้นทางครบ {a}/{b} รอบ",   // Complete routes {a}/{b} rounds
+  "m6.st.at": "อัปเดตผลล่าสุด {t} น.",   // Last calculated {t}
+  "m6.st.stale": "{n} วันต้องคำนวณใหม่",   // {n} days need recalculating
+  "m6.st.show": "ดูสถานะข้อมูล",   // Data status
+  "m6.st.hide": "ซ่อนสถานะข้อมูล",   // Hide status
+  "m6.st.daily": "แผนรายวัน",   // Daily plans
+  "m6.st.with": "มีแผน: {l}",   // with a plan: {l}
+  "m6.st.without": "ไม่มีแผน: {l}",   // no plan: {l}
+  "m6.st.none": "ไม่มีแผนในช่วงนี้",   // no plan in this period
+  "m6.st.more": "และอีก {n} วัน",   // and {n} more
+  "m6.st.imported": "นำเข้า {d}",   // imported {d}
+  "m6.st.nofile": "ยังไม่มีไฟล์",   // not uploaded
+  "m6.st.layout": "ผังคลัง",   // Warehouse layout
+  "m6.st.rules": "กติกาการย้าย",   // Relocation rules
+  "m6.st.rulesn": "ใช้งาน {n} กติกา",   // {n} rules in use
+  "m6.st.edited": "แก้ไขล่าสุด {d} {t} น.",   // last changed {d} {t}
+  "m6.st.result": "ผลวิเคราะห์",   // Analysis result
+  "m6.st.res.ok": "ปัจจุบัน",   // Up to date
+  "m6.st.res.stale": "ล้าสมัย {n} วัน ต้องคำนวณใหม่",   // Out of date for {n} days, recalculate
+  "m6.st.res.none": "ยังไม่มีผลคำนวณ",   // Not calculated
+  "m6.go1": "ไปโมดูลจัดการข้อมูล",   // Go to data management
+  "m6.c.title": "ตัวเลขภาพรวม",   // Overview numbers
+  "m6.c.rounds": "รอบจัด Part ตามแผน",   // Part rounds in the plan
+  "m6.c.rounds.i": "นับจาก วันที่ + U-line + Job",   // Counted from date + U-line + Job
+  "m6.c.rounds.s": "จากแผน {n} วัน",   // from {n} plan days
+  "m6.c.freq": "ความถี่หยิบรวมตามแผน",   // Planned picks
+  "m6.c.freq.i": "Part แต่ละรหัสนับครั้งเดียวต่อรอบ เฉพาะรอบที่ระบุ BOM ได้",   // Each Part is counted once per round, in rounds whose BOM is known
+  "m6.c.freq.s": "ระบุ BOM ได้ครบทุกรอบ",   // every round's BOM is known
+  "m6.c.freq.part": "ครอบคลุม {a}/{b} รอบ ที่เหลือหา BOM ไม่ได้",   // covers {a}/{b} rounds; the rest have no BOM
+  "m6.c.dist": "ระยะเข็นจำลองรวม",   // Simulated cart distance
+  "m6.c.dist.i": "เฉพาะรอบที่จัดเส้นทางครบ (ทุก Part มีช่องที่เข็นไปถึงได้)",   // Only rounds whose route is complete (every Part has a reachable bin)
+  "m6.c.dist.s": "จาก {a}/{b} รอบที่จัดเส้นทางครบ",   // {a}/{b} rounds with a complete route
+  "m6.c.avg": "ระยะเฉลี่ยต่อรอบ",   // Average per round
+  "m6.c.avg.i": "ระยะรวม ÷ จำนวนรอบที่จัดเส้นทางครบ",   // Total distance ÷ rounds with a complete route
+  "m6.c.avg.s": "คิดจากรอบที่จัดเส้นทางครบ",   // rounds with a complete route
+  "m6.u.round": "รอบ",   // rounds
+  "m6.u.times": "ครั้ง",   // picks
+  "m6.u.m": "ม.",   // m
+  "m6.u.km": "กม.",   // km
+  "m6.u.mr": "ม./รอบ",   // m/round
+  "m6.nodata": "ไม่มีข้อมูล",   // No data
+  "m6.d.na": "ไม่มีข้อมูลเปรียบเทียบ",   // nothing to compare
+  "m6.vs2": "ผลต่างเทียบกับ {p} งานที่มากหรือน้อยลงไม่ได้หมายถึงดีหรือแย่",   // Change compared with {p}. A higher or lower workload is not good or bad by itself.
+  "m6.partial": "ข้อมูลไม่ครบช่วง",   // Incomplete period
+  "m6.d.load": "ภาระงานจัด Part",   // Part workload
+  "m6.d.load.s": "จำนวนรอบหรือความถี่หยิบในแต่ละช่วง",   // Rounds or picks per period
+  "m6.d.rounds": "รอบจัด Part",   // Rounds
+  "m6.d.freq": "ความถี่หยิบ",   // Picks
+  "m6.d.dist": "แนวโน้มระยะเข็นจำลอง",   // Simulated cart distance
+  "m6.d.dist.s": "เฉพาะรอบที่จัดเส้นทางครบ",   // Rounds with a complete route only
+  "m6.d.total": "ระยะรวม",   // Total
+  "m6.d.avg": "เฉลี่ยต่อรอบ",   // Per round
+  "m6.d.click.day": "คลิกวันเพื่อเปิดในโมดูล 4",   // Click a day to open it in Module 4
+  "m6.d.click.month": "คลิกเดือนเพื่อดูรายวัน",   // Click a month to see its days
+  "m6.d.click.year": "คลิกปีเพื่อดูรายเดือน",   // Click a year to see its months
+  "m6.noplan": "ไม่มีแผน",   // no plan
+  "m6.noplan2": "วันนี้ไม่มีแผน",   // No plan for this day
+  "m6.noplan3": "ไม่มีแผนในช่วงนี้",   // No plan in this period
+  "m6.tp.rounds": "รอบตามแผน",   // Rounds in the plan
+  "m6.tp.freq": "ความถี่หยิบรวม",   // Picks
+  "m6.tp.plan": "วันที่มีแผน",   // Days with a plan
+  "m6.tp.planv": "{a}/{b} วัน",   // {a}/{b}
+  "m6.tp.part": "รอบที่ข้อมูลไม่ครบ",   // Rounds with incomplete data
+  "m6.tp.dist": "ระยะเข็นจำลองรวม",   // Total distance
+  "m6.tp.avg": "ระยะเฉลี่ยต่อรอบ",   // Average per round
+  "m6.tp.comp": "รอบที่จัดเส้นทางครบ",   // Rounds with a complete route
+  "m6.tp.all": "รอบตามแผนทั้งหมด",   // Rounds in the plan
+  "m6.tp.planr": "รอบตามแผน",   // Rounds in the plan
+  "m6.tp.share": "สัดส่วนต่อระยะรวมที่คำนวณได้",   // Share of all calculated distance
+  "m6.tp.compl": "ความครบถ้วน",   // Completeness
+  "m6.tp.full": "ครบทุกรอบ",   // Every round complete
+  "m6.tp.partv": "ครบ {a} จาก {b} รอบ",   // {a} of {b} rounds complete
+  "m6.e.title": "Product ที่สร้างภาระระยะทางสูง",   // Products with the most distance
+  "m6.e.sub": "5 อันดับในช่วงนี้ คลิกเพื่อวิเคราะห์ต่อในโมดูล 4",   // Top 5 in this period. Click one to analyse it in Module 4.
+  "m6.e.total": "ระยะรวมสูงสุด",   // Highest total
+  "m6.e.avg": "ระยะเฉลี่ยต่อรอบสูงสุด",   // Highest per round
+  "m6.e.comp": "คำนวณครบ {n} รอบ",   // {n} complete rounds
+  "m6.e.of": "จาก {n}",   // of {n}
+  "m6.e.none": "ไม่มี Product ที่จัดเส้นทางครบในช่วงนี้",   // No Product has a complete route in this period.
+  "m6.e.click": "คลิกเพื่อเปิดในโมดูล 4",   // Click to open in Module 4
+  "m6.f.title": "สรุปโอกาสลดระยะทางจากสถานการณ์จำลอง",   // Swap scenario
+  "m6.f.sub": "สถานการณ์ที่บันทึกไว้ในโมดูล 4 → Simulation แสดงตามผลที่คำนวณไว้",   // A scenario saved in Module 4 → Simulation, shown as it was calculated.
+  "m6.f.none": "ยังไม่มีผล Simulation สำหรับสรุป",   // No Simulation result to summarise yet
+  "m6.f.none2": "ทดลองสลับในโมดูล 4 → Simulation แล้วกด บันทึกสถานการณ์",   // Run a swap in Module 4 → Simulation and press Save scenario.
+  "m6.f.gosim": "เปิด Simulation",   // Open Simulation
+  "m6.f.pick": "สถานการณ์",   // Scenario
+  "m6.f.st.ok": "ผลปัจจุบัน",   // Current result
+  "m6.f.st.old": "ต้องคำนวณใหม่ ข้อมูลเปลี่ยนแล้ว",   // Recalculate: data changed since
+  "m6.f.st.part": "ข้อมูลตรวจสอบไม่ครบ",   // Checked data incomplete
+  "m6.f.plant": "มีการเลือก Plant เอง",   // Plants chosen by hand
+  "m6.f.range": "ช่วงข้อมูลที่ใช้จำลอง {r}",   // Simulated period {r}
+  "m6.f.prod": "เฉพาะ Product {p}",   // Product {p} only
+  "m6.f.at": "คำนวณเมื่อ {d} {t} น.",   // calculated {d} {t}
+  "m6.f.other": "สถานการณ์นี้ใช้ข้อมูล {a} ไม่ใช่ช่วงของแดชบอร์ด {b}",   // This scenario uses {a}, not the dashboard period {b}.
+  "m6.f.before": "ระยะก่อนปรับ",   // Before
+  "m6.f.after": "ระยะหลังปรับ",   // After
+  "m6.f.down": "ลดลง",   // Shorter by
+  "m6.f.up": "เพิ่มขึ้น",   // Longer by
+  "m6.f.same": "ผลต่าง",   // Difference
+  "m6.f.foot": "คู่สลับ {p} คู่ · Product ที่ได้รับผล {q} รายการ · ใช้ประเมิน {r} รอบ",   // {p} swap pairs · {q} Products affected · {r} rounds assessed
+  "m6.f.open": "เปิด Simulation",   // Open Simulation
+  "m6.g.title": "ประเด็นที่ต้องติดตาม",   // Things to follow up
+  "m6.g.sub": "ไม่เกิน 5 รายการ เรียงตามจำนวนรอบที่กระทบ รอบเดียวอาจมีหลายปัญหา จึงไม่นำจำนวนรอบมารวมกัน",   // Up to 5, the most rounds affected first. One round can be hit by several problems, so the rounds are not added up.
+  "m6.g.order": "Order เชื่อม Product ไม่ได้",   // Orders not linked to a Product
+  "m6.g.order.n": "{n} Order",   // {n} Orders
+  "m6.g.nobom": "Product ไม่มี BOM",   // Products without a BOM
+  "m6.g.nobom.n": "{n} Product",   // {n} Products
+  "m6.g.noloc": "Part ไม่มี Location",   // Parts without a location
+  "m6.g.noloc.n": "{n} Part",   // {n} Parts
+  "m6.g.layout": "Location ไม่มีบนผัง/เข้าถึงไม่ได้",   // Locations not on the layout or not reachable
+  "m6.g.layout.n": "{n} Location",   // {n} Locations
+  "m6.g.rule": "Part อยู่ผิดกติกา",   // Parts stored against a rule
+  "m6.g.rule.n": "{n} Part",   // {n} Parts
+  "m6.g.stale": "ผลวิเคราะห์ล้าสมัย",   // Analysis out of date
+  "m6.g.stale.n": "{n} วันต้องคำนวณใหม่",   // {n} days to recalculate
+  "m6.g.hit": "กระทบ {n} รอบจัด Part",   // affects {n} rounds
+  "m6.g.go4": "ดูในโมดูล 4",   // See in Module 4
+  "m6.g.detail": "ดูรายละเอียด",   // See details
+  "m6.g.go2": "ไปผังคลัง",   // Go to layout
+  "m6.g.go5": "ดูในโมดูล 5",   // See in Module 5
+  "m6.g.recalc": "คำนวณใหม่",   // Recalculate
+  "m6.g.none": "ไม่พบปัญหาข้อมูลในขอบเขตที่ตรวจสอบ",   // No data problems found in the checked period.
+  "m6.need.title": "ต้องมีข้อมูลก่อน",   // Data needed
+  "m6.need.sub": "แดชบอร์ดคำนวณไม่ได้ เพราะยังไม่มี: {list}",   // The dashboard cannot calculate without: {list}
+  "m6.err": "คำนวณไม่สำเร็จ: {e}",   // Could not calculate: {e}
+  "m6.retry": "ลองอีกครั้ง",   // Try again
+  "m4.backdash": "← กลับแดชบอร์ด",   // ← Back to the dashboard
+  "m4.sv.def": "สถานการณ์ {d} {t}",   // Scenario {d} {t}
+  "m4.sv.name": "ชื่อสถานการณ์",   // Scenario name
+  "m4.sv.btn": "บันทึกสถานการณ์",   // Save scenario
+  "m4.sv.sub": "ผลที่บันทึกจะแสดงในแดชบอร์ด",   // Saved results show on the dashboard.
+  "m4.sv.done": "บันทึกแล้ว: {name}",   // Saved: {name}
+  "m4.sv.done2": "แสดงในแดชบอร์ดแล้ว",   // It now shows on the dashboard.
+  "m4.sv.list": "สถานการณ์ที่บันทึกไว้ ({n})",   // Saved scenarios ({n})
+  "m4.sv.listsub": "กดเปิดเพื่อโหลดช่วงข้อมูลและคู่สลับกลับมาคำนวณ",   // Open one to load its period and swap pairs again.
+  "m4.sv.col.name": "ชื่อ",   // Name
+  "m4.sv.col.range": "ช่วงข้อมูล",   // Period
+  "m4.sv.col.pairs": "คู่สลับ",   // Pairs
+  "m4.sv.col.diff": "ผลต่างระยะ",   // Distance
+  "m4.sv.col.state": "สถานะ",   // Status
+  "m4.sv.at": "บันทึก {d} {t} น.",   // saved {d} {t}
+  "m4.sv.old": "ข้อมูลเปลี่ยนแล้ว",   // Data changed
+  "m4.sv.cur": "ปัจจุบัน",   // Current
+  "m4.sv.load": "เปิด",   // Open
+  "m4.sv.del": "ลบ",   // Delete
   "soon.m6": "อ่านผลลัพธ์ของ Module 1 ถึง 5",   // Reads the results of modules 1 to 5.
   };
 })(window);

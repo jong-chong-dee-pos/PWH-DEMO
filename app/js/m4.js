@@ -51,8 +51,11 @@
         if (id !== S.runId) return;
         S.base = base; S.recs = null; S.simRes = null; S.busy = null;
         S.sim.forEach(function (s) { s.a = partObj(s.a.code, s.a.pick.bin); s.b = partObj(s.b.code, s.b.pick.bin); s.rules = PWH.freq.checkSwap(S.d, s.a, s.b); });
+        PWH.freq.storeDays(S.d, base);   // the dashboard reads the same per-day results
         render();
         if (S.tab === 'recs') runRecs();
+        if (S.focusIss) { S.focusIss = false; var is = $('#m4iss'); if (is) { is.querySelectorAll('details').forEach(function (x) { x.open = true; }); setTimeout(function () { is.scrollIntoView({ block: 'start' }); }, 50); } }
+        if (S.tab === 'sim' && S.autoSim) { S.autoSim = false; if (S.sim.length && !S.sim.some(function (x) { return x.rules.length; })) runSim(); }
       });
     }).catch(function (e) { if (id === S.runId) { S.busy = null; S.err = String(e && e.message || e); render(); } });
   }
@@ -481,7 +484,7 @@
     form += '<div class="m4acts"><button type="button" class="btn primary" data-m4="simrun"' + (!S.sim.length || bad ? ' disabled' : '') + '>' + esc(t('m4.sim.run2')) + '</button><button type="button" class="btn" data-m4="simclear"' + (S.sim.length || S.simRes ? '' : ' disabled') + '>' + esc(t('m4.sim.reset')) + '</button>' + (bad ? '<span class="sub2">' + esc(t('m4.sim.blocked')) + '</span>' : '') + '</div></section>';
     var R = S.simRes;
     if (R) form += simResult(R);
-    return form;
+    return form + savedList();
   }
   function simResult(R) {
     var down = R.save >= 0;
@@ -492,12 +495,45 @@
       '<div class="m4k"><span class="k">' + esc(t('m4.k.used')) + '</span><span class="v">' + nf(R.roundsUsed) + '</span><span class="s">' + esc(t('m4.k.out', { n: nf(R.roundsOut) })) + '</span></div>' +
       '<div class="m4k"><span class="k">' + esc(t('m4.k.affected')) + '</span><span class="v">' + nf(R.byProd.length) + '</span><span class="s">' + esc(t('m4.k.updown', { a: R.better.length, b: R.worse.length })) + '</span></div></div>' +
       (R.lost.length ? '<div class="msg warn" role="status"><span>' + esc(t('m4.sim.lost', { n: R.lost.length })) + '</span></div>' : '') +
-      (R.sameFreq ? '' : '<div class="msg bad" role="status"><span>' + esc(t('m4.err.freq')) + '</span></div>');
+      (R.sameFreq ? '' : '<div class="msg bad" role="status"><span>' + esc(t('m4.err.freq')) + '</span></div>') + saveBox(R);
     if (R.byProd.length) {
       html += '<h3>' + esc(t('m4.sim.byprod')) + '</h3><p class="sub2">' + esc(t('m4.cmp.click')) + '</p>' + prodCmp(R.byProd);
       html += routePair(R, 'sim');
     } else html += noChange(R);
     return html + '</section>';
+  }
+
+  // ---------- saved scenarios (read by the dashboard) ----------
+  function defName() { var d = new Date(), p = function (n) { return (n < 10 ? '0' : '') + n; }; return t('m4.sv.def', { d: p(d.getDate()) + '/' + p(d.getMonth() + 1), t: fmtTime(Date.now()) }); }
+  function saveBox(R) {
+    if (R.savedId) return '<div class="m4save"><span class="chip ok">' + esc(t('m4.sv.done', { name: R.savedName })) + '</span><span class="sub2">' + esc(t('m4.sv.done2')) + '</span></div>';
+    return '<form class="m4save" id="m4save" autocomplete="off"><label class="m4f"><span>' + esc(t('m4.sv.name')) + '</span><input id="m4svname" maxlength="60" value="' + esc(defName()) + '"></label>' +
+      '<button type="submit" class="btn primary">' + esc(t('m4.sv.btn')) + '</button><span class="sub2">' + esc(t('m4.sv.sub')) + '</span></form>';
+  }
+  function saveScenario(name) {
+    var R = S.simRes; if (!R) return;
+    var sc = { id: 's' + Date.now().toString(36), name: name || defName(), from: S.from, to: S.to, product: S.product || '', at: Date.now(), key: S.d.key,
+      pairs: R.pairs.map(function (x) { return { a: { code: x.a.code, bin: x.a.pick.bin }, b: { code: x.b.code, bin: x.b.pick.bin } }; }),
+      before: R.before, after: R.after, save: R.save, pct: R.pct, roundsUsed: R.roundsUsed, roundsOut: R.roundsOut, roundsPartial: R.roundsPartial,
+      nProd: R.byProd.length, better: R.better.length, worse: R.worse.length, plantPick: Object.keys(S.plantPick || {}).length > 0 };
+    PWH.freq.saveScenario(sc).then(function (l) { R.savedId = sc.id; R.savedName = sc.name; S.saved = l; render(); });
+  }
+  function savedList() {
+    var L = S.saved || []; if (!L.length) return '';
+    return '<section class="panel"><div class="chd"><div class="chd-l"><h2>' + esc(t('m4.sv.list', { n: L.length })) + '</h2><p class="sub">' + esc(t('m4.sv.listsub')) + '</p></div></div><div class="tablebox"><table class="m4tb m4svt"><thead><tr><th>' + esc(t('m4.sv.col.name')) + '</th><th>' + esc(t('m4.sv.col.range')) + '</th><th class="num">' + esc(t('m4.sv.col.pairs')) + '</th><th class="num">' + esc(t('m4.sv.col.diff')) + '</th><th>' + esc(t('m4.sv.col.state')) + '</th><th></th></tr></thead><tbody>' +
+      L.map(function (x) {
+        var old = x.key !== S.d.key;
+        return '<tr><td><b>' + esc(x.name) + '</b><div class="sub2">' + esc(t('m4.sv.at', { d: fmtDate(new Date(x.at).toISOString().slice(0, 10)), t: fmtTime(x.at) })) + '</div></td><td>' + esc(fmtDate(x.from) + ' – ' + fmtDate(x.to)) + (x.product ? '<div class="sub2">' + esc(x.product) + '</div>' : '') + '</td><td class="num">' + nf(x.pairs.length) + '</td>' +
+          '<td class="num">' + (Math.abs(x.save) < 0.5 ? esc(t('m4.same')) : esc(t(x.save > 0 ? 'm4.down' : 'm4.up', { m: m(Math.abs(x.save)) }))) + '<div class="sub2">' + pct(x.pct == null ? null : Math.abs(x.pct)) + '</div></td>' +
+          '<td>' + (old ? chip('warn', t('m4.sv.old')) : chip('ok', t('m4.sv.cur'))) + '</td>' +
+          '<td class="m4act"><button type="button" class="btn sm" data-m4="svload" data-v="' + esc(x.id) + '">' + esc(t('m4.sv.load')) + '</button><button type="button" class="btn sm danger" data-m4="svdel" data-v="' + esc(x.id) + '">' + esc(t('m4.sv.del')) + '</button></td></tr>';
+      }).join('') + '</tbody></table></div></section>';
+  }
+  function loadScenario(sc) {
+    if (!sc) return;
+    S.from = sc.from; S.to = sc.to; S.product = sc.product || ''; S.prodView = null; S.tab = 'sim'; S.view = null; S.simRes = null;
+    S.sim = sc.pairs.map(function (x) { return { a: { code: x.a.code, pick: { bin: x.a.bin } }, b: { code: x.b.code, pick: { bin: x.b.bin } }, rules: [] }; });
+    S.autoSim = true; run();
   }
 
   // ---------- simulation: before / after routes side by side, like the pick route page ----------
@@ -635,7 +671,7 @@
   function render() {
     var R = S.root; if (!R) return;
     var d = S.d;
-    var head = '<div class="ph"><div class="ph-l"><h1>' + esc(t('nav.m4')) + '</h1><p class="lede">' + esc(t('m4.intro2')) + '</p></div></div>';
+    var head = '<div class="ph"><div class="ph-l">' + (S.fromDash ? '<button type="button" class="linkbtn m4back" data-m4="todash">' + esc(t('m4.backdash')) + '</button>' : '') + '<h1>' + esc(t('nav.m4')) + '</h1><p class="lede">' + esc(t('m4.intro2')) + '</p></div></div>';
     if (!d) { R.innerHTML = head + busyHtml() + (S.err ? '<div class="msg bad"><span>' + esc(t('m4.err.run', { e: S.err })) + '</span></div>' : ''); return; }
     var miss = []; ['daily', 'bom', 'matloc', 'layout'].forEach(function (k) { if (!d.have[k]) miss.push(t('m4.need.' + k)); });
     if (miss.length) { R.innerHTML = head + '<section class="panel"><h2>' + esc(t('m4.need.title')) + '</h2><p class="sub">' + esc(t('m4.need.list', { list: miss.join(', ') })) + '</p></section>'; return; }
@@ -668,6 +704,7 @@
     var rs = $('#m4round'); if (rs) rs.addEventListener('change', function () { S.prodRound = +rs.value; render(); });
     var spd = $('#m4sprod'); if (spd) spd.addEventListener('change', function () { S[spd.getAttribute('data-w') + 'Prod'] = spd.value; S.rp.before.floor = S.rp.after.floor = null; render(); });
     var rp = $('#m4rprod'); if (rp) rp.addEventListener('change', function () { S.view.prod = rp.value; if (S.view.kind === 's') S.simProd = rp.value; drawRoute(S.view.kind); });
+    var sv = $('#m4save'); if (sv) sv.addEventListener('submit', function (e) { e.preventDefault(); saveScenario(($('#m4svname').value || '').trim()); });
     var add = $('#m4add');
     if (add) {
       add.addEventListener('submit', function (e) { e.preventDefault(); addSim(); });
@@ -750,6 +787,9 @@
     else if (a === 'simdel') { S.sim.splice(+v, 1); S.simRes = null; render(); }
     else if (a === 'simclear') { S.sim = []; S.simRes = null; S.simMsg = ''; S.view = null; render(); }
     else if (a === 'simrun') runSim();
+    else if (a === 'svload') loadScenario((S.saved || []).filter(function (x) { return x.id === v; })[0]);
+    else if (a === 'svdel') PWH.freq.deleteScenario(v).then(function (l) { S.saved = l; render(); });
+    else if (a === 'todash') PWH.app.go(6);
     else if (a === 'cprod') { S[S.tab === 'recs' ? 'recProd' : 'simProd'] = v; S.rcache = null; S.rp.before.floor = S.rp.after.floor = null; render(); var rpp = $('#m4rp-before'); if (rpp) rpp.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     else if (a === 'sprod') { S.simProd = v; S.rp.before.floor = S.rp.after.floor = null; render(); var rp = $('#m4rp-before'); if (rp) rp.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     else if (a === 'rfloor') { S.rp[k].floor = +v; S.root.querySelectorAll('[data-m4=rfloor][data-k=' + k + ']').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-v') === v); }); var KF = S.kits['rp-' + k]; if (KF) { KF.M.floor = +v; KF.fit(); KF.draw(); } }
@@ -765,6 +805,17 @@
   });
   function mount(root) {
     S.root = root; S.kits = {}; S.slots = null;
+    PWH.freq.scenarios().then(function (l) { S.saved = l; if (S.tab === 'sim' && S.base && document.body.contains(root)) render(); });
+    var G = S.pending; S.pending = null; S.fromDash = !!G;
+    if (G) {
+      // opened from the dashboard: its range, Product and tab
+      if (G.tab) S.tab = G.tab;
+      if (G.scenario) { S.d ? loadScenario(G.scenario) : (S.from = G.scenario.from, S.to = G.scenario.to, S.product = G.scenario.product || '', S.pendingSc = G.scenario); }
+      else { if (G.from) { S.from = G.from; S.to = G.to; } S.product = G.product || ''; S.prodView = null; S.q = ''; S.focusIss = !!G.issues; }
+      if (S.d && !G.scenario) { render(); run(); return; }
+      if (!S.d) { render(); run(true).then(function () { if (S.pendingSc) { var sc = S.pendingSc; S.pendingSc = null; loadScenario(sc); } }); return; }
+      return;
+    }
     if (S.d) {
       // coming back: keep the range, filters and the swap list; recalculate only when the data changed
       render();
@@ -778,5 +829,5 @@
     if (!S.root || !document.body.contains(S.root) || !S.d) return;
     PWH.freq.keyNow().then(function (k) { if (k !== S.d.key && !S.stale) { S.stale = true; render(); } });
   }
-  PWH.m4 = { mount: mount, refresh: refresh, base: function () { return S.base; } };
+  PWH.m4 = { mount: mount, refresh: refresh, base: function () { return S.base; }, go: function (o) { S.pending = o || {}; }, _s: function () { return S; } };
 })(window);
