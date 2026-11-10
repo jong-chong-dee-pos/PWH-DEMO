@@ -829,7 +829,7 @@
   "m4.rc.rule": "กติกา",   // Rules
   "m4.rc.note": "คิดผลทีละคู่ · คลิกแถวเพื่อดูผลราย Product ก่อน–หลัง (ระยะ · % · เวลาจำลอง) และเส้นทาง · ยังไม่ตรวจขนาด/น้ำหนัก (ไม่มีข้อมูล)",   // Each pair is counted alone. Click a row to see each Product before and after (distance, %, simulated time) and the routes. Size and weight are not checked yet (no data).
   "m4.pp.title2": "เปลี่ยน Plant ของ {n} Product",   // Change the Plant of {n} Products
-  "m4.pp.sub2": "Product เหล่านี้มี BOM มากกว่า 1 Plant และ JOB ไม่อยู่ในแผนรายเดือน ผลจะแสดงเมื่อเลือก Plant ครบทุกตัว · ค่าที่เลือกจำไว้ระหว่างเปิดหน้านี้",   // These Products have a BOM in more than one Plant and their JOB is not in the monthly plan. The results appear once every Product has a Plant. The choice is kept while this page is open.
+  "m4.pp.sub2": "Product เหล่านี้มี BOM มากกว่า 1 Plant และ JOB ไม่อยู่ในแผนรายเดือน ผลจะแสดงเมื่อเลือก Plant ครบทุกตัว · ระบบจำค่าที่เลือกไว้ และใช้คำนวณในแดชบอร์ดด้วย",   // These Products have a BOM in more than one Plant and their JOB is not in the monthly plan. The results appear once every Product has a Plant. The choice is remembered and the dashboard uses it too.
   "m4.pp.need": "ต้องเลือกให้ครบทุก Product",   // choose a Plant for every Product
   "m4.pp.change": "เปลี่ยน Plant ({n})",   // Change Plant ({n})
   "m4.rc.affect": "มีผลต่อ {n} Product",   // affects {n} Products
@@ -1524,6 +1524,11 @@
   "m6.p.share": "{p}% ของทั้งหมด",   // {p}% of picks
   "m6.p.none": "ไม่มี Part ที่มี Bin ถูกหยิบในช่วงนี้",   // No Part with a bin was picked in this period.
   "m6.p.click": "คลิกเพื่อเปิดในโมดูล 4",   // Click to open in Module 4
+  "m4.k.plan_sub4": "มี Bin {a} · ไม่มี Bin {b} ครั้ง",   // {a} with a bin · {b} without
+  "m4.k.dist_sub4": "เฉลี่ย {m} ม./รอบ จาก {n} รอบที่มีเส้นทาง · เวลาจำลอง {h}",   // {m} m per round over {n} rounds with a route · simulated time {h}
+  "m6.st.plants": "Plant ที่เลือกให้ Product",   // Plants chosen for Products
+  "m6.st.plantsn": "{n} Product เลือกไว้ในโมดูล 4 และใช้คำนวณที่นี่ด้วย",   // {n} Products, chosen in Module 4 and used here too
+  "m6.st.plants0": "ยังไม่ได้เลือก",   // none chosen
   "soon.m6": "อ่านผลลัพธ์ของ Module 1 ถึง 5",   // Reads the results of modules 1 to 5.
   };
 })(window);

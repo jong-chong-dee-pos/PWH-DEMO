@@ -187,6 +187,7 @@
       ['BOM', fileTxt(d.files.bom)], ['Material–Location', fileTxt(d.files.matloc)],
       [t('m6.st.layout'), d.L ? (d.L.source || '') + ' · ' + t('m6.st.imported', { d: dTxt(new Date(d.L.importedAt || 0).toISOString().slice(0, 10), true) }) : t('m6.st.nofile')],
       [t('m6.st.rules'), t('m6.st.rulesn', { n: (d.rules.rules || []).filter(function (r) { return !r.off; }).length }) + (rl ? ' · ' + t('m6.st.edited', { d: dTxt(new Date(rl).toISOString().slice(0, 10), true), t: fmtTime(rl) }) : '')],
+      [t('m6.st.plants'), Object.keys(d.plantPick || {}).length ? t('m6.st.plantsn', { n: Object.keys(d.plantPick).length }) : t('m6.st.plants0')],
       [t('m6.st.result'), A.stale ? t('m6.st.res.stale', { n: A.stale }) : A.done ? t('m6.st.res.ok') : t('m6.st.res.none')]
     ];
     return '<div class="m6stp"><table class="m6stt2"><tbody>' + rows.map(function (r) { return '<tr><th scope="row">' + esc(r[0]) + '</th><td>' + esc(r[1]) + '</td></tr>'; }).join('') + '</tbody></table>' +

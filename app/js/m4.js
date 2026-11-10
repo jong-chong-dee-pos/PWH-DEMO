@@ -43,7 +43,7 @@
   function run(reload) {
     var id = ++S.runId; S.err = '';
     setBusy('load');
-    var p = reload || !S.d ? PWH.freq.load().then(function (d) { if (id !== S.runId) return; S.d = d; S.stale = false; fixRange(); }) : Promise.resolve();
+    var p = reload || !S.d ? PWH.freq.load().then(function (d) { if (id !== S.runId) return; S.d = d; S.stale = false; S.plantPick = Object.assign({}, d.plantPick); fixRange(); }) : Promise.resolve();
     return p.then(function () {
       if (id !== S.runId || !ready()) { if (id === S.runId) { S.busy = null; render(); } return; }
       setBusy('rounds'); render();
@@ -119,12 +119,13 @@
     var gs = issueGroups(), nIss = gs.reduce(function (n, gp) { return n + gp.items.length; }, 0);
     var prods = new Set(), jobs = new Set(); B.rounds.forEach(function (r) { jobs.add(r.job); r.products.forEach(function (p) { prods.add(p); }); });
     var withBin = B.parts.filter(function (p) { return p.pick.status === 'ok'; }).length;
+    var withRoute = B.identified.filter(function (r) { return r.m > 0; }).length;   // the divisor of the average, as on the dashboard
     var issSub = gs.map(function (gp) { return esc(t('m4.issshort.' + gp.why)) + ' ' + nf(gp.items.length); }).join(' · ');
     return '<div class="m4kpis m4k5">' +
       k(t('m4.k.rounds'), nf(B.rounds.length), esc(t('m4.k.rounds_sub2', { j: nf(jobs.size), p: nf(prods.size) }))) +
       k(t('m4.k.parts'), nf(B.parts.length), esc(t('m4.k.parts_sub2', { a: nf(withBin), b: nf(B.parts.length - withBin) }))) +
-      k(t('m4.k.plan'), nf(B.planFreq), esc(t('m4.k.plan_sub'))) +
-      k(t('m4.k.dist'), mm(B.totalM), esc(t('m4.k.dist_sub3', { m: m(B.identified.length ? B.totalM / B.identified.length : 0), h: hrs(B.totalSec) }))) +
+      k(t('m4.k.plan'), nf(B.planFreq), esc(t('m4.k.plan_sub4', { a: nf(B.routeFreq), b: nf(B.planFreq - B.routeFreq) }))) +
+      k(t('m4.k.dist'), mm(B.totalM), esc(t('m4.k.dist_sub4', { m: nf(withRoute ? B.totalM / withRoute : 0, 1), n: nf(withRoute), h: hrs(B.totalSec) }))) +
       '<button type="button" class="m4k m4kbtn' + (nIss ? ' warnv' : '') + '" data-m4="goiss"><span class="k">' + esc(t('m4.k.issues')) + '</span><span class="v">' + nf(nIss) + '</span><span class="s">' + (issSub || esc(t('m4.none'))) + '</span></button></div>' +
       (B.consistent ? '' : '<div class="msg bad" role="status"><span>' + esc(t('m4.err.heatsum', { h: nf(B.heatSum), r: nf(B.routeFreq) })) + '</span></div>');
   }
@@ -764,12 +765,12 @@
     var a = el.getAttribute('data-m4'), v = el.getAttribute('data-v'), k = el.getAttribute('data-k');
     if (a === 'tab') goTab(v);
     else if (a === 'recalc') run(true);
-    else if (a === 'clear') { var r = PWH.freq.defaultRange(S.d); S.from = r.from; S.to = r.to; S.product = ''; S.q = ''; S.prodView = null; S.plantPick = {}; S.plantDraft = {}; run(); }
+    else if (a === 'clear') { var r = PWH.freq.defaultRange(S.d); S.from = r.from; S.to = r.to; S.product = ''; S.q = ''; S.prodView = null; S.plantDraft = {}; run(); }
     else if (a === 'open') { if (e.target.closest('button') && e.target.closest('button') !== el) return; S.open = S.open === v ? null : v; render(); }
     else if (a === 'sort') { S.sort = v; render(); }
     else if (a === 'pdraft') { S.plantDraft[k] = v; plantRefresh(); }
     else if (a === 'pall') { ambiguous().forEach(function (p) { if (p.plants.indexOf(v) >= 0) S.plantDraft[p.product] = v; }); plantRefresh(); }
-    else if (a === 'papply') { Object.keys(S.plantDraft || {}).forEach(function (p) { S.plantPick[p] = S.plantDraft[p]; }); S.plantDraft = {}; S.showPlant = false; run(); }
+    else if (a === 'papply') { Object.keys(S.plantDraft || {}).forEach(function (p) { S.plantPick[p] = S.plantDraft[p]; }); S.plantDraft = {}; S.showPlant = false; PWH.freq.savePlantPicks(S.plantPick).then(function () { run(true); }); }
     else if (a === 'pchange') { S.showPlant = true; S.plantDraft = {}; render(); var pp = $('#m4plant'); if (pp) pp.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     else if (a === 'pclose') { S.showPlant = false; S.plantDraft = {}; render(); }
     else if (a === 'more') { S.partsMax += 60; render(); }

@@ -690,7 +690,7 @@
     'm4.rc.rule': "Rules",
     'm4.rc.note': "Each pair is counted alone. Click a row to see each Product before and after (distance, %, simulated time) and the routes. Size and weight are not checked yet (no data).",
     'm4.pp.title2': "Change the Plant of {n} Products",
-    'm4.pp.sub2': "These Products have a BOM in more than one Plant and their JOB is not in the monthly plan. The results appear once every Product has a Plant. The choice is kept while this page is open.",
+    'm4.pp.sub2': "These Products have a BOM in more than one Plant and their JOB is not in the monthly plan. The results appear once every Product has a Plant. The choice is remembered and the dashboard uses it too.",
     'm4.pp.need': "choose a Plant for every Product",
     'm4.pp.change': "Change Plant ({n})",
     'm4.rc.affect': "affects {n} Products",
@@ -1369,6 +1369,11 @@
     'm6.p.share': "{p}% of picks",
     'm6.p.none': "No Part with a bin was picked in this period.",
     'm6.p.click': "Click to open in Module 4",
+    'm4.k.plan_sub4': "{a} with a bin · {b} without",
+    'm4.k.dist_sub4': "{m} m per round over {n} rounds with a route · simulated time {h}",
+    'm6.st.plants': "Plants chosen for Products",
+    'm6.st.plantsn': "{n} Products, chosen in Module 4 and used here too",
+    'm6.st.plants0': "none chosen",
     'soon.m6': 'Reads the results of modules 1 to 5.'
   };
   var lang = 'th';

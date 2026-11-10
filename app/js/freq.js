@@ -34,10 +34,15 @@
   function sigOf(obj) { var s = JSON.stringify(obj || null), h = 0; for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0; return s.length + ':' + h; }
   function keyNow() {
     var A = PWH.app, ids = function (ty) { return A.activeFiles(ty).map(function (f) { return f.id; }).sort().join(','); };
-    return Promise.all([PWH.db.getMeta('layout').catch(function () { return null; }), PWH.db.getMeta('rules').catch(function () { return null; })]).then(function (r) {
-      return [ids('bom'), ids('matloc'), ids('daily'), ids('monthly'), sigOf(r[0] && r[0].floors), sigOf([(r[1] && r[1].rules) || [], (r[1] && r[1].partType) || {}])].join('|');
+    return Promise.all([PWH.db.getMeta('layout').catch(function () { return null; }), PWH.db.getMeta('rules').catch(function () { return null; }), plantPicks()]).then(function (r) {
+      return [ids('bom'), ids('matloc'), ids('daily'), ids('monthly'), sigOf(r[0] && r[0].floors), sigOf([(r[1] && r[1].rules) || [], (r[1] && r[1].partType) || {}]), sigOf(sortObj(r[2]))].join('|');
     });
   }
+  // the Plant chosen for a Product the plan cannot place by itself (Module 4 asks once; kept for every calculation after)
+  var PLANTS = 'plantPick.v1';
+  function sortObj(o) { var x = {}; Object.keys(o || {}).sort().forEach(function (k) { x[k] = o[k]; }); return x; }
+  function plantPicks() { return PWH.db.getMeta(PLANTS).catch(function () { return null; }).then(function (v) { return v || {}; }); }
+  function savePlantPicks(o) { return PWH.db.setMeta(PLANTS, sortObj(o)); }
   function load() {
     var A = PWH.app;
     var bom = A.activeFile('bom'), ml = A.activeFile('matloc'), daily = A.activeFiles('daily'), monthly = A.activeFiles('monthly');
@@ -46,11 +51,11 @@
       Promise.all(daily.map(function (f) { return PWH.db.getRows(f.id).then(function (r) { return { date: f.planDate, rows: r, file: f }; }); })),
       Promise.all(monthly.map(function (f) { return PWH.db.getRows(f.id); })),
       PWH.db.getMeta('layout').catch(function () { return null; }),
-      PWH.rules.load(), keyNow()
+      PWH.rules.load(), keyNow(), plantPicks()
     ]).then(function (r) {
       var d = { have: { bom: !!r[0], matloc: !!r[1], daily: r[2].length > 0, monthly: r[3].length > 0, layout: !!r[4] },
         L: r[4] || null, bins: new Map(), text: new Map(), desc: new Map(), orderPlant: new Map(), days: [], rules: r[5] || { rules: [], zones: [], log: [] },
-        key: r[6], loadedAt: Date.now(),
+        key: r[6], loadedAt: Date.now(), plantPick: r[7] || {},
         files: { bom: bom, matloc: ml, monthly: monthly, daily: daily } };
       if (r[0]) {
         d.index = PWH.checks.buildIndex(r[0]);
@@ -412,7 +417,8 @@
   }
   function readDays() { return PWH.db.getMeta(DAYS).catch(function () { return null; }).then(function (v) { return v && v.days ? v : { days: {} }; }); }
   function storeDays(d, res) {
-    if (!res || res.product || (res.plantPick && Object.keys(res.plantPick).length)) return Promise.resolve();
+    // only results made with the remembered Plant choices, for every Product, are kept
+    if (!res || res.product || sigOf(sortObj(res.plantPick || {})) !== sigOf(sortObj(d.plantPick || {}))) return Promise.resolve();
     var sm = summarize(d, res);
     return readDays().then(function (v) { sm.forEach(function (x, date) { v.days[date] = x; }); v.at = Date.now(); return PWH.db.setMeta(DAYS, v); }).catch(function () {});
   }
@@ -436,7 +442,7 @@
     function next() {
       if (k >= runs.length) return null;
       var r = runs[k++];
-      return analyze(d, { from: r.from, to: r.to, router: router, progress: function (i, n) { if (progress) progress(done + (n ? i / n : 1) * (daysIn(d, r.from, r.to).length), list.length); } })
+      return analyze(d, { from: r.from, to: r.to, router: router, plantPick: d.plantPick, progress: function (i, n) { if (progress) progress(done + (n ? i / n : 1) * (daysIn(d, r.from, r.to).length), list.length); } })
         .then(function (res) { done += daysIn(d, r.from, r.to).length; return storeDays(d, res); }).then(next);
     }
     return Promise.resolve(next());
@@ -454,5 +460,5 @@
   function timeOf(m, stops, lifts) { var S = PWH.SIM; var walk = m / S.walk, pick = stops * S.pick, lift = lifts * S.lift; return { walk: walk, pick: pick, lift: lift, sec: walk + pick + lift }; }
   PWH.freq = { timeOf: timeOf, load: load, keyNow: keyNow, analyze: analyze, simulate: simulate, recommend: recommend, checkSwap: checkSwap, pickOf: pickOf, pointOf: pointOf,
     defaultRange: defaultRange, daysIn: daysIn, addDays: addDays, plantOf: plantOf, partsOf: partsOf, makeRouter: makeRouter,
-    storeDays: storeDays, days: days, computeDays: computeDays, scenarios: scenarios, saveScenario: saveScenario, deleteScenario: deleteScenario };
+    storeDays: storeDays, plantPicks: plantPicks, savePlantPicks: savePlantPicks, days: days, computeDays: computeDays, scenarios: scenarios, saveScenario: saveScenario, deleteScenario: deleteScenario };
 })(window);
