@@ -174,7 +174,7 @@
       return i < rounds.length ? tick().then(step) : null;
     }
     function one(r) {
-      r.parts = []; r.routed = []; r.m = 0; r.sec = 0; r.missing = 0; r.unknown = 0; r.byProd = {};
+      r.parts = []; r.routed = []; r.m = 0; r.lifts = 0; r.sec = 0; r.missing = 0; r.unknown = 0; r.byProd = {};
       r.products.forEach(function (prod) {
         if (opt.product && prod !== opt.product) return;
         var pp = plantOf(d, r.job, prod), own = opt.plantPick && opt.plantPick[prod];
@@ -197,7 +197,7 @@
           if (routed) { x.nRoute++; var L = locs.get(it.pick.bin); if (!L) locs.set(it.pick.bin, (L = { bin: it.pick.bin, rack: it.pick.rack, level: it.pick.level, floor: it.pick.floor, n: 0, parts: new Map() })); L.n++; L.parts.set(it.code, (L.parts.get(it.code) || 0) + 1); }
         });
         var sec = rt.stops ? timeOf(rt.m, rt.stops, rt.lifts).sec : 0;
-        r.missing += miss; r.m += rt.m; r.sec += sec; r.byProd[prod] = { m: rt.m, sec: sec, complete: miss === 0 };
+        r.missing += miss; r.m += rt.m; r.lifts += rt.lifts || 0; r.sec += sec; r.byProd[prod] = { m: rt.m, sec: sec, complete: miss === 0 };
         P.routedParts = codes.length - miss; if (miss) P.status = 'partial';
         P.rounds++; P.mAll += rt.m; P.rlist.push(r);
         if (miss === 0) P.complete++;
@@ -374,7 +374,7 @@
    * prods     = per Product: planned rounds (r), rounds with a route (n), with a complete route (c), metres (m).
    * parts     = per Part: picks with a bin (the heatmap count).
    * iss       = per problem: the things affected (ids) and the rounds they touch (rk).  Counted again when days are joined. */
-  var DAYS = 'days.v2';
+  var DAYS = 'days.v3';
   function summarize(d, res) {
     var out = new Map(), pk = new Map(), mis = new Map();
     res.parts.forEach(function (p) { pk.set(p.code, p.pick); });
@@ -384,14 +384,18 @@
     }
     function day(date) {
       var x = out.get(date);
-      if (!x) out.set(date, (x = { date: date, key: d.key, at: res.at, rounds: 0, ident: 0, complete: 0, routed: 0, freq: 0, freqPlan: 0, m: 0, mComp: 0, prods: {}, parts: {},
+      if (!x) out.set(date, (x = { date: date, key: d.key, at: res.at, rounds: 0, ident: 0, complete: 0, routed: 0, freq: 0, freqPlan: 0, m: 0, mComp: 0, lifts: 0, prods: {}, parts: {}, lines: {}, floors: {},
         iss: { order: { ids: {}, rk: {} }, nobom: { ids: {}, rk: {} }, noloc: { ids: {}, rk: {} }, layout: { ids: {}, rk: {} }, rule: { ids: {}, rk: {} } } }));
       return x;
     }
     function hit(x, kind, id, rk) { x.iss[kind].ids[id] = 1; if (rk) x.iss[kind].rk[rk] = 1; }
     res.rounds.forEach(function (r) {
       var x = day(r.date); x.rounds++;
-      if (r.identified) { x.ident++; x.freqPlan += r.parts.length; x.freq += r.routed.length; x.m += r.m; if (r.m > 0) x.routed++; r.routed.forEach(function (c) { x.parts[c] = (x.parts[c] || 0) + 1; }); }
+      if (r.identified) { x.ident++; x.freqPlan += r.parts.length; x.freq += r.routed.length; x.m += r.m; if (r.m > 0) x.routed++; x.lifts += r.lifts || 0;
+        r.routed.forEach(function (c) { x.parts[c] = (x.parts[c] || 0) + 1; var f = pk.get(c) && pk.get(c).floor; if (f) x.floors[f] = (x.floors[f] || 0) + 1; }); }
+      // per U-line: rounds, rounds with a route, metres, picks, Products (distinct when days are joined)
+      var ln = r.line || '', LN = x.lines[ln] || (x.lines[ln] = { r: 0, n: 0, m: 0, f: 0, p: {} });
+      LN.r++; if (r.identified && r.m > 0) { LN.n++; LN.m += r.m; } LN.f += r.identified ? r.routed.length : 0; r.products.forEach(function (p) { LN.p[p] = 1; });
       if (r.complete) { x.complete++; x.mComp += r.m; }
       r.products.forEach(function (p) {
         var P = x.prods[p] || (x.prods[p] = { r: 0, n: 0, c: 0, m: 0 }), bp = r.byProd && r.byProd[p];

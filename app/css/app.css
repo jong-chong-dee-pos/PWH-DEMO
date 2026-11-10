@@ -2186,3 +2186,27 @@ input[type=checkbox], input[type=radio] { accent-color: var(--accent); }
 .ulg2 .ulv { width: 100%; flex-wrap: nowrap; white-space: nowrap; }
 .ulg2 .ulc { min-width: 0; text-align: left; }
 .ulg2 { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
+/* v55 — dashboard: U-line workload, floors, misplaced trend */
+.m6lf { display: grid; grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); gap: var(--sp-4); align-items: start; margin-bottom: var(--sp-4); }
+.m6lf > .panel { margin: 0; }
+@media (max-width: 1100px) { .m6lf { grid-template-columns: minmax(0, 1fr); } }
+.m6lrs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px var(--sp-5); }
+@media (max-width: 1100px) { .m6lrs { grid-template-columns: minmax(0, 1fr); } }
+.m6lrs .m6lr { grid-template-columns: 84px minmax(0, 1fr) auto; } .m6lrs .m6lv { min-width: 70px; }
+.m6lr { display: grid; grid-template-columns: 96px minmax(0, 1fr) auto; gap: var(--sp-3); align-items: center; padding: 6px 8px; border-radius: 8px; outline: none; }
+.m6lr:hover, .m6lr:focus-visible { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.m6ln { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.m6lr .m6tb { height: 10px; }
+.m6lv { white-space: nowrap; font-variant-numeric: tabular-nums; text-align: right; min-width: 92px; font-size: var(--fs-label); color: var(--muted); }
+.m6lv b { color: var(--ink); font-size: var(--fs-body); font-weight: 600; }
+.m6frs { display: flex; flex-direction: column; gap: var(--sp-3); }
+.m6fr { display: flex; flex-direction: column; gap: 6px; }
+.m6frh { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-2); }
+.m6fpc { font-size: 22px; font-weight: 300; letter-spacing: -0.02em; }
+.m6fr .m6tb { height: 12px; }
+.m6lift { display: flex; flex-direction: column; gap: 2px; margin-top: var(--sp-4); padding-top: var(--sp-3); border-top: 1px solid var(--line); }
+.m6lift .k { font-size: var(--fs-label); color: var(--muted); }
+.m6lift .v { font-size: 30px; font-weight: 300; letter-spacing: -0.03em; line-height: 1.2; }
+.m6lift .v small { font-size: var(--fs-body); color: var(--muted); margin-left: 6px; font-weight: 400; }
+.m6mis { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); flex-wrap: wrap; padding: 10px 14px; margin: 0 0 var(--sp-3); border-radius: 12px; background: var(--accent-soft); font-size: var(--fs-label); }
+.m6tp .chd { flex-wrap: wrap; }

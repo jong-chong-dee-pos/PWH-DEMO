@@ -78,14 +78,16 @@
   function restore(x) { S.view = x.view; S.day = x.day; S.month = x.month; S.year = x.year; }
 
   // ---------- adding up day results ----------
-  function emptyAgg() { return { days: 0, plan: 0, done: 0, stale: 0, rounds: 0, ident: 0, complete: 0, routed: 0, freq: 0, freqPlan: 0, m: 0, mComp: 0, prods: {}, parts: {}, iss: {}, staleRounds: 0, at: 0 }; }
+  function emptyAgg() { return { days: 0, plan: 0, done: 0, stale: 0, rounds: 0, ident: 0, complete: 0, routed: 0, freq: 0, freqPlan: 0, m: 0, mComp: 0, lifts: 0, lines: {}, floors: {}, prods: {}, parts: {}, iss: {}, staleRounds: 0, at: 0 }; }
   function addDay(A, x) {
     A.days++; if (!x.plan) return; A.plan++;
     var s = x.sum; if (!s) return;
     A.done++; if (x.stale) { A.stale++; A.staleRounds += s.rounds; }
-    ['rounds', 'ident', 'complete', 'routed', 'freq', 'freqPlan', 'm', 'mComp'].forEach(function (k) { A[k] += s[k] || 0; }); A.at = Math.max(A.at, s.at || 0);
+    ['rounds', 'ident', 'complete', 'routed', 'freq', 'freqPlan', 'm', 'mComp', 'lifts'].forEach(function (k) { A[k] += s[k] || 0; }); A.at = Math.max(A.at, s.at || 0);
     Object.keys(s.prods).forEach(function (p) { var P = A.prods[p] || (A.prods[p] = { r: 0, n: 0, c: 0, m: 0 }), q = s.prods[p]; P.r += q.r; P.n += q.n; P.c += q.c; P.m += q.m; });
     Object.keys(s.parts || {}).forEach(function (c) { A.parts[c] = (A.parts[c] || 0) + s.parts[c]; });
+    Object.keys(s.floors || {}).forEach(function (f) { A.floors[f] = (A.floors[f] || 0) + s.floors[f]; });
+    Object.keys(s.lines || {}).forEach(function (l) { var L = A.lines[l] || (A.lines[l] = { r: 0, n: 0, m: 0, f: 0, p: {} }), q = s.lines[l]; L.r += q.r; L.n += q.n; L.m += q.m; L.f += q.f; Object.assign(L.p, q.p); });
     Object.keys(s.iss).forEach(function (k) { var I = A.iss[k] || (A.iss[k] = { ids: {}, rk: {} }); Object.assign(I.ids, s.iss[k].ids); Object.assign(I.rk, s.iss[k].rk); });
   }
   function aggregate(P, dayList) {
@@ -105,7 +107,7 @@
     var p = reload || !S.d ? F().load().then(function (d) { if (id !== S.runId) return; S.d = d; if (!S.day.to) setLast3(); if (!S.month.y) { var l0 = latest() || '2026-01-01'; S.month = { y: +l0.slice(0, 4), a: +l0.slice(5, 7), b: +l0.slice(5, 7) }; } if (!S.year.a) { var y = years(); S.year = { a: y[y.length - 1], b: y[y.length - 1] }; } }) : Promise.resolve();
     return p.then(function () {
       if (id !== S.runId) return;
-      return F().scenarios().then(function (l) { S.scList = l; });
+      return Promise.all([F().scenarios().then(function (l) { S.scList = l; }), misHistory()]);
     }).then(function () {
       if (id !== S.runId || !ready()) { if (id === S.runId) { S.busy = null; render(); } return; }
       var P = period(), Q = prevOf(P), lo = S.cmp ? Q.from : P.from;
@@ -122,6 +124,27 @@
         S.missingLeft = r.missing.length; S.busy = null; render();
       });
     }).catch(function (e) { if (id === S.runId) { S.busy = null; S.err = String(e && e.message || e); render(); } });
+  }
+  // Parts stored against a rule, in the whole warehouse, each time Material–Location, the layout or the rules change.
+  // The app keeps only the current Material–Location, so this list is how "fewer than last time" can be shown.
+  function misHistory() {
+    var d = S.d; if (!d || !d.L) { S.mis = null; return Promise.resolve(); }
+    var k = d.key.split('|'), sig = [k[1], k[4], k[5]].join('|'), n = 0;
+    d.bins.forEach(function (_, code) { var pk = F().pickOf(d, code); if (pk.status === 'ok' && PWH.rules.misplaced(d.rules, code, pk).length) n++; });
+    return PWH.db.getMeta('misHist.v1').catch(function () { return null; }).then(function (h) {
+      h = (h && h.list) || [];
+      var last = h[h.length - 1];
+      if (!last || last.sig !== sig) { h.push({ sig: sig, at: Date.now(), n: n }); h = h.slice(-50); PWH.db.setMeta('misHist.v1', { list: h }); }
+      else if (last.n !== n) { last.n = n; PWH.db.setMeta('misHist.v1', { list: h }); }
+      S.mis = { now: n, prev: h.length > 1 ? h[h.length - 2] : null };
+    });
+  }
+  function misLine() {
+    var M = S.mis; if (!M) return '';
+    var txt = t('m6.mis.now', { n: nf(M.now) });
+    if (M.prev) { var dl = M.now - M.prev.n; txt += ' · ' + t(dl < 0 ? 'm6.mis.down' : dl > 0 ? 'm6.mis.up' : 'm6.mis.same', { n: nf(Math.abs(dl)), d: dTxt(new Date(M.prev.at).toISOString().slice(0, 10), true) }); }
+    else txt += ' · ' + t('m6.mis.first');
+    return '<div class="m6mis"><span>' + esc(txt) + '</span><button type="button" class="btn sm" data-m6="go5">' + esc(t('m6.g.go5')) + '</button></div>';
   }
   function recalcStale() {
     var id = ++S.runId, P = period(), Q = prevOf(P), lo = S.cmp ? Q.from : P.from;
@@ -351,16 +374,52 @@
       (rows ? '<div class="m6top">' + rows + '</div>' : '<p class="empty-note">' + esc(t('m6.e.none')) + '</p>') + '</section>';
   }
   function topParts() {
-    var A = S.cur, total = A.freq, list = Object.keys(A.parts).map(function (c) { return { c: c, n: A.parts[c] }; }).sort(function (a, b) { return b.n - a.n || (a.c < b.c ? -1 : 1); }).slice(0, 10);
+    var A = S.cur, fl = S.pfloor || '', floors = S.d.L ? S.d.L.floors.map(function (f) { return f.id; }) : [];
+    if (fl && floors.indexOf(fl) < 0) fl = S.pfloor = '';
+    var total = fl ? (A.floors[fl] || 0) : A.freq;
+    var list = Object.keys(A.parts).map(function (c) { return { c: c, n: A.parts[c], pk: PWH.freq.pickOf(S.d, c) }; })
+      .filter(function (x) { return !fl || x.pk.floor === fl; }).sort(function (a, b) { return b.n - a.n || (a.c < b.c ? -1 : 1); }).slice(0, 10);
     var max = list.length ? list[0].n : 1;
     S.tips.part = {};
     var rows = list.map(function (x, i) {
-      var name = S.d.text.get(x.c) || '', pk = PWH.freq.pickOf(S.d, x.c), bin = pk.status === 'ok' ? pk.bin : '';
+      var name = S.d.text.get(x.c) || '', pk = x.pk, bin = pk.status === 'ok' ? pk.bin : '';
       S.tips.part[i] = '<b>' + esc(x.c) + '</b>' + (name ? '<div class="sub2">' + esc(name) + '</div>' : '') + tipRows([[t('m6.tp.picks'), nf(x.n)], [t('m6.tp.bin'), bin || '–'], [t('m6.tp.share2'), total ? nf(x.n / total * 100, 1) + '%' : '–']]) + '<div class="m6thint">' + esc(t('m6.p.click')) + '</div>';
-      return topRow('partgo', x.c, i, 'part', x.c, name, nf(x.n), t('m6.u.times'), total ? t('m6.p.share', { p: nf(x.n / total * 100, 1) }) : '', x.n / max, bin ? '<span class="loc m6bin">' + esc(bin) + '</span>' : '');
+      return topRow('partgo', x.c, i, 'part', x.c, name, nf(x.n), t('m6.u.times'), total ? t(fl ? 'm6.p.share_f' : 'm6.p.share', { p: nf(x.n / total * 100, 1) }) : '', x.n / max, bin ? '<span class="loc m6bin">' + esc(bin) + '</span>' : '');
     }).join('');
-    return '<section class="panel m6tp"><div class="chd"><div class="chd-l"><h2>' + esc(t('m6.p.title')) + '</h2><p class="sub">' + esc(t('m6.p.sub')) + '</p></div></div>' +
+    var fseg = floors.length > 1 ? seg([['', t('m6.p.all')]].concat(floors.map(function (f) { return [f, floorName(f)]; })), fl, 'pfloor') : '';
+    return '<section class="panel m6tp"><div class="chd"><div class="chd-l"><h2>' + esc(t('m6.p.title')) + '</h2><p class="sub">' + esc(t(fl ? 'm6.p.sub2' : 'm6.p.sub', { f: fl ? floorName(fl) : '', s: total ? nf(total) : '0' })) + '</p></div>' + fseg + '</div>' +
       (rows ? '<div class="m6top">' + rows + '</div>' : '<p class="empty-note">' + esc(t('m6.p.none')) + '</p>') + '</section>';
+  }
+
+  function floorName(f) { return t('m4.floor', { n: String(f).replace(/^F/, '') }); }
+
+  // ---------- workload per U-line (no click: the tooltip carries the detail) ----------
+  function linesSection() {
+    var A = S.cur, total = { r: A.rounds, m: A.m }, list = Object.keys(A.lines).map(function (l) { var L = A.lines[l]; return { l: l, r: L.r, n: L.n, m: L.m, f: L.f, p: Object.keys(L.p).length, avg: L.n ? L.m / L.n : null }; });
+    var k = S.lineBy || 'r', val = function (x) { return k === 'r' ? x.r : k === 'm' ? x.m : x.avg; };
+    list = list.filter(function (x) { return val(x) != null && val(x) > 0; }).sort(function (a, b) { return val(b) - val(a) || (a.l < b.l ? -1 : 1); });
+    var max = list.length ? val(list[0]) : 1;
+    S.tips.line = {};
+    var rows = list.map(function (x, i) {
+      S.tips.line[i] = '<b>' + esc(x.l || t('ul.noline')) + '</b>' + tipRows([[t('m6.l.rounds'), nf(x.r)], [t('m6.l.prods'), nf(x.p)], [t('m6.tp.freq2'), nf(x.f)], [t('m6.tp.dist'), x.n ? nf(x.m, 1) + ' ' + t('m6.u.m') : '–'], [t('m6.tp.avg'), x.avg != null ? nf(x.avg, 1) + ' ' + t('m6.u.m') : '–'],
+        [t('m6.l.share'), k === 'r' ? (total.r ? nf(x.r / total.r * 100, 1) + '%' : '–') : (total.m ? nf(x.m / total.m * 100, 1) + '%' : '–')]]);
+      var v = val(x), txt = k === 'r' ? nf(v) : nf(v, 1), unit = t(k === 'r' ? 'm6.u.round' : k === 'm' ? 'm6.u.m' : 'm6.u.mr');
+      return '<div class="m6lr" tabindex="0" data-tip="line:' + i + '"><span class="m6ln code">' + esc(x.l || t('ul.noline')) + '</span><span class="m6tb"><i style="width:' + Math.max(2, v / max * 100).toFixed(1) + '%"></i></span><span class="m6lv"><b>' + esc(txt) + '</b> ' + esc(unit) + '</span></div>';
+    }).join('');
+    return '<section class="panel m6lines"><div class="chd"><div class="chd-l"><h2>' + esc(t('m6.l.title')) + '</h2><p class="sub">' + esc(t('m6.l.sub', { n: list.length })) + '</p></div>' + seg([['r', t('m6.l.byr')], ['m', t('m6.l.bym')], ['a', t('m6.l.bya')]], k, 'lineBy') + '</div>' +
+      (rows ? '<div class="m6lrs">' + rows + '</div>' : '<p class="empty-note">' + esc(t('m6.e.none')) + '</p>') + '</section>';
+  }
+  // ---------- picks per building floor and lift rides ----------
+  function floorSection() {
+    var A = S.cur, floors = S.d.L ? S.d.L.floors.map(function (f) { return f.id; }) : [], tot = floors.reduce(function (s0, f) { return s0 + (A.floors[f] || 0); }, 0);
+    var rows = floors.map(function (f) {
+      var n = A.floors[f] || 0, pc = tot ? n / tot * 100 : 0;
+      return '<div class="m6fr"><div class="m6frh"><b>' + esc(floorName(f)) + '</b><span><b class="m6fpc">' + nf(pc, 1) + '%</b> <span class="sub2">' + esc(t('m6.f2.picks', { n: nf(n) })) + '</span></span></div><span class="m6tb"><i style="width:' + Math.max(n ? 2 : 0, pc).toFixed(1) + '%"></i></span></div>';
+    }).join('');
+    var per = A.routed ? A.lifts / A.routed : null;
+    return '<section class="panel m6floors"><div class="chd"><div class="chd-l"><h2>' + esc(t('m6.f2.title')) + '</h2><p class="sub">' + esc(t('m6.f2.sub')) + '</p></div></div>' +
+      (tot ? '<div class="m6frs">' + rows + '</div>' : '<p class="empty-note">' + esc(t('m6.p.none')) + '</p>') +
+      '<div class="m6lift"><span class="k">' + esc(t('m6.f2.lifts')) + '</span><span class="v">' + (A.routed ? nf(A.lifts) : '–') + '<small>' + esc(t('m6.f2.times')) + '</small></span><span class="sub2">' + esc(per != null ? t('m6.f2.per', { n: nf(per, 2), r: nf(A.routed) }) : t('m6.nodata')) + '</span></div></section>';
   }
 
   // ---------- F: a saved swap scenario ----------
@@ -399,7 +458,7 @@
       if (k === 'layout') return '<button type="button" class="btn sm" data-m6="goiss">' + esc(t('m6.g.detail')) + '</button><button type="button" class="btn sm" data-m6="go2">' + esc(t('m6.g.go2')) + '</button>';
       return '<button type="button" class="btn sm" data-m6="goiss">' + esc(t('m6.g.go4')) + '</button>';
     }
-    return '<section class="panel"><div class="chd"><div class="chd-l"><h2>' + esc(t('m6.g.title')) + '</h2><p class="sub">' + esc(t('m6.g.sub')) + '</p></div></div>' +
+    return '<section class="panel"><div class="chd"><div class="chd-l"><h2>' + esc(t('m6.g.title')) + '</h2><p class="sub">' + esc(t('m6.g.sub')) + '</p></div></div>' + misLine() +
       (out.length ? '<ul class="m6iss">' + out.map(function (x) { return '<li><div><b>' + esc(x.title) + '</b><span class="sub2">' + esc(x.n) + ' · ' + esc(t('m6.g.hit', { n: nf(x.r) })) + '</span></div><div class="m6acts">' + acts(x.k) + '</div></li>'; }).join('') + '</ul>' : '<p class="m6ok">' + esc(t('m6.g.none')) + '</p>') + '</section>';
   }
 
@@ -417,7 +476,7 @@
       return;
     }
     var err = S.err ? '<div class="msg bad" role="status"><span>' + esc(t('m6.err', { e: S.err })) + '</span><button type="button" class="btn sm" data-m6="reload">' + esc(t('m6.retry')) + '</button></div>' : '';
-    var body = !S.cur || (S.busy && !S.cur) ? skeleton() : cards() + trends() + '<section class="m6two">' + topProducts() + topParts() + '</section>' + scenario() + issues();
+    var body = !S.cur || (S.busy && !S.cur) ? skeleton() : cards() + trends() + '<section class="m6two">' + topProducts() + topParts() + '</section><section class="m6lf">' + linesSection() + floorSection() + '</section>' + scenario() + issues();
     var held = window.scrollY;
     R.innerHTML = head + periodBar() + busyHtml() + err + (S.cur ? statusBar() : '') + '<div class="m6body' + (S.busy && S.cur ? ' m4old' : '') + '">' + body + '</div>';
     window.scrollTo(0, held);
@@ -458,6 +517,7 @@
     else if (a === 'recalc') recalcStale();
     else if (a === 'status') { S.statusOpen = !S.statusOpen; render(); }
     else if (a === 'mL' || a === 'mR' || a === 'top') { S[a] = v; keep(); render(); }
+    else if (a === 'pfloor' || a === 'lineBy') { S[a] = v; render(); }
     else if (a === 'topgo') openM4({ from: P.from, to: P.to, product: v, tab: 'freq' });
     else if (a === 'partgo') openM4({ from: P.from, to: P.to, part: v, tab: 'freq' });
     else if (a === 'goiss') openM4({ from: P.from, to: P.to, tab: 'freq', issues: true });

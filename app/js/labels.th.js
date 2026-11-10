@@ -1555,6 +1555,28 @@
   "m4.k.rounds_sub3": "JOB ไม่ซ้ำ {j} · {p} Product",   // {j} different JOBs · {p} Products
   "m4.k.rep_days": "{n} JOB อยู่ในแผนมากกว่า 1 วัน",   // {n} JOBs are planned on more than one day
   "m4.k.rep_lines": "{n} JOB อยู่หลาย U-line ในวันเดียวกัน",   // {n} JOBs are on more than one U-line the same day
+  "m6.p.all": "ทั้งหมด",   // All floors
+  "m6.p.sub2": "10 อันดับบน{f} · ชั้นนี้หยิบรวม {s} ครั้ง คลิกเพื่อดูในโมดูล 4",   // Top 10 on {f} · {s} picks on this floor. Click one to see it in Module 4.
+  "m6.l.title": "ภาระงานตาม U-line",   // Workload per U-line
+  "m6.l.sub": "{n} ไลน์ในช่วงนี้ ชี้ที่แถวเพื่อดูรายละเอียด",   // {n} lines in this period. Point at a line for its details.
+  "m6.l.byr": "รอบจัด Part",   // Rounds
+  "m6.l.bym": "ระยะเข็นรวม",   // Total distance
+  "m6.l.bya": "เฉลี่ยต่อรอบ",   // Per round
+  "m6.l.rounds": "รอบจัด Part (JOB รายวัน)",   // Part rounds (JOB per day)
+  "m6.l.prods": "Product",   // Products
+  "m6.l.share": "สัดส่วนต่อทั้งหมด",   // Share of the total
+  "m6.f2.title": "แยกตามชั้นอาคาร",   // By building floor
+  "m6.f2.sub": "หยิบจากชั้นไหน และรถเข็นต้องขึ้นลงลิฟต์กี่เที่ยว",   // Where the picks with a bin are, and how often the cart rides the lift
+  "m6.f2.picks": "{n} ครั้ง",   // {n} picks
+  "m6.f2.lifts": "เที่ยวลิฟต์",   // Lift rides
+  "m6.f2.times": "เที่ยว",   // rides
+  "m6.f2.per": "เฉลี่ย {n} เที่ยว/รอบ จาก {r} รอบที่มีเส้นทาง (จำลอง)",   // {n} per round over {r} rounds with a route (simulated)
+  "m6.mis.now": "Part ที่อยู่ผิดกติกาทั้งคลังตอนนี้ {n} Part",   // Parts stored against a rule, whole warehouse: {n}
+  "m6.mis.down": "ลดลง {n} จากการอัปเดตครั้งก่อน ({d})",   // {n} fewer than the last update ({d})
+  "m6.mis.up": "เพิ่มขึ้น {n} จากการอัปเดตครั้งก่อน ({d})",   // {n} more than the last update ({d})
+  "m6.mis.same": "เท่ากับการอัปเดตครั้งก่อน ({d})",   // same as the last update ({d})
+  "m6.mis.first": "บันทึกครั้งแรก จะเทียบเมื่ออัปโหลด Material–Location ผัง หรือแก้กติกาครั้งถัดไป",   // first count; the next upload of Material–Location, layout or rules is compared with this one
+  "m6.p.share_f": "{p}% ของชั้นนี้",   // {p}% of this floor
   "soon.m6": "อ่านผลลัพธ์ของ Module 1 ถึง 5",   // Reads the results of modules 1 to 5.
   };
 })(window);
