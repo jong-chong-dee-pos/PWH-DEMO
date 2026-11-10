@@ -78,13 +78,14 @@
   function restore(x) { S.view = x.view; S.day = x.day; S.month = x.month; S.year = x.year; }
 
   // ---------- adding up day results ----------
-  function emptyAgg() { return { days: 0, plan: 0, done: 0, stale: 0, rounds: 0, ident: 0, complete: 0, freq: 0, m: 0, prods: {}, iss: {}, staleRounds: 0, at: 0 }; }
+  function emptyAgg() { return { days: 0, plan: 0, done: 0, stale: 0, rounds: 0, ident: 0, complete: 0, routed: 0, freq: 0, freqPlan: 0, m: 0, mComp: 0, prods: {}, parts: {}, iss: {}, staleRounds: 0, at: 0 }; }
   function addDay(A, x) {
     A.days++; if (!x.plan) return; A.plan++;
     var s = x.sum; if (!s) return;
     A.done++; if (x.stale) { A.stale++; A.staleRounds += s.rounds; }
-    A.rounds += s.rounds; A.ident += s.ident; A.complete += s.complete; A.freq += s.freq; A.m += s.m; A.at = Math.max(A.at, s.at || 0);
-    Object.keys(s.prods).forEach(function (p) { var P = A.prods[p] || (A.prods[p] = { r: 0, c: 0, m: 0 }), q = s.prods[p]; P.r += q.r; P.c += q.c; P.m += q.m; });
+    ['rounds', 'ident', 'complete', 'routed', 'freq', 'freqPlan', 'm', 'mComp'].forEach(function (k) { A[k] += s[k] || 0; }); A.at = Math.max(A.at, s.at || 0);
+    Object.keys(s.prods).forEach(function (p) { var P = A.prods[p] || (A.prods[p] = { r: 0, n: 0, c: 0, m: 0 }), q = s.prods[p]; P.r += q.r; P.n += q.n; P.c += q.c; P.m += q.m; });
+    Object.keys(s.parts || {}).forEach(function (c) { A.parts[c] = (A.parts[c] || 0) + s.parts[c]; });
     Object.keys(s.iss).forEach(function (k) { var I = A.iss[k] || (A.iss[k] = { ids: {}, rk: {} }); Object.assign(I.ids, s.iss[k].ids); Object.assign(I.rk, s.iss[k].rk); });
   }
   function aggregate(P, dayList) {
@@ -207,16 +208,16 @@
   }
   function cards() {
     var A = S.cur, B = S.prev, h = has(A), hb = has(B);
-    var avg = h && A.complete ? A.m / A.complete : null, avgB = hb && B.complete ? B.m / B.complete : null;
-    var dist = h && A.complete ? km(A.m) : null;
+    var avg = h && A.routed ? A.m / A.routed : null, avgB = hb && B.routed ? B.m / B.routed : null;
+    var dist = h && A.routed ? km(A.m) : null;
     var dUnit = dist && dist.u === t('m6.u.km') ? t('m6.u.km') : t('m6.u.m');
-    var dl3 = cmpOn() ? (hb && B.complete && h && A.complete ? (dUnit === t('m6.u.km') ? deltaTxt(A.m / 1000, B.m / 1000, 1, dUnit) : deltaTxt(A.m, B.m, 1, dUnit)) : deltaTxt(null)) : '';
+    var dl3 = cmpOn() ? (hb && B.routed && h && A.routed ? (dUnit === t('m6.u.km') ? deltaTxt(A.m / 1000, B.m / 1000, 1, dUnit) : deltaTxt(A.m, B.m, 1, dUnit)) : deltaTxt(null)) : '';
     var cmpNote = cmpOn() ? '<div class="m6cmpn">' + esc(t('m6.vs2', { p: rangeTxt(B.P) })) + (B.plan < B.days || A.plan < A.days ? ' <span class="chip warn">' + esc(t('m6.partial')) + '</span>' : '') + '</div>' : '';
     return '<section class="m6cards" aria-label="' + esc(t('m6.c.title')) + '">' +
       card('rounds', t('m6.c.rounds'), t('m6.c.rounds.i'), h ? nf(A.rounds) : null, t('m6.u.round'), '', h ? esc(t('m6.c.rounds.s', { n: A.plan })) : '', cmpOn() ? deltaTxt(h ? A.rounds : null, hb ? B.rounds : null) : '') +
-      card('freq', t('m6.c.freq'), t('m6.c.freq.i'), h ? nf(A.freq) : null, t('m6.u.times'), '', h ? (A.ident < A.rounds ? '<span class="m6warn">' + esc(t('m6.c.freq.part', { a: nf(A.ident), b: nf(A.rounds) })) + '</span>' : esc(t('m6.c.freq.s'))) : '', cmpOn() ? deltaTxt(h ? A.freq : null, hb ? B.freq : null) : '') +
-      card('dist', t('m6.c.dist'), t('m6.c.dist.i'), dist ? dist.v : null, dist ? dist.u : '', dist ? dist.full : '', h ? esc(t('m6.c.dist.s', { a: nf(A.complete), b: nf(A.rounds) })) : '', dl3) +
-      card('avg', t('m6.c.avg'), t('m6.c.avg.i'), avg != null ? nf(avg, 1) : null, t('m6.u.mr'), '', avg != null ? esc(t('m6.c.avg.s')) : '', cmpOn() ? deltaTxt(avg, avgB, 1, t('m6.u.m')) : '') +
+      card('freq', t('m6.c.freq'), t('m6.c.freq.i'), h ? nf(A.freq) : null, t('m6.u.times'), '', h ? esc(A.freqPlan > A.freq ? t('m6.c.freq.s2', { a: nf(A.freqPlan), b: nf(A.freqPlan - A.freq) }) : t('m6.c.freq.s3')) + (A.ident < A.rounds ? '<br><span class="m6warn">' + esc(t('m6.c.freq.part', { a: nf(A.ident), b: nf(A.rounds) })) + '</span>' : '') : '', cmpOn() ? deltaTxt(h ? A.freq : null, hb ? B.freq : null) : '') +
+      card('dist', t('m6.c.dist'), t('m6.c.dist.i'), dist ? dist.v : null, dist ? dist.u : '', dist ? dist.full : '', h ? esc(t('m6.c.dist.s2', { a: nf(A.routed), b: nf(A.complete) })) : '', dl3) +
+      card('avg', t('m6.c.avg'), t('m6.c.avg.i'), avg != null ? nf(avg, 1) : null, t('m6.u.mr'), '', avg != null ? esc(t('m6.c.avg.s2', { n: nf(A.routed) })) : '', cmpOn() ? deltaTxt(avg, avgB, 1, t('m6.u.m')) : '') +
       '</section>' + cmpNote;
   }
 
@@ -238,13 +239,13 @@
     if (st < 1) st = 1;
     return { max: Math.ceil(v / st) * st, step: st };
   }
-  function tick(v) { return v >= 10000 ? nf(v / 1000) + 'K' : nf(v, v < 10 && v % 1 ? 1 : 0); }
+  function tick(v, top) { return !v ? '0' : top >= 10000 ? nf(v / 1000, (v / 1000) % 1 ? 1 : 0) + 'K' : nf(v, v < 10 && v % 1 ? 1 : 0); }
   function valL(A) { return S.mL === 'rounds' ? A.rounds : A.freq; }
-  function valR(A) { return !A.complete ? null : S.mR === 'total' ? A.m : A.m / A.complete; }
+  function valR(A) { return !A.routed ? null : S.mR === 'total' ? A.m : A.m / A.routed; }
   function tipHtml(A, kind) {
     var rows = kind === 'L'
-      ? [[t('m6.tp.rounds'), nf(A.rounds)], [t('m6.tp.freq'), nf(A.freq)], [t('m6.tp.plan'), t('m6.tp.planv', { a: A.plan, b: A.days })], [t('m6.tp.part'), nf(A.rounds - A.complete)]]
-      : [[t('m6.tp.dist'), A.complete ? nf(A.m, 1) + ' ' + t('m6.u.m') : '–'], [t('m6.tp.avg'), A.complete ? nf(A.m / A.complete, 1) + ' ' + t('m6.u.m') : '–'], [t('m6.tp.comp'), nf(A.complete)], [t('m6.tp.all'), nf(A.rounds)]];
+      ? [[t('m6.tp.rounds'), nf(A.rounds)], [t('m6.tp.freq2'), nf(A.freq)], [t('m6.tp.freqp'), nf(A.freqPlan)], [t('m6.tp.plan'), t('m6.tp.planv', { a: A.plan, b: A.days })], [t('m6.tp.part'), nf(A.rounds - A.complete)]]
+      : [[t('m6.tp.dist'), A.routed ? nf(A.m, 1) + ' ' + t('m6.u.m') : '–'], [t('m6.tp.avg'), A.routed ? nf(A.m / A.routed, 1) + ' ' + t('m6.u.m') : '–'], [t('m6.tp.routed'), nf(A.routed)], [t('m6.tp.comp'), nf(A.complete)], [t('m6.tp.all'), nf(A.rounds)]];
     return rows;
   }
   function drawCharts() {
@@ -257,7 +258,7 @@
       var sc = scale(Math.max.apply(null, vals.filter(function (v) { return v != null; }).concat([0]))), max = sc.max;
       var y = function (v) { return mt + ih - v / max * ih; }, slot = iw / n, cx = function (i) { return ml + slot * i + slot / 2; };
       var g = '';
-      for (var j = 0; j * sc.step <= max + 1e-9; j++) { var tv = j * sc.step, yy = y(tv); g += '<line x1="' + ml + '" x2="' + (W - mr) + '" y1="' + yy + '" y2="' + yy + '" class="m6grid"/><text x="' + (ml - 8) + '" y="' + (yy + 4) + '" class="m6ax" text-anchor="end">' + tick(tv) + '</text>'; }
+      for (var j = 0; j * sc.step <= max + 1e-9; j++) { var tv = j * sc.step, yy = y(tv); g += '<line x1="' + ml + '" x2="' + (W - mr) + '" y1="' + yy + '" y2="' + yy + '" class="m6grid"/><text x="' + (ml - 8) + '" y="' + (yy + 4) + '" class="m6ax" text-anchor="end">' + tick(tv, max) + '</text>'; }
       var every = Math.max(1, Math.ceil(n / Math.floor(iw / (view === 'day' ? 58 : 64))));
       cur.forEach(function (A, i) {
         if (i % every === 0 || n <= 12) g += '<text x="' + cx(i) + '" y="' + (H - 14) + '" class="m6ax" text-anchor="middle">' + esc(bucketTxt(A, view, true)) + '</text>';
@@ -326,22 +327,39 @@
   }
   function openM4(o) { PWH.m4.go(o); PWH.app.go(4); }
 
-  // ---------- E: Products with the most distance ----------
+  // ---------- E: Products with the most distance, and the Parts picked most ----------
+  function topRow(act, v, i, tipKey, code, name, valTxt, unit, sub, w, extra) {
+    return '<button type="button" class="m6tr" data-m6="' + act + '" data-v="' + esc(v) + '" data-tip="' + tipKey + ':' + i + '"><span class="m6rk">' + (i + 1) + '</span>' +
+      '<span class="m6tn"><span class="code">' + esc(code) + '</span><span class="sub2">' + esc(name || '–') + '</span></span>' + (extra || '') +
+      '<span class="m6tv"><span class="m6tvv"><b>' + esc(valTxt) + '</b> ' + esc(unit) + '</span><span class="sub2">' + esc(sub) + '</span></span>' +
+      '<span class="m6tb"><i style="width:' + Math.max(2, w * 100).toFixed(1) + '%"></i></span></button>';
+  }
   function topProducts() {
-    var A = S.cur, list = Object.keys(A.prods).map(function (p) { var x = A.prods[p]; return { p: p, r: x.r, c: x.c, m: x.m, avg: x.c ? x.m / x.c : null }; });
+    var A = S.cur, list = Object.keys(A.prods).map(function (p) { var x = A.prods[p]; return { p: p, r: x.r, n: x.n, c: x.c, m: x.m, avg: x.n ? x.m / x.n : null }; });
     var total = list.reduce(function (s, x) { return s + x.m; }, 0);
     list = S.top === 'total' ? list.filter(function (x) { return x.m > 0; }).sort(function (a, b) { return b.m - a.m; }) : list.filter(function (x) { return x.avg != null && x.avg > 0; }).sort(function (a, b) { return b.avg - a.avg; });
-    list = list.slice(0, 5);
+    list = list.slice(0, 10);
     var max = list.reduce(function (s, x) { return Math.max(s, S.top === 'total' ? x.m : x.avg); }, 0) || 1;
     S.tips.top = {};
     var rows = list.map(function (x, i) {
       var v = S.top === 'total' ? x.m : x.avg, name = S.d.desc.get(x.p) || '';
       S.tips.top[i] = '<b>' + esc(x.p) + '</b>' + (name ? '<div class="sub2">' + esc(name) + '</div>' : '') + tipRows([[t('m6.tp.planr'), nf(x.r)], [t('m6.tp.dist'), nf(x.m, 1) + ' ' + t('m6.u.m')], [t('m6.tp.avg'), x.avg != null ? nf(x.avg, 1) + ' ' + t('m6.u.m') : '–'], [t('m6.tp.share'), total ? nf(x.m / total * 100, 1) + '%' : '–'], [t('m6.tp.compl'), x.c === x.r ? t('m6.tp.full') : t('m6.tp.partv', { a: x.c, b: x.r })]]) + '<div class="m6thint">' + esc(t('m6.e.click')) + '</div>';
-      return '<button type="button" class="m6tr" data-m6="topgo" data-v="' + esc(x.p) + '" data-tip="top:' + i + '"><span class="m6tn"><span class="code">' + esc(x.p) + '</span><span class="sub2">' + esc(name || '–') + '</span></span>' +
-        '<span class="m6tb"><i style="width:' + Math.max(2, v / max * 100).toFixed(1) + '%"></i></span><span class="m6tv"><b>' + esc(nf(v, 1)) + '</b> ' + esc(t(S.top === 'total' ? 'm6.u.m' : 'm6.u.mr')) + '<span class="sub2">' + esc(t('m6.e.comp', { n: x.c })) + (x.c < x.r ? ' · ' + esc(t('m6.e.of', { n: x.r })) : '') + '</span></span></button>';
+      return topRow('topgo', x.p, i, 'top', x.p, name, nf(v, 1), t(S.top === 'total' ? 'm6.u.m' : 'm6.u.mr'), t('m6.e.rounds', { n: x.n }) + (x.c < x.n ? ' · ' + t('m6.e.partial', { n: x.n - x.c }) : ''), v / max);
     }).join('');
-    return '<section class="panel"><div class="chd"><div class="chd-l"><h2>' + esc(t('m6.e.title')) + '</h2><p class="sub">' + esc(t('m6.e.sub')) + '</p></div>' + seg([['total', t('m6.e.total')], ['avg', t('m6.e.avg')]], S.top, 'top') + '</div>' +
+    return '<section class="panel m6tp"><div class="chd"><div class="chd-l"><h2>' + esc(t('m6.e.title')) + '</h2><p class="sub">' + esc(t('m6.e.sub2')) + '</p></div>' + seg([['total', t('m6.e.total')], ['avg', t('m6.e.avg')]], S.top, 'top') + '</div>' +
       (rows ? '<div class="m6top">' + rows + '</div>' : '<p class="empty-note">' + esc(t('m6.e.none')) + '</p>') + '</section>';
+  }
+  function topParts() {
+    var A = S.cur, total = A.freq, list = Object.keys(A.parts).map(function (c) { return { c: c, n: A.parts[c] }; }).sort(function (a, b) { return b.n - a.n || (a.c < b.c ? -1 : 1); }).slice(0, 10);
+    var max = list.length ? list[0].n : 1;
+    S.tips.part = {};
+    var rows = list.map(function (x, i) {
+      var name = S.d.text.get(x.c) || '', pk = PWH.freq.pickOf(S.d, x.c), bin = pk.status === 'ok' ? pk.bin : '';
+      S.tips.part[i] = '<b>' + esc(x.c) + '</b>' + (name ? '<div class="sub2">' + esc(name) + '</div>' : '') + tipRows([[t('m6.tp.picks'), nf(x.n)], [t('m6.tp.bin'), bin || '–'], [t('m6.tp.share2'), total ? nf(x.n / total * 100, 1) + '%' : '–']]) + '<div class="m6thint">' + esc(t('m6.p.click')) + '</div>';
+      return topRow('partgo', x.c, i, 'part', x.c, name, nf(x.n), t('m6.u.times'), total ? t('m6.p.share', { p: nf(x.n / total * 100, 1) }) : '', x.n / max, bin ? '<span class="loc m6bin">' + esc(bin) + '</span>' : '');
+    }).join('');
+    return '<section class="panel m6tp"><div class="chd"><div class="chd-l"><h2>' + esc(t('m6.p.title')) + '</h2><p class="sub">' + esc(t('m6.p.sub')) + '</p></div></div>' +
+      (rows ? '<div class="m6top">' + rows + '</div>' : '<p class="empty-note">' + esc(t('m6.p.none')) + '</p>') + '</section>';
   }
 
   // ---------- F: a saved swap scenario ----------
@@ -398,7 +416,7 @@
       return;
     }
     var err = S.err ? '<div class="msg bad" role="status"><span>' + esc(t('m6.err', { e: S.err })) + '</span><button type="button" class="btn sm" data-m6="reload">' + esc(t('m6.retry')) + '</button></div>' : '';
-    var body = !S.cur || (S.busy && !S.cur) ? skeleton() : cards() + trends() + topProducts() + scenario() + issues();
+    var body = !S.cur || (S.busy && !S.cur) ? skeleton() : cards() + trends() + '<section class="m6two">' + topProducts() + topParts() + '</section>' + scenario() + issues();
     var held = window.scrollY;
     R.innerHTML = head + periodBar() + busyHtml() + err + (S.cur ? statusBar() : '') + '<div class="m6body' + (S.busy && S.cur ? ' m4old' : '') + '">' + body + '</div>';
     window.scrollTo(0, held);
@@ -440,6 +458,7 @@
     else if (a === 'status') { S.statusOpen = !S.statusOpen; render(); }
     else if (a === 'mL' || a === 'mR' || a === 'top') { S[a] = v; keep(); render(); }
     else if (a === 'topgo') openM4({ from: P.from, to: P.to, product: v, tab: 'freq' });
+    else if (a === 'partgo') openM4({ from: P.from, to: P.to, part: v, tab: 'freq' });
     else if (a === 'goiss') openM4({ from: P.from, to: P.to, tab: 'freq', issues: true });
     else if (a === 'opensc') openM4({ tab: 'sim', scenario: (S.scList || []).filter(function (x) { return x.id === v; })[0] });
     else if (a === 'gosim') openM4({ from: P.view === 'day' ? P.from : '', to: P.view === 'day' ? P.to : '', tab: 'sim' });

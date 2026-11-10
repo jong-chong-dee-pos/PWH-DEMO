@@ -1386,15 +1386,15 @@
   "m6.c.rounds": "รอบจัด Part ตามแผน",   // Part rounds in the plan
   "m6.c.rounds.i": "นับจาก วันที่ + U-line + Job",   // Counted from date + U-line + Job
   "m6.c.rounds.s": "จากแผน {n} วัน",   // from {n} plan days
-  "m6.c.freq": "ความถี่หยิบรวมตามแผน",   // Planned picks
-  "m6.c.freq.i": "Part แต่ละรหัสนับครั้งเดียวต่อรอบ เฉพาะรอบที่ระบุ BOM ได้",   // Each Part is counted once per round, in rounds whose BOM is known
+  "m6.c.freq": "ความถี่หยิบรวม (มี Bin)",   // Picks with a bin
+  "m6.c.freq.i": "Part แต่ละรหัสนับครั้งเดียวต่อรอบ นับเฉพาะ Part ที่มี Bin location ที่เข็นไปถึงได้ ตรงกับผลรวมใน Heatmap โมดูล 4",   // Each Part counted once per round, only Parts with a bin location the cart can reach. Same number as the heatmap in Module 4.
   "m6.c.freq.s": "ระบุ BOM ได้ครบทุกรอบ",   // every round's BOM is known
   "m6.c.freq.part": "ครอบคลุม {a}/{b} รอบ ที่เหลือหา BOM ไม่ได้",   // covers {a}/{b} rounds; the rest have no BOM
   "m6.c.dist": "ระยะเข็นจำลองรวม",   // Simulated cart distance
-  "m6.c.dist.i": "เฉพาะรอบที่จัดเส้นทางครบ (ทุก Part มีช่องที่เข็นไปถึงได้)",   // Only rounds whose route is complete (every Part has a reachable bin)
+  "m6.c.dist.i": "ทุกรอบที่ระบุ BOM ได้ Part ที่ไม่มี Bin location ตัดออกจากเส้นทางของรอบนั้น",   // Every round whose BOM is known. Parts without a bin are left out of that round's route.
   "m6.c.dist.s": "จาก {a}/{b} รอบที่จัดเส้นทางครบ",   // {a}/{b} rounds with a complete route
   "m6.c.avg": "ระยะเฉลี่ยต่อรอบ",   // Average per round
-  "m6.c.avg.i": "ระยะรวม ÷ จำนวนรอบที่จัดเส้นทางครบ",   // Total distance ÷ rounds with a complete route
+  "m6.c.avg.i": "ระยะรวม ÷ จำนวนรอบที่มีเส้นทาง รอบที่หา BOM ไม่ได้ หรือไม่มี Part ใดมี Bin จะไม่มีเส้นทาง จึงไม่นับ",   // Total distance ÷ rounds that have a route. Rounds with no BOM or no Part with a bin have no route and are not counted.
   "m6.c.avg.s": "คิดจากรอบที่จัดเส้นทางครบ",   // rounds with a complete route
   "m6.u.round": "รอบ",   // rounds
   "m6.u.times": "ครั้ง",   // picks
@@ -1408,9 +1408,9 @@
   "m6.d.load": "ภาระงานจัด Part",   // Part workload
   "m6.d.load.s": "จำนวนรอบหรือความถี่หยิบในแต่ละช่วง",   // Rounds or picks per period
   "m6.d.rounds": "รอบจัด Part",   // Rounds
-  "m6.d.freq": "ความถี่หยิบ",   // Picks
+  "m6.d.freq": "ความถี่หยิบ",   // Picks with a bin
   "m6.d.dist": "แนวโน้มระยะเข็นจำลอง",   // Simulated cart distance
-  "m6.d.dist.s": "เฉพาะรอบที่จัดเส้นทางครบ",   // Rounds with a complete route only
+  "m6.d.dist.s": "ทุกรอบที่มีเส้นทาง Part ที่ไม่มี Bin ตัดออก",   // Every round with a route; Parts without a bin are left out
   "m6.d.total": "ระยะรวม",   // Total
   "m6.d.avg": "เฉลี่ยต่อรอบ",   // Per round
   "m6.d.click.day": "คลิกวันเพื่อเปิดในโมดูล 4",   // Click a day to open it in Module 4
@@ -1426,7 +1426,7 @@
   "m6.tp.part": "รอบที่ข้อมูลไม่ครบ",   // Rounds with incomplete data
   "m6.tp.dist": "ระยะเข็นจำลองรวม",   // Total distance
   "m6.tp.avg": "ระยะเฉลี่ยต่อรอบ",   // Average per round
-  "m6.tp.comp": "รอบที่จัดเส้นทางครบ",   // Rounds with a complete route
+  "m6.tp.comp": "รอบที่เส้นทางครบทุก Part",   // Rounds with every Part on the route
   "m6.tp.all": "รอบตามแผนทั้งหมด",   // Rounds in the plan
   "m6.tp.planr": "รอบตามแผน",   // Rounds in the plan
   "m6.tp.share": "สัดส่วนต่อระยะรวมที่คำนวณได้",   // Share of all calculated distance
@@ -1506,6 +1506,24 @@
   "m4.sv.cur": "ปัจจุบัน",   // Current
   "m4.sv.load": "เปิด",   // Open
   "m4.sv.del": "ลบ",   // Delete
+  "m6.c.freq.s2": "ตามแผน {a} ครั้ง · ไม่มี Bin {b} ครั้ง",   // {a} in the plan · {b} without a bin
+  "m6.c.freq.s3": "ทุกครั้งตามแผนมี Bin",   // every planned pick has a bin
+  "m6.c.dist.s2": "จาก {a} รอบ · เส้นทางครบทุก Part {b} รอบ",   // from {a} rounds · {b} with every Part on the route
+  "m6.c.avg.s2": "หารด้วย {n} รอบที่มีเส้นทาง",   // ÷ {n} rounds with a route
+  "m6.tp.freq2": "ความถี่หยิบ (มี Bin)",   // Picks with a bin
+  "m6.tp.freqp": "ความถี่ตามแผน",   // Picks in the plan
+  "m6.tp.routed": "รอบที่มีเส้นทาง",   // Rounds with a route
+  "m6.tp.picks": "จำนวนครั้งที่หยิบ",   // Picks
+  "m6.tp.bin": "Bin ที่ใช้หยิบ",   // Bin used
+  "m6.tp.share2": "สัดส่วนต่อความถี่รวม",   // Share of all picks
+  "m6.e.sub2": "10 อันดับในช่วงนี้ คลิกเพื่อวิเคราะห์ต่อในโมดูล 4",   // Top 10 in this period. Click one to analyse it in Module 4.
+  "m6.e.rounds": "{n} รอบ",   // {n} rounds
+  "m6.e.partial": "ตัด Part ออก {n} รอบ",   // {n} with Parts left out
+  "m6.p.title": "Part ที่หยิบบ่อยที่สุด",   // Parts picked most
+  "m6.p.sub": "10 อันดับในช่วงนี้ เฉพาะ Part ที่มี Bin คลิกเพื่อดูในโมดูล 4",   // Top 10 in this period, Parts with a bin. Click one to see it in Module 4.
+  "m6.p.share": "{p}% ของทั้งหมด",   // {p}% of picks
+  "m6.p.none": "ไม่มี Part ที่มี Bin ถูกหยิบในช่วงนี้",   // No Part with a bin was picked in this period.
+  "m6.p.click": "คลิกเพื่อเปิดในโมดูล 4",   // Click to open in Module 4
   "soon.m6": "อ่านผลลัพธ์ของ Module 1 ถึง 5",   // Reads the results of modules 1 to 5.
   };
 })(window);

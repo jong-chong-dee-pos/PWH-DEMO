@@ -2006,3 +2006,21 @@ span.loc { width: auto !important; display: inline-flex !important; margin: 0 !i
 .m4svt td { vertical-align: top; }
 .m6sgrid { align-items: start; }
 .m6body .chd { flex-wrap: wrap; }
+/* Top 10 lists side by side: rank, code + name, (bin), value, then the bar on its own line */
+.m6tp .m6top { gap: 0; }
+.m6tp .m6tr { grid-template-columns: 22px minmax(0, 1fr) auto auto; grid-template-areas: "rk nm bin val" ". bar bar bar"; gap: 4px var(--sp-3); padding: 7px 8px; }
+.m6tp .m6tr + .m6tr { border-top: 1px solid var(--line); border-radius: 0; }
+.m6tp .m6tr:hover { border-radius: 6px; }
+.m6rk { grid-area: rk; color: var(--muted); font-size: var(--fs-label); font-variant-numeric: tabular-nums; text-align: right; align-self: start; padding-top: 1px; }
+.m6tp .m6tn { grid-area: nm; flex-direction: row; gap: var(--sp-2); align-items: baseline; }
+.m6tp .m6tn .code { flex: none; }
+.m6tp .m6tn .sub2 { min-width: 0; }
+.m6tp .m6tv { grid-area: val; display: flex; gap: 6px; align-items: baseline; justify-content: flex-end; }
+.m6tp .m6tv b { font-size: var(--fs-body); }
+.m6tp .m6tv .sub2 { display: inline; }
+.m6tp .m6tb { grid-area: bar; height: 8px; }
+.m6bin { grid-area: bin; align-self: center; font-size: 13px; font-weight: 400; }
+@media (max-width: 1500px) { .m6tp .m6tn { flex-direction: column; gap: 0; } .m6tp .m6tv { flex-direction: column; align-items: flex-end; gap: 0; } }
+.m6tp, .m6tp .m6top, .m6tp .m6tr { min-width: 0; max-width: 100%; }
+.m6tp .m6tn > span { display: block; max-width: 100%; }
+.m6tvv { white-space: nowrap; }

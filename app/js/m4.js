@@ -54,6 +54,7 @@
         PWH.freq.storeDays(S.d, base);   // the dashboard reads the same per-day results
         render();
         if (S.tab === 'recs') runRecs();
+        if (S.focusPart && S.tab === 'freq' && $('#m4parts')) { S.focusPart = false; setTimeout(function () { var pt = $('#m4parts'); if (pt) pt.scrollIntoView({ block: 'start' }); }, 50); }
         if (S.focusIss) { S.focusIss = false; var is = $('#m4iss'); if (is) { is.querySelectorAll('details').forEach(function (x) { x.open = true; }); setTimeout(function () { is.scrollIntoView({ block: 'start' }); }, 50); } }
         if (S.tab === 'sim' && S.autoSim) { S.autoSim = false; if (S.sim.length && !S.sim.some(function (x) { return x.rules.length; })) runSim(); }
       });
@@ -811,7 +812,7 @@
       // opened from the dashboard: its range, Product and tab
       if (G.tab) S.tab = G.tab;
       if (G.scenario) { S.d ? loadScenario(G.scenario) : (S.from = G.scenario.from, S.to = G.scenario.to, S.product = G.scenario.product || '', S.pendingSc = G.scenario); }
-      else { if (G.from) { S.from = G.from; S.to = G.to; } S.product = G.product || ''; S.prodView = null; S.q = ''; S.focusIss = !!G.issues; }
+      else { if (G.from) { S.from = G.from; S.to = G.to; } S.product = G.product || ''; S.prodView = null; S.q = G.part || ''; S.open = G.part || null; S.focusPart = !!G.part; S.focusIss = !!G.issues; }
       if (S.d && !G.scenario) { render(); run(); return; }
       if (!S.d) { render(); run(true).then(function () { if (S.pendingSc) { var sc = S.pendingSc; S.pendingSc = null; loadScenario(sc); } }); return; }
       return;

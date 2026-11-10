@@ -169,7 +169,7 @@
       return i < rounds.length ? tick().then(step) : null;
     }
     function one(r) {
-      r.parts = []; r.m = 0; r.sec = 0; r.missing = 0; r.unknown = 0; r.byProd = {};
+      r.parts = []; r.routed = []; r.m = 0; r.sec = 0; r.missing = 0; r.unknown = 0; r.byProd = {};
       r.products.forEach(function (prod) {
         if (opt.product && prod !== opt.product) return;
         var pp = plantOf(d, r.job, prod), own = opt.plantPick && opt.plantPick[prod];
@@ -186,7 +186,7 @@
           var routed = it.pick.status === 'ok' && rt.unreach.indexOf(it.code) < 0;
           if (!routed) miss++;
           if (r.parts.indexOf(it.code) >= 0) return;   // a Part counts once per round
-          r.parts.push(it.code);
+          r.parts.push(it.code); if (routed) r.routed.push(it.code);
           var x = parts.get(it.code); if (!x) parts.set(it.code, (x = { code: it.code, name: d.text.get(it.code) || '', n: 0, nRoute: 0, products: new Map(), pick: it.pick }));
           x.n++; x.products.set(prod, (x.products.get(prod) || 0) + 1);
           if (routed) { x.nRoute++; var L = locs.get(it.pick.bin); if (!L) locs.set(it.pick.bin, (L = { bin: it.pick.bin, rack: it.pick.rack, level: it.pick.level, floor: it.pick.floor, n: 0, parts: new Map() })); L.n++; L.parts.set(it.code, (L.parts.get(it.code) || 0) + 1); }
@@ -363,11 +363,13 @@
 
   // ---------- results per day (one store, read by Module 4 and the dashboard) ----------
   /* A day's summary, cut from an analysis that ran without a Product filter and without Plants chosen on the page.
-   * rounds    = date + U-line + JOB.   freq = unique Parts per round, rounds whose BOM is known.
-   * m         = metres of the rounds whose route is complete (every Part routed).   mAll = every identified round.
-   * prods     = per Product: planned rounds (r), rounds with a complete route for it (c), metres of those (m).
+   * rounds    = date + U-line + JOB.   freqPlan = unique Parts per round (BOM known).  freq = of those, Parts with a bin the cart reaches.
+   * m         = metres of every round whose BOM is known; Parts without a bin are left out of the route (agreed 10/11/2026).
+   * routed    = rounds with a route of more than 0 m (the divisor of the average).   mComp = metres of rounds whose route is complete.
+   * prods     = per Product: planned rounds (r), rounds with a route (n), with a complete route (c), metres (m).
+   * parts     = per Part: picks with a bin (the heatmap count).
    * iss       = per problem: the things affected (ids) and the rounds they touch (rk).  Counted again when days are joined. */
-  var DAYS = 'days.v1';
+  var DAYS = 'days.v2';
   function summarize(d, res) {
     var out = new Map(), pk = new Map(), mis = new Map();
     res.parts.forEach(function (p) { pk.set(p.code, p.pick); });
@@ -377,18 +379,18 @@
     }
     function day(date) {
       var x = out.get(date);
-      if (!x) out.set(date, (x = { date: date, key: d.key, at: res.at, rounds: 0, ident: 0, complete: 0, freq: 0, m: 0, mAll: 0, prods: {},
+      if (!x) out.set(date, (x = { date: date, key: d.key, at: res.at, rounds: 0, ident: 0, complete: 0, routed: 0, freq: 0, freqPlan: 0, m: 0, mComp: 0, prods: {}, parts: {},
         iss: { order: { ids: {}, rk: {} }, nobom: { ids: {}, rk: {} }, noloc: { ids: {}, rk: {} }, layout: { ids: {}, rk: {} }, rule: { ids: {}, rk: {} } } }));
       return x;
     }
     function hit(x, kind, id, rk) { x.iss[kind].ids[id] = 1; if (rk) x.iss[kind].rk[rk] = 1; }
     res.rounds.forEach(function (r) {
       var x = day(r.date); x.rounds++;
-      if (r.identified) { x.ident++; x.freq += r.parts.length; x.mAll += r.m; }
-      if (r.complete) { x.complete++; x.m += r.m; }
+      if (r.identified) { x.ident++; x.freqPlan += r.parts.length; x.freq += r.routed.length; x.m += r.m; if (r.m > 0) x.routed++; r.routed.forEach(function (c) { x.parts[c] = (x.parts[c] || 0) + 1; }); }
+      if (r.complete) { x.complete++; x.mComp += r.m; }
       r.products.forEach(function (p) {
-        var P = x.prods[p] || (x.prods[p] = { r: 0, c: 0, m: 0 }), bp = r.byProd && r.byProd[p];
-        P.r++; if (bp && bp.complete) { P.c++; P.m += bp.m; }
+        var P = x.prods[p] || (x.prods[p] = { r: 0, n: 0, c: 0, m: 0 }), bp = r.byProd && r.byProd[p];
+        P.r++; if (bp && bp.m > 0) { P.n++; P.m += bp.m; } if (bp && bp.complete) P.c++;
       });
       (r.parts || []).forEach(function (c) {
         var p = pk.get(c); if (!p) return;
