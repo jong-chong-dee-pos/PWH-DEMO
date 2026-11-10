@@ -34,7 +34,8 @@
   function freqMap() {
     var B = PWH.m4 && PWH.m4.base && PWH.m4.base(); if (!B) return null;
     if (S.fq && S.fq.B === B) return S.fq.m;
-    var m = new Map(); B.parts.forEach(function (p) { m.set(p.code, p.nRoute || 0); });   // Parts without a bin are not counted S.fq = { B: B, m: m }; return m;
+    // Parts without a bin are not counted
+    var m = new Map(); B.parts.forEach(function (p) { m.set(p.code, p.nRoute || 0); }); S.fq = { B: B, m: m }; return m;
   }
 
   function load() {
