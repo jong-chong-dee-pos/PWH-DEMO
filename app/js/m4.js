@@ -236,7 +236,7 @@
   }
   // ---------- heatmap ----------
   // one continuous colour ramp from 1 pick to the highest count in the range (no fixed steps)
-  var HEAT = ['#2b6c9e', '#2a9d8f', '#8ab84a', '#f2b705', '#f0603a'], ZERO = '#4a5a74', NODATA = '#26324a';
+  var HEAT = ['#2b6c9e', '#2a9d8f', '#8ab84a', '#f2b705', '#f0603a'], ZERO = '#4d4766', NODATA = '#2a2540';
   function breaks(max) { return Math.max(1, max); }
   function hex(c) { return [parseInt(c.substr(1, 2), 16), parseInt(c.substr(3, 2), 16), parseInt(c.substr(5, 2), 16)]; }
   function heatColor(n, max) {
@@ -301,7 +301,7 @@
     K.M.rackTint = function (r) { var h = slot.base.heat.get(r.id); return h && h.n > 0 ? heatColor(h.n, slot.br) : S.d.rackData.has(r.id) ? ZERO : NODATA; };
     K.M.onSelect = function (id) { S.hSel[slot.id] = id; heatSide(slot); };
     K.M.overlay = function (c, Pj, f) {   // frequency number on each rack with picks
-      c.save(); c.font = '600 11px "IBM Plex Sans Thai", sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.save(); c.font = '600 11px "Anuphan", "IBM Plex Sans Thai", sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
       slot.base.heat.forEach(function (h, rid) {
         var r = S.d.match.rackById.get(rid); if (!r || r.floor !== f.id || !h.n) return;
         var a = Pj(r.x, r.y, 0), b = Pj(r.x + r.w, r.y + r.h, 0); if (Math.abs(b[0] - a[0]) < 16 || Math.abs(b[1] - a[1]) < 11) return;
@@ -446,7 +446,7 @@
         res.legs.forEach(function (l) {
           if (l.floor !== f.id || l.pts.length < 2) return;
           c.beginPath(); l.pts.forEach(function (p, i) { var q = Pj(p[0], p[1], 0); if (i) c.lineTo(q[0], q[1]); else c.moveTo(q[0], q[1]); });
-          c.strokeStyle = 'rgba(56,163,255,0.25)'; c.lineWidth = 8; c.stroke(); c.strokeStyle = '#38a3ff'; c.lineWidth = 2.4; c.stroke();
+          c.strokeStyle = 'rgba(56,189,248,0.25)'; c.lineWidth = 8; c.stroke(); c.strokeStyle = '#38bdf8'; c.lineWidth = 2.4; c.stroke();
         });
         c.restore();
       }
@@ -458,7 +458,7 @@
         var q = Pj(r.x + r.w / 2, r.y + r.h / 2, H), txt = h.tag + ' · ' + h.code;
         c.font = '600 12px "IBM Plex Mono", monospace'; var w = c.measureText(txt).width + 14;
         c.fillStyle = h.col; c.beginPath(); if (c.roundRect) c.roundRect(q[0] - w / 2, q[1] - 30, w, 20, 10); else c.rect(q[0] - w / 2, q[1] - 30, w, 20); c.fill();
-        c.fillStyle = '#060d19'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, q[0], q[1] - 20);
+        c.fillStyle = '#0d0b18'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, q[0], q[1] - 20);
       });
     };
     K.wireMap(); K.resize(); K.fit(); K.draw();
@@ -651,11 +651,11 @@
       (res.legs || []).forEach(function (l) {
         if (l.floor !== f.id || l.pts.length < 2) return;
         c.beginPath(); l.pts.forEach(function (p, i) { var q = Pj(p[0], p[1], 0); if (i) c.lineTo(q[0], q[1]); else c.moveTo(q[0], q[1]); });
-        c.strokeStyle = 'rgba(56,163,255,0.25)'; c.lineWidth = 8; c.stroke(); c.strokeStyle = '#38a3ff'; c.lineWidth = 2.4; c.stroke();
+        c.strokeStyle = 'rgba(56,189,248,0.25)'; c.lineWidth = 8; c.stroke(); c.strokeStyle = '#38bdf8'; c.lineWidth = 2.4; c.stroke();
       });
       // numbered stops: grouped per rack so the badge reads e.g. "6,8,9"
       var byRack = {}; res.order.forEach(function (o, i) { var pk = sd.picks[o.key]; if (!pk.rack || pk.floor !== f.id) return; (byRack[pk.rack] = byRack[pk.rack] || []).push({ n: i + 1, code: o.key }); });
-      c.font = '600 12px "IBM Plex Sans Thai", sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.font = '600 12px "Anuphan", "IBM Plex Sans Thai", sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
       var placed = [];   // badges of neighbouring racks must not cover each other
       Object.keys(byRack).sort(function (x, y) { return byRack[x][0].n - byRack[y][0].n; }).forEach(function (rid) {
         var r = S.d.match.rackById.get(rid); if (!r) return;
@@ -666,9 +666,9 @@
         while (hit() && tries < 8) { tries++; q = [ax + (tries % 2 ? 1 : -1) * Math.ceil(tries / 2) * 0, ay - Math.ceil(tries / 2) * 24 * (tries % 2 ? 1 : -1)]; }
         if (tries) { c.strokeStyle = 'rgba(255,255,255,0.55)'; c.lineWidth = 1; c.beginPath(); c.moveTo(ax, ay); c.lineTo(q[0], q[1]); c.stroke(); }
         placed.push([q[0], q[1], w]);
-        c.fillStyle = col || '#ffffff'; c.strokeStyle = col ? '#060d19' : '#38a3ff'; c.lineWidth = 2;
+        c.fillStyle = col || '#ffffff'; c.strokeStyle = col ? '#0d0b18' : '#38bdf8'; c.lineWidth = 2;
         c.beginPath(); if (c.roundRect) c.roundRect(q[0] - w / 2, q[1] - 11, w, 22, 11); else c.rect(q[0] - w / 2, q[1] - 11, w, 22); c.fill(); c.stroke();
-        c.fillStyle = '#060d19'; c.fillText(txt, q[0], q[1] + 0.5);
+        c.fillStyle = '#0d0b18'; c.fillText(txt, q[0], q[1] + 0.5);
       });
       c.restore();
     };

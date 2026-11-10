@@ -11,7 +11,7 @@
  * Engine: rules.js. Every change is logged with who and when. */
 (function (g) {
   var PWH = g.PWH, t = PWH.t;
-  var TINT = { keep: '#22c55e', deny: '#ef4444', lock: '#f59e0b', src: '#38bdf8', off: '#55657e', some: '#eab308', here: '#a78bfa' };
+  var TINT = { keep: '#22c55e', deny: '#ef4444', lock: '#f59e0b', src: '#38bdf8', off: '#5a5475', some: '#eab308', here: '#a78bfa' };
   var CHIP = { lock: 'warn', deny: 'error', allow: 'ok', pair: 'info' };
   var S = { root: null, data: null, parts: [], names: new Map(), L: null, ml: [], match: null, fd: null, places: null,
     form: null, ptarget: 'dest', pmode: 'row', lastRack: null, kit: null, floor: 0, mode: 'view', selRule: null,

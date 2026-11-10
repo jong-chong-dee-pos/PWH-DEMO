@@ -4,7 +4,7 @@
  * Nothing here changes stored data except calculating days that have no result yet. */
 (function (g) {
   var PWH = g.PWH, t = PWH.t;
-  var CUR = '#1f5fd1', PREV = '#b58a3c';   // the period shown / the period before it (checked for colour-blind separation)
+  var CUR = '#6d4aff', PREV = '#0ea5e9';   // the period shown / the period before it (checked for colour-blind separation)
   var S = {
     root: null, d: null, view: 'day', day: { from: '', to: '' }, month: { y: 0, a: 1, b: 12 }, year: { a: 0, b: 0 },
     cmp: false, mL: 'rounds', mR: 'total', top: 'total', scen: '', stack: [], cur: null, prev: null, scList: [],

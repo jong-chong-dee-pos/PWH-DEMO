@@ -382,7 +382,7 @@
   }
   function overlay(c, Pj, f, o) {
     var R = P.result; if (!R || !R.legs) return;
-    var z = o.z, col = '#38a3ff';
+    var z = o.z, col = '#38bdf8';
     c.save(); c.lineJoin = 'round'; c.lineCap = 'round';
     R.legs.forEach(function (l) {
       if (l.floor !== f.id || l.pts.length < 2) return;
@@ -419,7 +419,7 @@
       if (q !== anchor) { c.beginPath(); c.moveTo(anchor[0], anchor[1]); c.lineTo(q[0], q[1]); c.strokeStyle = sel ? '#facc15' : col; c.lineWidth = 1.5; c.stroke(); c.beginPath(); c.arc(anchor[0], anchor[1], 3, 0, 7); c.fillStyle = sel ? '#facc15' : col; c.fill(); }
       c.beginPath(); if (c.roundRect) c.roundRect(q[0] - w / 2, q[1] - 12, w, 24, 12); else c.rect(q[0] - w / 2, q[1] - 12, w, 24);
       c.save(); c.shadowColor = col; c.shadowBlur = 8; c.fillStyle = sel ? '#facc15' : '#ffffff'; c.fill(); c.restore(); c.lineWidth = 2; c.strokeStyle = col; c.stroke();
-      c.fillStyle = '#0c1726'; c.font = '600 13.5px "IBM Plex Sans Thai", system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(label, q[0], q[1] + 0.5);
+      c.fillStyle = '#110e1f'; c.font = '600 13.5px "Anuphan", "IBM Plex Sans Thai", system-ui, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(label, q[0], q[1] + 0.5);
     });
     c.restore();
   }

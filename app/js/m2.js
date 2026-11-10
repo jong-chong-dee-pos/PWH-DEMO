@@ -33,10 +33,10 @@
   function zoneOf(id) { var m = String(id).match(/^([0-9]*[A-Z]+)/); return m ? m[1] : String(id); }
   function zoneColor(id) { var z = zoneOf(id), h = 0; for (var i = 0; i < z.length; i++) h = (h * 31 + z.charCodeAt(i)) >>> 0; return ZONES[h % ZONES.length]; }
   function pal() {
-    return { l: { 1: '#4a6fa5', 2: '#3f8f8a', 3: '#a07a45', 4: '#5b8f5f' }, rack: '#1b2b44', none: '#18263b', aisle: '#10213b', ground: '#0b1729', bg: '#060d19', outside: '#16142c',
-      grid: 'rgba(120,160,215,0.07)', lane: 'rgba(150,190,240,0.20)',
-      stock: '#5aa9ff', ink: '#e8eef7', sel: '#f2b705', hit: '#2f86ff', hitLine: '#9cc8ff', start: '#22c55e', drop: '#3b82f6', door: '#d4a72c', lift: '#8b5cf6', exit: '#a08c5a',
-      line: 'rgba(150,185,230,0.22)', route: '#38a3ff' };
+    return { l: { 1: '#6f63b8', 2: '#3f8f8a', 3: '#a07a45', 4: '#5b8f5f' }, rack: '#262040', none: '#1e1a33', aisle: '#1a1630', ground: '#141126', bg: '#0d0b18', outside: '#1a1530',
+      grid: 'rgba(170,150,240,0.07)', lane: 'rgba(190,170,255,0.20)',
+      stock: '#a48bff', ink: '#eeeafc', sel: '#ff7a45', hit: '#8b6cff', hitLine: '#c9bbff', start: '#22c55e', drop: '#0ea5e9', door: '#d4a72c', lift: '#a78bfa', exit: '#a08c5a',
+      line: 'rgba(185,170,245,0.22)', route: '#38bdf8' };
   }
   function rgb(hex) { var h = hex.replace('#', ''); return [parseInt(h.substr(0, 2), 16), parseInt(h.substr(2, 2), 16), parseInt(h.substr(4, 2), 16)]; }
   function shade(hex, f, a) { var c = rgb(hex); return 'rgba(' + Math.min(255, Math.round(c[0] * f)) + ',' + Math.min(255, Math.round(c[1] * f)) + ',' + Math.min(255, Math.round(c[2] * f)) + ',' + (a == null ? 1 : a) + ')'; }
@@ -116,7 +116,7 @@
   function rectPts(o, z) { return [P(o.x, o.y, z), P(o.x + o.w, o.y, z), P(o.x + o.w, o.y + o.h, z), P(o.x, o.y + o.h, z)]; }
   function rr(x, y, w, h, r) { var c = M.ctx; c.beginPath(); if (c.roundRect) c.roundRect(x, y, w, h, r); else c.rect(x, y, w, h); }
   function label(txt, p, color, bg, size) {
-    var c = M.ctx; c.font = '600 ' + size + 'px "IBM Plex Sans Thai", system-ui, sans-serif';
+    var c = M.ctx; c.font = '600 ' + size + 'px "Anuphan", "IBM Plex Sans Thai", system-ui, sans-serif';
     var w = c.measureText(txt).width + 12, h = size + 8;
     c.save(); c.shadowColor = 'rgba(0,0,0,0.45)'; c.shadowBlur = 8; c.shadowOffsetY = 2; c.fillStyle = bg; rr(p[0] - w / 2, p[1] - h / 2, w, h, h / 2); c.fill(); c.restore();
     c.fillStyle = color; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, p[0], p[1] + 0.5);
@@ -178,7 +178,7 @@
     var w = Math.max(size * 1.9, c.measureText(txt).width + size * 0.9), h = size + 7, x = p[0] - w / 2, y = p[1] - h / 2;
     if (lead) { line([p[0], p[1] + h / 2], lead, shade(col, 1, 0.8), 1.2); c.beginPath(); c.arc(lead[0], lead[1], 2.2, 0, 7); c.fillStyle = col; c.fill(); }
     c.save(); c.shadowColor = shade(col, 1, 0.55); c.shadowBlur = 10; c.fillStyle = col; rr(x, y, w, h, 5); c.fill(); c.restore();
-    c.fillStyle = 'rgba(6,13,25,0.92)'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, p[0], p[1] + 0.5);
+    c.fillStyle = 'rgba(13,11,24,0.92)'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(txt, p[0], p[1] + 0.5);
     return [x, y, w, h];
   }
 
@@ -309,7 +309,7 @@
         if (d3) faces(r).forEach(function (fc) { poly(wall(fc, 0, H2), 'rgba(242,183,5,0.22)', C.sel, 1.5); });
         c.save(); c.shadowColor = C.sel; c.shadowBlur = 16; poly(rectPts(r, H2), 'rgba(242,183,5,0.35)', C.sel, 2.5); c.restore();
         var ts = P(r.x + r.w / 2, r.y + r.h / 2, H2);
-        label(r.id, [ts[0], ts[1] - (d3 ? 18 : 0) - 14], '#060d19', C.sel, 12);
+        label(r.id, [ts[0], ts[1] - (d3 ? 18 : 0) - 14], '#0d0b18', C.sel, 12);
       }
       else poly(rectPts(r, H2), null, 'rgba(255,255,255,0.75)', pair[1]);
     });

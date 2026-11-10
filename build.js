@@ -19,7 +19,7 @@ ${lines.join('\n')}
   };
 })(window);
 `);
-const fonts='<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap">';
+const fonts='<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">';
 const scripts=['vendor/xlsx.full.min.js','js/labels.th.js','js/labels.js','js/db.js','js/parsers.js','js/checks.js','js/changes.js','js/layout.js','js/route.js','js/m2.js','js/m3.js','js/rules.js','js/freq.js','js/m4.js','js/m5.js','js/m6.js','js/lookup.js','js/app.js'].map(s=>`<script src="${s}"></script>`).join('\n');
 const title='PWH Part Warehouse';
 fs.writeFileSync('app/index.html',`<!doctype html>
