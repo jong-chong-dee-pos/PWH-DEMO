@@ -2028,3 +2028,20 @@ span.loc { width: auto !important; display: inline-flex !important; margin: 0 !i
 .m2nobin { margin-top: var(--sp-3); padding: var(--sp-3); border: 1px dashed var(--line-2); border-radius: 8px; font-size: var(--fs-label); }
 .m2nobin ul { list-style: none; margin: 6px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
 .m2nobin li { display: flex; gap: var(--sp-2); align-items: center; flex-wrap: wrap; }
+
+/* v52 — Module 5: types first, collapsible type list, ungrouped stands out, rules table fits at 1366 */
+.m5tc.none.left { border-style: solid; border-color: var(--tape); background: var(--tape-soft); }
+.m5tc.none.left .m5tcn { color: var(--tape-ink); }
+.m5tc.none.done { border-style: dashed; color: var(--muted); }
+.m5cph { display: flex; align-items: center; justify-content: flex-start; gap: var(--sp-2); flex-wrap: wrap; }
+.m5cph .m5cpx { margin-left: auto; }
+.m5tw { margin-top: var(--sp-2); }
+@media (max-width: 1600px) {
+  .m5rowacts { display: flex; flex-direction: column; gap: 4px; align-items: stretch; }
+  .m5rowacts .btn { justify-content: center; }
+  .m5rtab td:nth-child(4) { min-width: 0; }
+  .m5rtab td:nth-child(2) { overflow-wrap: anywhere; }
+}
+.m5tcs { grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
+/* the reason column only when some rule has a reason */
+.m5rtab.nowhy col.c-why { width: 0; } .m5rtab.nowhy th:nth-child(5), .m5rtab.nowhy td:nth-child(5) { padding: 0; font-size: 0; overflow: hidden; border-left: 0; border-right: 0; }

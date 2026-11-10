@@ -15,7 +15,7 @@
   var CHIP = { lock: 'warn', deny: 'error', allow: 'ok', pair: 'info' };
   var S = { root: null, data: null, parts: [], names: new Map(), L: null, ml: [], match: null, fd: null, places: null,
     form: null, ptarget: 'dest', pmode: 'row', lastRack: null, kit: null, floor: 0, mode: 'view', selRule: null,
-    view: { kind: 'type', code: '', type: null }, card: '_none', tq: '', tpick: new Set(), tedit: null, moveTo: '',
+    view: { kind: 'type', code: '', type: null }, card: '', tq: '', tpick: new Set(), tedit: null, moveTo: '',
     confirm: null, msg: null, test: null, misQ: '' };
   var NONE = '_none';
 
@@ -121,7 +121,13 @@
   }
   function typeButtons(sel, act) {
     if (!S.data.types.length) return '<p class="sub2">' + esc(t('m5.t.none')) + '</p>';
-    return '<div class="m5grid wide">' + S.data.types.map(function (tp) { return '<button type="button" class="m5pick" data-m5="' + act + '" data-v="' + esc(tp.id) + '" aria-pressed="' + (sel.indexOf(tp.id) >= 0) + '">' + esc(tp.name) + ' <small>' + nf(typeCount(tp.id)) + '</small></button>'; }).join('') + '</div>';
+    return '<div class="m5grid wide">' + S.data.types.map(function (tp) { return '<button type="button" class="m5pick" data-m5="' + act + '" data-v="' + esc(tp.id) + '" aria-pressed="' + (sel.indexOf(tp.id) >= 0) + '">' + esc(tp.name) + ' <small>' + nf(typeCount(tp.id)) + '</small></button>'; }).join('') + '</div>' + emptyTypeWarn(sel, act);
+  }
+  // a rule about a type with no Parts is saved but touches nothing: say so while the rule is being made
+  function emptyTypeWarn(sel, act) {
+    var empty = S.data.types.filter(function (tp) { return sel.indexOf(tp.id) >= 0 && !typeCount(tp.id); });
+    if (!empty.length) return '';
+    return '<div class="msg warn m5tw" role="status"><span>' + esc(t(act === 'wtype' ? 'm5.tw.who' : 'm5.tw.partner', { t: empty.map(function (x) { return x.name; }).join(', ') })) + '</span></div>';
   }
   function selSummary(a, side) {
     var bits = [];
@@ -217,7 +223,7 @@
     return (S.msg && S.msg[0] === 'ok' ? '<div class="msg ok" role="status"><span>' + esc(S.msg[1]) + '</span></div>' : '') + (S.msg && S.msg[0] === 'bad' && !S.form ? msgBad() : '') +
       ((S.data.dropped || []).length ? '<div class="msg warn" role="status"><span>' + esc(t('m5.dropped', { n: S.data.dropped.join(', ') })) + '</span></div>' : '') +
       (dead.length ? '<div class="msg bad" role="status"><span>' + esc(t('m5.dead', { n: dead.map(function (x) { return x.subj.code ? x.subj.label : x.subj.label ? t('m5.w.type', { v: x.subj.label }) : t('m5.w.all'); }).join(', ') })) + '</span></div>' : '') +
-      (rules.length ? '<div class="tablebox"><table class="m5tbl m5rtab"><colgroup><col class="c-act"><col class="c-who"><col class="c-src"><col class="c-where"><col class="c-why"><col class="c-on"><col class="c-btn"></colgroup><thead><tr><th>' + esc(t('m5.col.kind')) + '</th><th>' + esc(t('m5.col.who')) + '</th><th>' + esc(t('m5.col.src')) + '</th><th>' + esc(t('m5.col.dest')) + '</th><th>' + esc(t('m5.reason')) + '</th><th>' + esc(t('m5.col.state')) + '</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div><p class="sub2 m5hint">' + esc(t('m5.list.click')) + '</p>'
+      (rules.length ? '<div class="tablebox"><table class="m5tbl m5rtab' + (rules.some(function (r) { return r.reason; }) ? '' : ' nowhy') + '"><colgroup><col class="c-act"><col class="c-who"><col class="c-src"><col class="c-where"><col class="c-why"><col class="c-on"><col class="c-btn"></colgroup><thead><tr><th>' + esc(t('m5.col.kind')) + '</th><th>' + esc(t('m5.col.who')) + '</th><th>' + esc(t('m5.col.src')) + '</th><th>' + esc(t('m5.col.dest')) + '</th><th>' + esc(t('m5.reason')) + '</th><th>' + esc(t('m5.col.state')) + '</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div><p class="sub2 m5hint">' + esc(t('m5.list.click')) + '</p>'
         : '<p class="empty-note">' + esc(t('m5.none2')) + '</p>');
   }
 
@@ -296,10 +302,10 @@
       var on = S.card === tp.id;
       return '<button type="button" class="m5tc' + (on ? ' on' : '') + '" data-m5="card" data-v="' + esc(tp.id) + '" aria-pressed="' + on + '"><b>' + esc(tp.name) + '</b><span class="m5tcn">' + nf(typeCount(tp.id)) + '<small>' + esc(t('m5.t.parts')) + '</small></span><span class="sub2">' + esc(t('m5.t.rules', { n: rulesOfType(tp.id) })) + '</span></button>';
     }).join('');
-    var nNone = S.parts.length - Object.keys(S.data.partType).filter(function (c) { return S.data.partType[c]; }).length;
-    cards += '<button type="button" class="m5tc none' + (S.card === NONE ? ' on' : '') + '" data-m5="card" data-v="' + NONE + '" aria-pressed="' + (S.card === NONE) + '"><b>' + esc(t('m5.t.ungrouped')) + '</b><span class="m5tcn">' + nf(nNone) + '<small>' + esc(t('m5.t.parts')) + '</small></span><span class="sub2">' + esc(t('m5.t.ungrouped.sub')) + '</span></button>';
-    cards += '<button type="button" class="m5tc add" data-m5="tadd"><b>+ ' + esc(t('m5.t.add')) + '</b></button>';
-    return '<section class="panel m5sec" id="m5types"><div class="chd"><div class="chd-l"><h2>' + esc(t('m5.t.title')) + '</h2><p class="sub">' + esc(t('m5.t.sub2')) + '</p></div></div>' +
+    var none = cardCodes(NONE), nNone = none.length, fq = freqMap(), inPlan = fq ? none.filter(function (c) { return fq.get(c) > 0; }).length : null;
+    cards += '<button type="button" class="m5tc none' + (nNone ? ' left' : ' done') + (S.card === NONE ? ' on' : '') + '" data-m5="card" data-v="' + NONE + '" aria-pressed="' + (S.card === NONE) + '"><b>' + esc(t('m5.t.ungrouped')) + '</b><span class="m5tcn">' + nf(nNone) + '<small>' + esc(t('m5.t.parts')) + '</small></span><span class="sub2">' +
+      esc(!nNone ? t('m5.t.ungrouped.done') : inPlan != null ? t('m5.t.ungrouped.plan', { n: nf(inPlan) }) : t('m5.t.ungrouped.sub')) + '</span></button>';
+    return '<section class="panel m5sec" id="m5types"><div class="chd"><div class="chd-l"><h2>' + esc(t('m5.t.title')) + '</h2><p class="sub">' + esc(t('m5.t.sub3')) + '</p></div><button type="button" class="btn" data-m5="tadd">+ ' + esc(t('m5.t.add')) + '</button></div>' +
       '<div class="m5tcs">' + cards + '</div>' + cardPanel() + '</section>';
   }
   function cardPanel() {
@@ -318,7 +324,7 @@
       '<label class="m5mv"><span>' + esc(t(isNone ? 'm5.t.setto' : 'm5.t.moveto')) + '</span><select id="m5moveto"><option value="">' + esc(t('m5.v.choose')) + '</option>' + targets.map(function (x) { return '<option value="' + esc(x.id) + '"' + (S.moveTo === x.id ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</select></label>' +
       '<button type="button" class="btn sm primary" data-m5="tmove"' + (S.tpick.size && S.moveTo ? '' : ' disabled') + '>' + esc(t('m5.t.apply')) + '</button>' +
       (isNone ? '' : '<button type="button" class="btn sm danger" data-m5="tunset"' + (S.tpick.size ? '' : ' disabled') + '>' + esc(t('m5.t.unset2')) + '</button>') + '</div>';
-    return '<div class="m5cardp"><div class="m5cph">' + head + '</div>' +
+    return '<div class="m5cardp"><div class="m5cph">' + head + '<button type="button" class="btn sm m5cpx" data-m5="card" data-v="' + esc(id) + '">' + esc(t('m5.t.hide')) + '</button></div>' +
       '<div class="m5cpt"><input id="m5tq" type="search" value="' + esc(S.tq) + '" placeholder="' + esc(t('m5.ph.part3')) + '" aria-label="' + esc(t('m5.ph.part3')) + '"><span class="sub2">' + esc(t('m5.t.showing', { n: nf(shown.length), m: nf(list.length) })) + (fq ? ' · ' + esc(t('m5.t.byfreq')) : ' · ' + esc(t('m5.t.needm4b'))) + '</span></div>' + bar +
       (shown.length ? '<div class="tablebox m5ptb"><table class="m5tbl m5parts"><colgroup><col class="c-chk"><col class="c-code"><col><col class="c-bin"><col class="c-n"></colgroup><thead><tr><th><input type="checkbox" data-m5all="1"' + (allOn ? ' checked' : '') + ' aria-label="' + esc(t('m5.t.all', { n: shown.length })) + '"></th><th>Part</th><th>' + esc(t('m5.col.name')) + '</th><th>Bin</th><th class="num">' + esc(t('m5.mis.n')) + '</th></tr></thead><tbody>' +
         shown.map(function (c) { var pk = pickFor(c); return '<tr><td><input type="checkbox" data-m5c="' + esc(c) + '"' + (S.tpick.has(c) ? ' checked' : '') + ' aria-label="' + esc(c) + '"></td><td><span class="code">' + esc(c) + '</span></td><td>' + esc(S.names.get(c) || '–') + '</td><td>' + (pk && pk.status === 'ok' ? loc(pk.bin) : '<span class="chip warn">' + esc(PWH.freq.locText(pk)) + '</span>') + '</td><td class="num">' + (fq && pk && pk.status === 'ok' ? nf(fq.get(c) || 0) : '–') + '</td></tr>'; }).join('') +
@@ -364,7 +370,7 @@
     var held = window.scrollY;
     S.root.innerHTML = '<div class="ph"><div class="ph-l"><h1>' + esc(t('nav.m5')) + '</h1><p class="lede">' + esc(t('m5.intro3')) + '</p></div></div>' +
       '<datalist id="m5parts">' + S.parts.slice(0, 5000).map(function (x) { return '<option value="' + esc(x) + '">' + esc(S.names.get(x) || '') + '</option>'; }).join('') + '</datalist>' +
-      rulesSection() + typesSection() + misSection() + '<div class="m5cols">' + testCard() + logCard() + '</div>';
+      typesSection() + rulesSection() + misSection() + '<div class="m5cols">' + testCard() + logCard() + '</div>';
     window.scrollTo(0, held);
     wire();
     if ($('#m5map')) mountMap();
@@ -545,7 +551,7 @@
       flash('ok', t('m5.ok.deleted', { name: dn })); save('del', { name: dn }).then(render); return;
     }
     // --- item types
-    else if (a === 'card') { if (S.card !== v) { S.card = v; S.tpick = new Set(); S.tq = ''; S.moveTo = ''; S.tedit = null; } }
+    else if (a === 'card') { S.card = S.card === v ? '' : v; S.tpick = new Set(); S.tq = ''; S.moveTo = ''; S.tedit = null; }
     else if (a === 'tadd') { var nid = 'T' + Date.now(); S.data.types.push({ id: nid, name: t('m5.t.newname') }); S.card = nid; S.tedit = nid; S.tpick = new Set(); S.tq = ''; save('tadd', { name: t('m5.t.newname') }).then(render); return; }
     else if (a === 'tedit') { S.tedit = v; }
     else if (a === 'tcancel') { S.tedit = null; }
@@ -560,7 +566,7 @@
       for (var k in pt) if (pt[k] === v) delete pt[k];
       S.data.rules.forEach(function (r) { if (r.who && r.who.kind === 'type') r.who.types = r.who.types.filter(function (x) { return x !== v; }); });
       S.data.rules = S.data.rules.filter(function (r) { return !(r.who && r.who.kind === 'type' && !r.who.types.length); });
-      S.data.types = S.data.types.filter(function (x) { return x.id !== v; }); S.card = NONE; if (S.view.type === v) S.view.type = null;
+      S.data.types = S.data.types.filter(function (x) { return x.id !== v; }); S.card = ''; if (S.view.type === v) S.view.type = null;
       save('tdel', { name: tn }).then(render); return;
     }
     // --- map viewer

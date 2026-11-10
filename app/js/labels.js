@@ -1383,6 +1383,12 @@
     'm4.nc.unreach': "no aisle {n}",
     'lookup.nobin': "No BIN LOCATION",
     'm2.nobin.title': "{n} Parts in the BOM match but have no BIN LOCATION",
+    'm5.tw.who': "{t} has no Parts yet, so this rule will not affect any Part until Parts are put in it.",
+    'm5.tw.partner': "{t} has no Parts yet, so no Part can be a swap partner from it.",
+    'm5.t.sub3': "Start here: put Parts into types, then write rules for the types below. Click a card to see and move its Parts.",
+    'm5.t.hide': "Hide list",
+    'm5.t.ungrouped.plan': "{n} of them are in the plan",
+    'm5.t.ungrouped.done': "every Part has a type",
     'soon.m6': 'Reads the results of modules 1 to 5.'
   };
   var lang = 'th';

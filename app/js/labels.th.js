@@ -1536,6 +1536,12 @@
   "m4.nc.notonlayout": "ไม่อยู่บนผัง {n}",   // not on layout {n}
   "m4.nc.unreach": "ไม่มีทางเดินถึง {n}",   // no aisle {n}
   "m2.nobin.title": "Part ใน BOM ที่ตรงกับคำค้น แต่ไม่มี BIN LOCATION ({n})",   // {n} Parts in the BOM match but have no BIN LOCATION
+  "m5.tw.who": "ประเภท {t} ยังไม่มี Part กติกาจะยังไม่มีผลกับ Part ใด จนกว่าจะใส่ Part เข้าประเภท",   // {t} has no Parts yet, so this rule will not affect any Part until Parts are put in it.
+  "m5.tw.partner": "ประเภท {t} ยังไม่มี Part จึงยังไม่มี Part จากกลุ่มนี้ที่เป็นคู่สลับได้",   // {t} has no Parts yet, so no Part can be a swap partner from it.
+  "m5.t.sub3": "เริ่มที่นี่: ใส่ Part เข้าประเภท แล้วจึงตั้งกติกาให้ประเภทด้านล่าง คลิกการ์ดเพื่อดูและย้าย Part",   // Start here: put Parts into types, then write rules for the types below. Click a card to see and move its Parts.
+  "m5.t.hide": "ซ่อนรายชื่อ",   // Hide list
+  "m5.t.ungrouped.plan": "ในนั้นอยู่ในแผน {n} Part",   // {n} of them are in the plan
+  "m5.t.ungrouped.done": "จัดกลุ่มครบแล้ว",   // every Part has a type
   "soon.m6": "อ่านผลลัพธ์ของ Module 1 ถึง 5",   // Reads the results of modules 1 to 5.
   };
 })(window);
