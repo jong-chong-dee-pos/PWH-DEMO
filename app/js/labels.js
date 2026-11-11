@@ -1548,6 +1548,18 @@
     'bk.err.write': "Restore did not finish. The data on this computer may be incomplete; try the restore again.",
     'bk.setup.link': "Have a backup file? Restore from it",
     'bk.note.restored': "Data restored. Sign in with an account from the backup.",
+    'm4.hist.title': "History of Product {p}",
+    'm4.hist.rule': "1 round = date + U-Line + JOB",
+    'm4.hist.none': "This Product is not in the daily plans of the selected range.",
+    'm4.hist.rounds': "Rounds",
+    'm4.hist.days': "Plan days",
+    'm4.hist.lines': "U-Lines",
+    'm4.hist.qty': "Planned qty",
+    'm4.hist.n': "{n} rounds",
+    'm4.hist.last': "last {d}",
+    'm4.hist.noline': "No U-Line",
+    'm4.hist.open': "Open this day's plan in Module 1",
+    'm4.hist.btn': "Show history",
     'soon.m6': 'Reads the results of modules 1 to 5.'
   };
   var lang = 'th';

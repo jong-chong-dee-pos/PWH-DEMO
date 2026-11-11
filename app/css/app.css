@@ -2374,3 +2374,16 @@ html[data-role="user"] [data-m5="tmove"], html[data-role="user"] [data-m5="tunse
 .gbk .glink { color: var(--accent); }
 .gbk .bksum { text-align: left; padding: 14px; border: 1px solid var(--line); border-radius: 14px; }
 @media (max-width: 900px) { .ubk-grid { grid-template-columns: 1fr; } }
+
+/* v60 — Module 4: Product history */
+.m4hs { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; margin: 4px 0 14px; }
+.m4hst { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border: 1px solid var(--line, #e3e1ec); border-radius: 10px; }
+.m4hst b { font-size: 22px; font-variant-numeric: tabular-nums; line-height: 1.2; }
+.m4hl { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.m4hl li { display: flex; align-items: baseline; gap: 8px; white-space: nowrap; padding: 6px 12px; border-radius: 999px; background: var(--accent-soft); }
+.m4ht td, .m4ht th { white-space: nowrap; }
+.m4ht td.code { white-space: normal; }
+.m4hd { background: none; border: 0; padding: 2px 0; color: var(--accent, #6e56f7); font: inherit; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.m4hd:focus-visible { outline: 2px solid var(--accent, #6e56f7); outline-offset: 2px; border-radius: 4px; }
+.m4pvb { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start; }
+@media (max-width: 640px) { .m4hs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

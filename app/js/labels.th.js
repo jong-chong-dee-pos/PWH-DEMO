@@ -1701,6 +1701,18 @@
   "bk.err.write": "กู้คืนไม่สำเร็จ ข้อมูลในเครื่องนี้อาจไม่ครบ ลองกู้คืนอีกครั้ง",   // Restore did not finish. The data on this computer may be incomplete; try the restore again.
   "bk.setup.link": "มีไฟล์สำรองข้อมูล? กู้คืนจากไฟล์",   // Have a backup file? Restore from it
   "bk.note.restored": "กู้คืนข้อมูลแล้ว เข้าสู่ระบบด้วยบัญชีที่อยู่ในไฟล์สำรอง",   // Data restored. Sign in with an account from the backup.
+  "m4.hist.title": "ประวัติ Product {p}",   // History of Product {p}
+  "m4.hist.rule": "1 รอบ = วันที่ + U-Line + JOB",   // 1 round = date + U-Line + JOB
+  "m4.hist.none": "ไม่พบ Product นี้ในแผนรายวันช่วงที่เลือก",   // This Product is not in the daily plans of the selected range.
+  "m4.hist.rounds": "รอบ",   // Rounds
+  "m4.hist.days": "วันที่มีแผน",   // Plan days
+  "m4.hist.lines": "U-Line",   // U-Lines
+  "m4.hist.qty": "จำนวนแผน",   // Planned qty
+  "m4.hist.n": "{n} รอบ",   // {n} rounds
+  "m4.hist.last": "ล่าสุด {d}",   // last {d}
+  "m4.hist.noline": "ไม่ระบุ U-Line",   // No U-Line
+  "m4.hist.open": "เปิดแผนวันนี้ในโมดูล 1",   // Open this day's plan in Module 1
+  "m4.hist.btn": "ดูประวัติ",   // Show history
   "soon.m6": "อ่านผลลัพธ์ของ Module 1 ถึง 5",   // Reads the results of modules 1 to 5.
   };
 })(window);

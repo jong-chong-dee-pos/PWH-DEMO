@@ -238,7 +238,7 @@
       var pk = sd.picks[c], q = sd.seq[c];
       return '<tr' + (q ? '' : ' class="m4re"') + '><td class="num"><b>' + (q || '–') + '</b></td><td class="m4pn"><span class="code">' + esc(c) + '</span><div class="sub2">' + esc(partName(c) || '–') + '</div></td><td>' + (pk.status === 'ok' ? locTag(pk.bin) + ' <span class="sub2">' + esc(floorTxt(pk.floor) + ' · ' + t('m4.level', { n: pk.level })) + '</span>' : chip('warn', PWH.freq.locText(pk))) + '</td></tr>';
     }).join('');
-    return '<div class="m4pv" id="m4pv"><div class="m4pvh"><div><h3>' + esc(t('m4.pv.title', { p: P.product })) + '</h3><p class="sub">' + esc(prodName(P.product)) + ' · Plant ' + esc(P.plant) + ' · ' + esc(t('m4.pt.jobs', { n: P.rounds })) + ' · ' + esc(t('m4.pt.total', { m: m(P.m), n: P.rounds })) + '</p></div><button type="button" class="btn sm" data-m4="prod" data-v="' + esc(P.product) + '">' + esc(t('m4.close')) + '</button></div>' +
+    return '<div class="m4pv" id="m4pv"><div class="m4pvh"><div><h3>' + esc(t('m4.pv.title', { p: P.product })) + '</h3><p class="sub">' + esc(prodName(P.product)) + ' · Plant ' + esc(P.plant) + ' · ' + esc(t('m4.pt.jobs', { n: P.rounds })) + ' · ' + esc(t('m4.pt.total', { m: m(P.m), n: P.rounds })) + '</p></div><div class="m4pvb">' + (S.product ? '' : '<button type="button" class="btn sm" data-m4="hist" data-v="' + esc(P.product) + '">' + esc(t('m4.hist.btn')) + '</button>') + '<button type="button" class="btn sm" data-m4="prod" data-v="' + esc(P.product) + '">' + esc(t('m4.close')) + '</button></div></div>' +
       '<div class="m4pvg">' + routeCard('pv', sd, null) +
       '<div><div class="m4dh">' + esc(t('m4.pv.order')) + (P.parts > P.routedParts ? ' · <span class="m4lo">' + esc(t('m4.pt.skip', { n: P.parts - P.routedParts, of: P.parts })) + '</span>' : '') + '</div><div class="tablebox m4tb"><table class="m4ord"><thead><tr><th class="num">#</th><th>' + esc(t('m4.col.part')) + '</th><th>Bin</th></tr></thead><tbody>' + rows + '</tbody></table></div></div></div></div>';
   }
@@ -342,10 +342,46 @@
     });
     return html + '</section>';
   }
+  // ---------- Product history: when and on which U-line one Product was planned ----------
+  // Read straight from the daily plans in the range. 1 round = date + U-line + JOB (the same count as the rest of Module 4).
+  function histData(p) {
+    var by = new Map(), lines = new Map(), days = new Set(), keys = new Set(), qty = 0;
+    S.d.days.forEach(function (day) {
+      if (day.date < S.from || day.date > S.to) return;
+      day.rows.forEach(function (r) {
+        var job = String(r[0] == null ? '' : r[0]).trim(), prod = String(r[1] == null ? '' : r[1]).trim();
+        if (!job || prod !== p) return;
+        var line = String(r[4] == null ? '' : r[4]).trim(), q = +r[3] || 0, rk = day.date + '|' + line + '|' + job;
+        var g = by.get(day.date + '|' + line);
+        if (!g) by.set(day.date + '|' + line, (g = { date: day.date, line: line, jobs: [], qty: 0 }));
+        if (g.jobs.indexOf(job) < 0) g.jobs.push(job);
+        g.qty += q; qty += q; days.add(day.date);
+        var L = lines.get(line); if (!L) lines.set(line, (L = { line: line, n: 0, last: '' }));
+        if (!keys.has(rk)) { keys.add(rk); L.n++; }
+        if (day.date > L.last) L.last = day.date;
+      });
+    });
+    var rows = Array.from(by.values()).sort(function (a, b) { return a.date < b.date ? 1 : a.date > b.date ? -1 : a.line < b.line ? -1 : a.line > b.line ? 1 : 0; });
+    var ls = Array.from(lines.values()).sort(function (a, b) { return b.n - a.n || (a.line < b.line ? -1 : 1); });
+    return { rows: rows, lines: ls, rounds: keys.size, days: days.size, qty: qty };
+  }
+  function histCard() {
+    if (!S.product) return '';
+    var p = S.product, H = histData(p), noline = t('m4.hist.noline');
+    var head = '<div class="chd"><div class="chd-l"><h2>' + esc(t('m4.hist.title', { p: p })) + '</h2><p class="sub">' + esc([prodName(p), t('m4.scope.range', { from: fmtDate(S.from), to: fmtDate(S.to) }), t('m4.hist.rule')].filter(Boolean).join(' · ')) + '</p></div></div>';
+    if (!H.rounds) return '<section class="panel m4card" id="m4hist">' + head + '<p class="empty-note">' + esc(t('m4.hist.none')) + '</p></section>';
+    var stats = [[t('m4.hist.rounds'), H.rounds], [t('m4.hist.days'), H.days], [t('m4.hist.lines'), H.lines.length], [t('m4.hist.qty'), H.qty]];
+    return '<section class="panel m4card" id="m4hist">' + head +
+      '<div class="m4hs">' + stats.map(function (x) { return '<div class="m4hst"><span class="sub2">' + esc(x[0]) + '</span><b>' + nf(x[1]) + '</b></div>'; }).join('') + '</div>' +
+      '<ul class="m4hl">' + H.lines.map(function (L) { return '<li><span class="code">' + esc(L.line || noline) + '</span><b>' + esc(t('m4.hist.n', { n: nf(L.n) })) + '</b><span class="sub2">' + esc(t('m4.hist.last', { d: fmtDate(L.last) })) + '</span></li>'; }).join('') + '</ul>' +
+      '<div class="tablebox m4tb"><table class="m4ht"><thead><tr><th>' + esc(t('m4.col.date')) + '</th><th>U-Line</th><th>JOB</th><th class="num">' + esc(t('m4.hist.rounds')) + '</th><th class="num">' + esc(t('m4.hist.qty')) + '</th></tr></thead><tbody>' +
+      H.rows.map(function (g) { return '<tr><td><button type="button" class="m4hd" data-m4="histday" data-v="' + esc(g.date) + '" title="' + esc(t('m4.hist.open')) + '">' + esc(fmtDate(g.date)) + '</button></td><td>' + esc(g.line || noline) + '</td><td class="code">' + esc(g.jobs.join(', ')) + '</td><td class="num">' + nf(g.jobs.length) + '</td><td class="num">' + nf(g.qty) + '</td></tr>'; }).join('') +
+      '</tbody></table></div></section>';
+  }
   function freqTab() {
     var B = S.base;
     if (!B.rounds.length) return '<section class="panel"><p class="empty-note">' + esc(t(S.product ? 'm4.empty.product' : 'm4.empty.range')) + '</p></section>' + issuesCard();
-    return kpis() + heatSection() + partsTable() + prodsTable() + issuesCard();
+    return kpis() + histCard() + heatSection() + partsTable() + prodsTable() + issuesCard();
   }
 
   // ---------- 2. swap advice ----------
@@ -809,6 +845,8 @@
     else if (a === 'svload') loadScenario((S.saved || []).filter(function (x) { return x.id === v; })[0]);
     else if (a === 'svdel') PWH.freq.deleteScenario(v).then(function (l) { S.saved = l; render(); });
     else if (a === 'todash') PWH.app.go(6);
+    else if (a === 'histday') { var A = PWH.app, fd = A.activeFiles('daily').filter(function (x) { return x.planDate === v; })[0]; if (fd) { A.state.tab = 'daily'; A.state.sel.daily = fd.id; } A.go(1); }
+    else if (a === 'hist') { S.product = v; S.prodView = null; run(); setTimeout(function () { var h = $('#m4hist'); if (h) h.scrollIntoView({ block: 'start' }); }, 60); }
     else if (a === 'cprod') { S[S.tab === 'recs' ? 'recProd' : 'simProd'] = v; S.rcache = null; S.rp.before.floor = S.rp.after.floor = null; render(); var rpp = $('#m4rp-before'); if (rpp) rpp.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     else if (a === 'sprod') { S.simProd = v; S.rp.before.floor = S.rp.after.floor = null; render(); var rp = $('#m4rp-before'); if (rp) rp.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     else if (a === 'rfloor') { S.rp[k].floor = +v; S.root.querySelectorAll('[data-m4=rfloor][data-k=' + k + ']').forEach(function (b) { b.setAttribute('aria-pressed', b.getAttribute('data-v') === v); }); var KF = S.kits['rp-' + k]; if (KF) { KF.M.floor = +v; KF.fit(); KF.draw(); } }
