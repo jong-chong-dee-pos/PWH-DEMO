@@ -1560,6 +1560,23 @@
     'm4.hist.noline': "No U-Line",
     'm4.hist.open': "Open this day's plan in Module 1",
     'm4.hist.btn': "Show history",
+    'm4.idle.title': "Parts not moving",
+    'm4.idle.sub': "Stored in a bin but not used by any planned round {from}–{to} · based on production plans, not actual issues",
+    'm4.idle.short': "The range is only {n} days, so many Parts look idle. Choose 30 days or more (import the daily plans for those days first).",
+    'm4.idle.g.all': "All {n}",
+    'm4.idle.g.plan': "Not in plans {n}",
+    'm4.idle.g.bom': "Not in any BOM {n}",
+    'm4.idle.g.plan1': "Not in plans",
+    'm4.idle.g.bom1': "Not in any BOM",
+    'm4.idle.q': "Find Part, name or Bin",
+    'm4.idle.none': "Every stored Part is used by the plans in this range.",
+    'm4.idle.offmap': "Not on the layout",
+    'm4.idle.stock': "Stock",
+    'm4.idle.group': "Group",
+    'm4.idle.last': "Last used",
+    'm4.idle.still': "Idle",
+    'm4.idle.days': "{n} days",
+    'm4.idle.never': "Not in imported plans",
     'soon.m6': 'Reads the results of modules 1 to 5.'
   };
   var lang = 'th';

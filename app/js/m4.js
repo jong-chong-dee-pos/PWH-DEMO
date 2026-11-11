@@ -3,7 +3,7 @@
 (function (g) {
   var PWH = g.PWH, t = PWH.t;
   var S = {
-    root: null, d: null, base: null, tab: 'freq', from: '', to: '', product: '', q: '', sort: 'plan', open: null, partsMax: 60,
+    root: null, d: null, base: null, tab: 'freq', from: '', to: '', product: '', q: '', sort: 'plan', open: null, partsMax: 60, idleMax: 60, idleG: 'all', idleQ: '',
     prodView: null, prodRound: 0, hFloor: 0, hSel: {}, hq: '', kits: {}, recs: null, recOpen: null, sim: [], simMsg: '', simRes: null,
     simProd: null, view: null, busy: null, plantPick: {}, rp: { before: { floor: null, mode: '2d' }, after: { floor: null, mode: '2d' }, pv: { floor: null, mode: '2d' } }, recProd: null, stale: false, runId: 0, err: '', form: { a: '', ab: '', b: '', bb: '' }
   };
@@ -378,10 +378,68 @@
       H.rows.map(function (g) { return '<tr><td><button type="button" class="m4hd" data-m4="histday" data-v="' + esc(g.date) + '" title="' + esc(t('m4.hist.open')) + '">' + esc(fmtDate(g.date)) + '</button></td><td>' + esc(g.line || noline) + '</td><td class="code">' + esc(g.jobs.join(', ')) + '</td><td class="num">' + nf(g.jobs.length) + '</td><td class="num">' + nf(g.qty) + '</td></tr>'; }).join('') +
       '</tbody></table></div></section>';
   }
+  // ---------- Idle Parts: stored in a bin but not used by any planned round in the range ----------
+  // Plan based (not actual issues). Last use comes from every daily plan imported, not only the range.
+  var IDLE = { key: null, last: null, inBom: null };
+  function idleBase() {
+    var d = S.d; if (IDLE.key === d.key && IDLE.last) return IDLE;
+    var last = new Map(), inBom = new Set();
+    if (d.index) d.index.byPlant.forEach(function (pm) { pm.forEach(function (kids) { kids.forEach(function (q, c) { inBom.add(c); }); }); });
+    d.days.forEach(function (day) {
+      var seen = new Set();
+      day.rows.forEach(function (r) {
+        var job = String(r[0] == null ? '' : r[0]).trim(), prod = String(r[1] == null ? '' : r[1]).trim(), k = job + '|' + prod;
+        if (!job || !prod || seen.has(k)) return; seen.add(k);
+        var pp = PWH.freq.plantOf(d, job, prod), plants = pp.plant ? [pp.plant] : (pp.plants || []);
+        plants.forEach(function (pl) { PWH.freq.partsOf(d, prod, pl).forEach(function (c) { var x = last.get(c); if (!x || day.date > x) last.set(c, day.date); }); });
+      });
+    });
+    IDLE = { key: d.key, last: last, inBom: inBom }; return IDLE;
+  }
+  function idleRows() {
+    var d = S.d, I = idleBase(), used = new Set(), out = [];
+    S.base.parts.forEach(function (p) { if (p.n > 0) used.add(p.code); });
+    d.bins.forEach(function (list, code) {
+      if (used.has(code)) return;
+      var g = I.inBom.has(code) ? 'plan' : 'bom', last = I.last.get(code) || '';
+      list.forEach(function (b) {
+        var pt = PWH.freq.pointOf(d, b.bin);
+        out.push({ code: code, bin: b.bin, stock: +b.stock || 0, g: g, last: last, idle: last ? dayDiff(last, S.to) : null, pt: pt });
+      });
+    });
+    return out.sort(function (a, b) { return (a.g === b.g ? 0 : a.g === 'bom' ? -1 : 1) || ((b.idle == null ? 1e9 : b.idle) - (a.idle == null ? 1e9 : a.idle)) || b.stock - a.stock || (a.code < b.code ? -1 : a.code > b.code ? 1 : 0); });
+  }
+  function dayDiff(a, b) { return Math.round((Date.parse(b + 'T00:00:00Z') - Date.parse(a + 'T00:00:00Z')) / 864e5); }
+  function idleCard() {
+    if (S.product || !S.d.bins || !S.d.bins.size) return '';
+    var all = idleRows(), cnt = function (g) { return nf(new Set(all.filter(function (r) { return !g || r.g === g; }).map(function (r) { return r.code; })).size); }, q = S.idleQ.trim().toLowerCase();
+    var rows = all.filter(function (r) { return (S.idleG === 'all' || r.g === S.idleG) && (!q || r.code.toLowerCase().indexOf(q) >= 0 || r.bin.toLowerCase().indexOf(q) >= 0 || (partName(r.code) || '').toLowerCase().indexOf(q) >= 0); });
+    var span = dayDiff(S.from, S.to) + 1, shown = rows.slice(0, S.idleMax);
+    var parts = new Set(all.map(function (r) { return r.code; })).size;
+    var head = '<div class="chd"><div class="chd-l"><h2>' + esc(t('m4.idle.title')) + ' <span class="chip info">' + nf(parts) + '</span></h2><p class="sub">' + esc(t('m4.idle.sub', { from: fmtDate(S.from), to: fmtDate(S.to) })) + '</p></div></div>';
+    var warn = span < 30 ? '<p class="m4iwarn">' + esc(t('m4.idle.short', { n: span })) + '</p>' : '';
+    var segs = seg([['all', t('m4.idle.g.all', { n: cnt('') })], ['plan', t('m4.idle.g.plan', { n: cnt('plan') })], ['bom', t('m4.idle.g.bom', { n: cnt('bom') })]], S.idleG, 'idleg');
+    var tool = '<div class="m4itool">' + segs + '<input id="m4iq" type="search" placeholder="' + esc(t('m4.idle.q')) + '" value="' + esc(S.idleQ) + '" aria-label="' + esc(t('m4.idle.q')) + '"></div>';
+    if (!all.length) return '<section class="panel m4card" id="m4idle">' + head + '<p class="empty-note">' + esc(t('m4.idle.none')) + '</p></section>';
+    var body = shown.map(function (r) {
+      var pt = r.pt, where = pt.status === 'ok' || pt.status === 'unreach' ? floorTxt(pt.floor) + ' · ' + t('m4.level', { n: pt.level }) : t('m4.idle.offmap');
+      return '<tr><td class="m4pn"><span class="code">' + esc(r.code) + '</span><div class="sub2">' + esc(partName(r.code) || '–') + '</div></td>' +
+        '<td>' + locTag(r.bin) + '<div class="sub2">' + esc(where) + '</div></td>' +
+        '<td class="num">' + nf(r.stock) + '</td>' +
+        '<td>' + chip(r.g === 'bom' ? 'warn' : 'info', t('m4.idle.g.' + r.g + '1')) + '</td>' +
+        '<td>' + (r.last ? esc(fmtDate(r.last)) : '<span class="sub2">' + esc(t('m4.idle.never')) + '</span>') + '</td>' +
+        '<td class="num">' + (r.idle == null ? '–' : esc(t('m4.idle.days', { n: nf(Math.max(0, r.idle)) }))) + '</td>' +
+        '<td class="m4act">' + (pt.status === 'ok' ? '<button type="button" class="btn sm" data-m4="idlemap" data-v="' + esc(pt.rack) + '" data-k="' + esc(pt.floor) + '">' + esc(t('m4.act.map')) + '</button>' : '') + '</td></tr>';
+    }).join('');
+    return '<section class="panel m4card" id="m4idle">' + head + warn + tool +
+      (rows.length ? '<div class="tablebox m4tb"><table class="m4it"><thead><tr><th>' + esc(t('m4.col.part')) + '</th><th>Bin</th><th class="num">' + esc(t('m4.idle.stock')) + '</th><th>' + esc(t('m4.idle.group')) + '</th><th>' + esc(t('m4.idle.last')) + '</th><th class="num">' + esc(t('m4.idle.still')) + '</th><th></th></tr></thead><tbody>' + body + '</tbody></table></div>' +
+        (rows.length > S.idleMax ? '<div class="m4more"><span class="sub2">' + esc(t('m4.more', { n: S.idleMax, t: rows.length })) + '</span><button type="button" class="btn sm" data-m4="idlemore">' + esc(t('m4.more.btn')) + '</button></div>' : '')
+        : '<p class="empty-note">' + esc(t('m4.none.q')) + '</p>') + '</section>';
+  }
   function freqTab() {
     var B = S.base;
     if (!B.rounds.length) return '<section class="panel"><p class="empty-note">' + esc(t(S.product ? 'm4.empty.product' : 'm4.empty.range')) + '</p></section>' + issuesCard();
-    return kpis() + histCard() + heatSection() + partsTable() + prodsTable() + issuesCard();
+    return kpis() + histCard() + heatSection() + partsTable() + idleCard() + prodsTable() + issuesCard();
   }
 
   // ---------- 2. swap advice ----------
@@ -746,7 +804,7 @@
     function dates() { var a = f1.value, b = f2.value; if (!a || !b) return; if (b < a) { var x = a; a = b; b = x; } S.from = a; S.to = b; S.prodView = null; run(); }
     if (f1) f1.addEventListener('change', dates); if (f2) f2.addEventListener('change', dates);
     var pf = $('#m4prodf'); if (pf) pf.addEventListener('change', function () { var v = pf.value.trim(); if (v === S.product) return; S.product = v; S.prodView = null; run(); });
-    wireQ();
+    wireQ(); wireIQ();
     S.root.querySelectorAll('.m4hq').forEach(function (inp) {
       inp.addEventListener('input', function () { S.hq = inp.value; var K = S.kits.f; if (K) { K.M.hl = heatMatches(S.hq); K.draw(); } });
       inp.addEventListener('keydown', function (e) { if (e.key === 'Enter') { var K = S.kits.f, set = heatMatches(inp.value); if (K && set && set.size) K.zoomToRacks(Array.from(set)); } });
@@ -780,6 +838,10 @@
   function wireQ() {
     var q = $('#m4q'); if (!q || q.dataset.w) return; q.dataset.w = 1;
     q.addEventListener('input', function () { S.q = q.value; var pos = q.selectionStart; var sec = $('#m4parts'); if (sec) { var tmp = document.createElement('div'); tmp.innerHTML = partsTable(); sec.replaceWith(tmp.firstChild); var q2 = $('#m4q'); q2.focus(); q2.setSelectionRange(pos, pos); wireQ(); } });
+  }
+  function wireIQ() {
+    var q = $('#m4iq'); if (!q || q.dataset.w) return; q.dataset.w = 1;
+    q.addEventListener('input', function () { S.idleQ = q.value; S.idleMax = 60; var pos = q.selectionStart; var sec = $('#m4idle'); if (sec) { var tmp = document.createElement('div'); tmp.innerHTML = idleCard(); sec.replaceWith(tmp.firstChild); var q2 = $('#m4iq'); q2.focus(); q2.setSelectionRange(pos, pos); wireIQ(); } });
   }
   // Part search for the swap form: any part of the code (e.g. 11236) or of the name; Parts with a bin first
   function partHits(q) {
@@ -827,6 +889,9 @@
     else if (a === 'pchange') { S.showPlant = true; S.plantDraft = {}; render(); var pp = $('#m4plant'); if (pp) pp.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     else if (a === 'pclose') { S.showPlant = false; S.plantDraft = {}; render(); }
     else if (a === 'more') { S.partsMax += 60; render(); }
+    else if (a === 'idlemore') { S.idleMax += 60; render(); }
+    else if (a === 'idleg') { S.idleG = v; S.idleMax = 60; render(); }
+    else if (a === 'idlemap') { var fi2 = S.d.L.floors.map(function (f) { return f.id; }).indexOf(k); if (fi2 >= 0) S.hFloor = fi2; S.hSel.f = v; render(); var sec2 = $('#m4h-f'); if (sec2) sec2.scrollIntoView({ behavior: 'smooth', block: 'center' }); var K3 = S.kits.f; if (K3) K3.zoomToRacks([v]); }
     else if (a === 'prod') { S.prodView = S.prodView === v ? null : v; S.prodRound = 0; render(); var pv = $('#m4pv'); if (pv) pv.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
     else if (a === 'onmap') { e.stopPropagation(); selectRackOf(v); }
     else if (a === 'gopart') { S.q = v; S.open = v; render(); var pt = $('#m4parts'); if (pt) pt.scrollIntoView({ behavior: 'smooth', block: 'start' }); }

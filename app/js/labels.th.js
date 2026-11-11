@@ -1713,6 +1713,23 @@
   "m4.hist.noline": "ไม่ระบุ U-Line",   // No U-Line
   "m4.hist.open": "เปิดแผนวันนี้ในโมดูล 1",   // Open this day's plan in Module 1
   "m4.hist.btn": "ดูประวัติ",   // Show history
+  "m4.idle.title": "Part ที่ไม่เคลื่อนไหว",   // Parts not moving
+  "m4.idle.sub": "มีของใน Bin แต่ไม่ถูกใช้ในแผนผลิตช่วง {from}–{to} · นับจากแผนผลิต ไม่ใช่การเบิกจริง",   // Stored in a bin but not used by any planned round {from}–{to} · based on production plans, not actual issues
+  "m4.idle.short": "ช่วงที่เลือกมีแค่ {n} วัน Part ส่วนใหญ่จะดูเหมือนไม่เคลื่อนไหว ควรเลือก 30 วันขึ้นไป (ต้องนำเข้าแผนรายวันของวันเหล่านั้นก่อน)",   // The range is only {n} days, so many Parts look idle. Choose 30 days or more (import the daily plans for those days first).
+  "m4.idle.g.all": "ทั้งหมด {n}",   // All {n}
+  "m4.idle.g.plan": "ไม่อยู่ในแผนช่วงนี้ {n}",   // Not in plans {n}
+  "m4.idle.g.bom": "ไม่อยู่ใน BOM {n}",   // Not in any BOM {n}
+  "m4.idle.g.plan1": "ไม่อยู่ในแผนช่วงนี้",   // Not in plans
+  "m4.idle.g.bom1": "ไม่อยู่ใน BOM",   // Not in any BOM
+  "m4.idle.q": "ค้นหา Part, ชื่อ หรือ Bin",   // Find Part, name or Bin
+  "m4.idle.none": "Part ที่เก็บอยู่ทุกตัวถูกใช้ในแผนช่วงนี้",   // Every stored Part is used by the plans in this range.
+  "m4.idle.offmap": "ไม่อยู่บนผัง",   // Not on the layout
+  "m4.idle.stock": "สต็อก",   // Stock
+  "m4.idle.group": "กลุ่ม",   // Group
+  "m4.idle.last": "ใช้ล่าสุด",   // Last used
+  "m4.idle.still": "นิ่งมา",   // Idle
+  "m4.idle.days": "{n} วัน",   // {n} days
+  "m4.idle.never": "ไม่พบในแผนที่นำเข้า",   // Not in imported plans
   "soon.m6": "อ่านผลลัพธ์ของ Module 1 ถึง 5",   // Reads the results of modules 1 to 5.
   };
 })(window);

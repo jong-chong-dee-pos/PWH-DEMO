@@ -2387,3 +2387,9 @@ html[data-role="user"] [data-m5="tmove"], html[data-role="user"] [data-m5="tunse
 .m4hd:focus-visible { outline: 2px solid var(--accent, #6e56f7); outline-offset: 2px; border-radius: 4px; }
 .m4pvb { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start; }
 @media (max-width: 640px) { .m4hs { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+/* v61 — Module 4: idle Parts */
+.m4itool { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 2px 0 12px; }
+.m4itool input[type=search] { flex: 1 1 220px; max-width: 360px; }
+.m4iwarn { margin: 0 0 12px; padding: 8px 12px; border-radius: 8px; background: #fff6e0; color: #6b4a00; border: 1px solid #f1d58a; }
+.m4it td, .m4it th { white-space: nowrap; }
