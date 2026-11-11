@@ -1,6 +1,6 @@
-# Netlify: static site, no build step. The site is served from the repo root (index.html).
+# Netlify: static site, no build step. The site is served from app/ (app/index.html).
 [build]
-  publish = "."
+  publish = "app"
   command = ""
 
 [[headers]]
