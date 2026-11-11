@@ -1674,6 +1674,33 @@
   "au.forgot.tip": "ติดต่อแอดมินให้ตั้งรหัสใหม่ที่หน้าผู้ใช้",   // Ask an admin to set a new code for you on the Users page.
   "au.noacc": "ยังไม่มีบัญชี?",   // No account yet?
   "au.noacc.who": "ติดต่อแอดมิน",   // Ask an admin.
+  "bk.title": "สำรองและกู้คืนข้อมูล",   // Back up and restore
+  "bk.sub": "ไฟล์เดียวเก็บทุกอย่างในเครื่องนี้ ทั้งไฟล์ Excel ที่อัปโหลด การตั้งค่า กติกา สถานการณ์ที่บันทึกไว้ และบัญชีผู้ใช้",   // One file holds everything on this computer: uploaded Excel files, settings, rules, saved scenarios and accounts.
+  "bk.save.h": "สำรองข้อมูล",   // Back up
+  "bk.save.p": "บันทึกไฟล์สำรองเก็บไว้ หรือใช้ย้ายข้อมูลไปเครื่องอื่น",   // Save a backup file to keep, or to move the data to another computer.
+  "bk.save.btn": "บันทึกไฟล์สำรอง",   // Save backup file
+  "bk.save.busy": "กำลังเตรียมไฟล์สำรอง…",   // Preparing the backup file…
+  "bk.save.ok": "บันทึก {name} ({size}) แล้ว",   // Saved {name} ({size}).
+  "bk.save.declined": "ยกเลิกการบันทึกแล้ว",   // The save was cancelled.
+  "bk.save.fail": "บันทึกไฟล์สำรองในหน้านี้ไม่สำเร็จ",   // Could not save the backup file here.
+  "bk.load.h": "กู้คืนข้อมูล",   // Restore
+  "bk.load.p": "แทนที่ข้อมูลในเครื่องนี้ด้วยข้อมูลจากไฟล์สำรอง",   // Replace the data on this computer with a backup file.
+  "bk.load.btn": "เลือกไฟล์สำรอง…",   // Choose backup file…
+  "bk.sum.title": "ไฟล์สำรอง",   // Backup file
+  "bk.sum.when": "สร้างเมื่อ",   // Made
+  "bk.sum.by": "โดย",   // By
+  "bk.sum.files": "ไฟล์ข้อมูล",   // Data files
+  "bk.sum.users": "บัญชีผู้ใช้",   // Accounts
+  "bk.warn": "ข้อมูลทั้งหมดในเครื่องนี้จะถูกแทนที่ รวมถึงบัญชีผู้ใช้ หลังกู้คืนต้องเข้าสู่ระบบใหม่ด้วยบัญชีที่อยู่ในไฟล์สำรอง",   // Everything on this computer is replaced, including accounts. You will sign in again with an account from the backup.
+  "bk.warn.setup": "บัญชีและข้อมูลในไฟล์สำรองจะถูกนำมาใช้ในเครื่องนี้ จากนั้นเข้าสู่ระบบด้วยบัญชีที่อยู่ในไฟล์สำรอง",   // The accounts and data in the backup are used on this computer. Sign in with an account from the backup afterwards.
+  "bk.go": "กู้คืน",   // Restore
+  "bk.go.sure": "ยืนยันกู้คืน",   // Confirm restore
+  "bk.err.format": "ไฟล์นี้ไม่ใช่ไฟล์สำรองของ PWH",   // This is not a PWH backup file.
+  "bk.err.version": "ไฟล์สำรองนี้มาจาก PWH เวอร์ชันใหม่กว่า กรุณาอัปเดตก่อน",   // This backup comes from a newer PWH. Update this copy first.
+  "bk.err.read": "อ่านไฟล์ไม่ได้",   // The file could not be read.
+  "bk.err.write": "กู้คืนไม่สำเร็จ ข้อมูลในเครื่องนี้อาจไม่ครบ ลองกู้คืนอีกครั้ง",   // Restore did not finish. The data on this computer may be incomplete; try the restore again.
+  "bk.setup.link": "มีไฟล์สำรองข้อมูล? กู้คืนจากไฟล์",   // Have a backup file? Restore from it
+  "bk.note.restored": "กู้คืนข้อมูลแล้ว เข้าสู่ระบบด้วยบัญชีที่อยู่ในไฟล์สำรอง",   // Data restored. Sign in with an account from the backup.
   "soon.m6": "อ่านผลลัพธ์ของ Module 1 ถึง 5",   // Reads the results of modules 1 to 5.
   };
 })(window);

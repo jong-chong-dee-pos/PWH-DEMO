@@ -57,7 +57,18 @@
       all: function (s) { return run([s], 'readonly', function (t) { return t.objectStore(s).getAll(); }); },
       prefix: function (s, prefix) {
         return run([s], 'readonly', function (t) { return t.objectStore(s).getAll(IDBKeyRange.bound(prefix, prefix + '￿')); });
-      }
+      },
+      entries: function (s) {   // [[key, value], ...] in key order (for backups)
+        return open().then(function (db) {
+          return new Promise(function (res, rej) {
+            var out = [], t = db.transaction([s], 'readonly'), c = t.objectStore(s).openCursor();
+            c.onsuccess = function () { var cur = c.result; if (cur) { out.push([cur.key, cur.value]); cur.continue(); } };
+            t.oncomplete = function () { res(out); };
+            t.onerror = function () { rej(t.error); };
+          });
+        });
+      },
+      clear: function (s) { return run([s], 'readwrite', function (t) { t.objectStore(s).clear(); }); }
     };
   }
 
@@ -74,7 +85,9 @@
       del: function (s, k) { m[s].delete(k); return Promise.resolve(); },
       delPrefix: function (s, p) { Array.from(m[s].keys()).forEach(function (k) { if (k.indexOf(p) === 0) m[s].delete(k); }); return Promise.resolve(); },
       all: function (s) { return Promise.resolve(sorted(s, function () { return true; })); },
-      prefix: function (s, p) { return Promise.resolve(sorted(s, function (k) { return k.indexOf(p) === 0; })); }
+      prefix: function (s, p) { return Promise.resolve(sorted(s, function (k) { return k.indexOf(p) === 0; })); },
+      entries: function (s) { return Promise.resolve(Array.from(m[s].keys()).sort().map(function (k) { return [k, m[s].get(k)]; })); },
+      clear: function (s) { m[s].clear(); return Promise.resolve(); }
     };
   }
 
@@ -136,6 +149,20 @@
     }),
     getBuffer: guard(function (id) { return A().get('blobs', id); }),
     getMeta: guard(function (k) { return A().get('meta', k); }),
-    setMeta: guard(function (k, v) { return A().put('meta', k, v); })
+    setMeta: guard(function (k, v) { return A().put('meta', k, v); }),
+    STORES: STORES,
+    // every store as {store: [[key, value], ...]} (backups)
+    dumpAll: guard(function () {
+      var out = {};
+      return STORES.reduce(function (p, s) { return p.then(function () { return A().entries(s).then(function (e) { out[s] = e; }); }); }, Promise.resolve()).then(function () { return out; });
+    }),
+    // replace everything with a dump (restore); written in batches so a large backup does not need one huge transaction
+    loadAll: guard(function (dump) {
+      var ops = [];
+      STORES.forEach(function (s) { (dump[s] || []).forEach(function (kv) { ops.push({ s: s, k: kv[0], v: kv[1] }); }); });
+      var p = STORES.reduce(function (q, s) { return q.then(function () { return A().clear(s); }); }, Promise.resolve());
+      for (var i = 0; i < ops.length; i += 200) (function (part) { p = p.then(function () { return A().putMany(part); }); })(ops.slice(i, i + 200));
+      return p;
+    })
   };
 })(window);

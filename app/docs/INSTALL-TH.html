@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="th"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>คู่มือติดตั้ง PWH บน intranet</title>
+<link rel="stylesheet" href="fonts/fonts.css">
+<style>
+:root { --ink: #17142b; --muted: #5f5a78; --line: #e4e0f5; --soft: #f5f3ff; --accent: #6d4aff; --warn-bg: #fff4e5; --warn: #9a3412; }
+body { margin: 0; background: #fff; color: var(--ink); font: 16px/1.7 Anuphan, "Leelawadee UI", Tahoma, sans-serif; }
+main { max-width: 860px; margin: 0 auto; padding: 40px max(20px, env(safe-area-inset-left, 0px)) 80px; }
+h1 { font-size: 32px; line-height: 1.25; margin: 0 0 6px; }
+h2 { font-size: 22px; margin: 44px 0 10px; padding-top: 14px; border-top: 1px solid var(--line); }
+h3 { font-size: 18px; margin: 26px 0 6px; }
+p, li { max-width: 72ch; }
+.lede { color: var(--muted); margin: 0 0 18px; }
+.meta { color: var(--muted); font-size: 14px; }
+code, pre { font-family: "IBM Plex Mono", Consolas, monospace; font-size: 14px; }
+code { background: var(--soft); padding: 1px 6px; border-radius: 6px; }
+pre { background: #17142b; color: #ece8ff; padding: 14px 16px; border-radius: 12px; overflow-x: auto; line-height: 1.55; }
+.box { border: 1px solid var(--line); border-radius: 14px; padding: 14px 18px; margin: 16px 0; background: var(--soft); }
+.warn { background: var(--warn-bg); border-color: #fbd9b5; color: var(--warn); }
+table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 15px; }
+th, td { border: 1px solid var(--line); padding: 8px 10px; text-align: left; vertical-align: top; }
+th { background: var(--soft); font-weight: 600; }
+.toc { columns: 2; gap: 32px; padding-left: 20px; }
+@media (max-width: 640px) { .toc { columns: 1; } h1 { font-size: 26px; } }
+</style></head><body><main>
+
+<h1>คู่มือติดตั้ง PWH บน intranet</h1>
+<p class="lede">ระบบจัดการคลัง Part (PWH) สำหรับฝ่าย IT ระยะที่ 1: เปิดใช้งานบนเว็บเซิร์ฟเวอร์ภายในบริษัท</p>
+<p class="meta">ดูเลขเวอร์ชันได้ในไฟล์ <code>version.txt</code> ในชุดติดตั้ง</p>
+
+<ol class="toc">
+  <li><a href="#overview">ภาพรวม</a></li>
+  <li><a href="#req">สิ่งที่ต้องเตรียม</a></li>
+  <li><a href="#files">ไฟล์ในชุดติดตั้ง</a></li>
+  <li><a href="#iis">ติดตั้งบน IIS (Windows Server)</a></li>
+  <li><a href="#nginx">ติดตั้งบน Nginx (Linux)</a></li>
+  <li><a href="#apache">ติดตั้งบน Apache</a></li>
+  <li><a href="#check">ตรวจหลังติดตั้ง</a></li>
+  <li><a href="#data">ข้อมูลและการสำรองข้อมูล</a></li>
+  <li><a href="#move">ย้ายข้อมูลจากลิงก์ claude.ai</a></li>
+  <li><a href="#update">อัปเดตเวอร์ชัน</a></li>
+  <li><a href="#security">ความปลอดภัย</a></li>
+  <li><a href="#trouble">ปัญหาที่พบบ่อย</a></li>
+</ol>
+
+<h2 id="overview">1. ภาพรวม</h2>
+<p>PWH เป็นเว็บแอปแบบไฟล์ล้วน (HTML, CSS, JavaScript) ไม่มีโปรแกรมฝั่งเซิร์ฟเวอร์ และไม่ต้องใช้ฐานข้อมูลในระยะที่ 1 เซิร์ฟเวอร์ทำหน้าที่ส่งไฟล์ให้เบราว์เซอร์เท่านั้น</p>
+<ul>
+  <li><b>ไม่ต้องใช้อินเทอร์เน็ต</b> ฟอนต์และไลบรารีอ่าน Excel อยู่ในชุดติดตั้งครบ แอปไม่เรียกใช้เว็บภายนอกเลย และการตั้งค่าเซิร์ฟเวอร์ที่แนบมามีนโยบาย Content-Security-Policy ที่สั่งให้เบราว์เซอร์บล็อกการเชื่อมต่อออกนอกเซิร์ฟเวอร์ทุกชนิด</li>
+  <li><b>ข้อมูลเก็บในเบราว์เซอร์ของแต่ละเครื่อง</b> (IndexedDB) ไฟล์ Excel ที่อัปโหลด กติกา และบัญชีผู้ใช้ จะไม่ถูกส่งไปที่เซิร์ฟเวอร์ ดูรายละเอียดในหัวข้อ 8</li>
+  <li><b>เบราว์เซอร์ที่รองรับ</b> Microsoft Edge หรือ Google Chrome เวอร์ชันปัจจุบัน</li>
+</ul>
+
+<h2 id="req">2. สิ่งที่ต้องเตรียม</h2>
+<table>
+  <tr><th>รายการ</th><th>รายละเอียด</th></tr>
+  <tr><td>เว็บเซิร์ฟเวอร์</td><td>เลือกได้หนึ่งอย่าง: IIS 10 ขึ้นไป, Nginx หรือ Apache 2.4 พื้นที่ดิสก์ประมาณ 5 MB</td></tr>
+  <tr><td>ชื่อเว็บภายใน</td><td>เช่น <code>pwh.company.local</code> ชี้มาที่ IP ของเซิร์ฟเวอร์ใน DNS ภายใน</td></tr>
+  <tr><td>ใบรับรอง HTTPS ภายใน (แนะนำ)</td><td>ออกจาก CA ภายในของบริษัท เครื่องลูกข่ายต้องเชื่อถือ CA นี้ ถ้ายังไม่มี เปิดแบบ http ได้ แต่แนะนำให้เปลี่ยนเป็น HTTPS เมื่อพร้อม ดูหัวข้อ 11</td></tr>
+  <tr><td>เครื่องผู้ใช้</td><td>Edge หรือ Chrome ที่<b>ไม่ได้ปิด</b>การเก็บข้อมูลเว็บไซต์ (IndexedDB) ด้วย Group Policy และไม่ได้ตั้งให้ลบข้อมูลเว็บไซต์ทุกครั้งที่ปิดเบราว์เซอร์</td></tr>
+</table>
+
+<h2 id="files">3. ไฟล์ในชุดติดตั้ง</h2>
+<table>
+  <tr><th>ไฟล์ / โฟลเดอร์</th><th>ใช้ทำอะไร</th></tr>
+  <tr><td><code>index.html</code>, <code>css/</code>, <code>js/</code>, <code>vendor/</code>, <code>fonts/</code></td><td>ตัวแอป วางทั้งหมดไว้ในโฟลเดอร์เดียวกันตามโครงสร้างเดิม</td></tr>
+  <tr><td><code>web.config</code></td><td>การตั้งค่าสำหรับ IIS (ชนิดไฟล์ฟอนต์, header ความปลอดภัย, การแคช)</td></tr>
+  <tr><td><code>.htaccess</code></td><td>การตั้งค่าแบบเดียวกันสำหรับ Apache</td></tr>
+  <tr><td><code>_server/nginx-pwh.conf</code></td><td>ตัวอย่างการตั้งค่า Nginx</td></tr>
+  <tr><td><code>_server/csp.txt</code></td><td>นโยบาย Content-Security-Policy ฉบับเต็ม เผื่อต้องตั้งในอุปกรณ์อื่น เช่น reverse proxy</td></tr>
+  <tr><td><code>version.txt</code></td><td>เลขเวอร์ชันและวันเวลาที่สร้างชุดติดตั้ง</td></tr>
+  <tr><td><code>fonts/LICENSE-*.txt</code></td><td>สัญญาอนุญาตฟอนต์ Anuphan และ IBM Plex Mono (SIL Open Font License 1.1 ใช้ในองค์กรได้)</td></tr>
+</table>
+<div class="box">ไฟล์ <code>web.config</code>, <code>.htaccess</code> และโฟลเดอร์ <code>_server</code> ไม่ใช่ส่วนของแอป ถ้าไม่ได้ใช้เซิร์ฟเวอร์ชนิดนั้น จะลบทิ้งก็ได้</div>
+
+<h2 id="iis">4. ติดตั้งบน IIS (Windows Server)</h2>
+<ol>
+  <li>เปิด Server Manager แล้วเพิ่ม Role <b>Web Server (IIS)</b> ใช้แค่ <i>Static Content</i> กับ <i>Default Document</i> ก็พอ</li>
+  <li>แตกไฟล์ zip แล้วคัดลอกเนื้อหาในโฟลเดอร์ <code>pwh-intranet</code> ไปไว้ที่ เช่น <code>C:\inetpub\pwh</code></li>
+  <li>เปิด IIS Manager แล้วเลือก <b>Sites → Add Website</b>
+    <ul><li>Site name: <code>PWH</code></li><li>Physical path: <code>C:\inetpub\pwh</code></li><li>Binding: https, port 443, Host name <code>pwh.company.local</code> แล้วเลือกใบรับรองภายใน (ถ้ายังไม่มี ใช้ http port 80 ไปก่อน)</li></ul></li>
+  <li>ไม่ต้องตั้งค่าอื่น ไฟล์ <code>web.config</code> ที่แนบมาตั้งชนิดไฟล์ <code>.woff2</code>, header ความปลอดภัย และการแคชให้แล้ว</li>
+  <li>ให้สิทธิ์อ่านโฟลเดอร์แก่ <code>IIS_IUSRS</code> (ปกติมีอยู่แล้วเมื่อวางใน <code>C:\inetpub</code>)</li>
+</ol>
+
+<h2 id="nginx">5. ติดตั้งบน Nginx (Linux)</h2>
+<pre>sudo mkdir -p /var/www/pwh
+sudo unzip pwh-intranet-*.zip -d /tmp/pwh &amp;&amp; sudo cp -r /tmp/pwh/pwh-intranet/* /var/www/pwh/
+sudo cp /var/www/pwh/_server/nginx-pwh.conf /etc/nginx/conf.d/pwh.conf
+# แก้ server_name, root และ path ของใบรับรองใน /etc/nginx/conf.d/pwh.conf
+sudo nginx -t &amp;&amp; sudo systemctl reload nginx</pre>
+<p>ถ้ายังไม่มีใบรับรอง ให้ลบบล็อก <code>listen 443 ssl</code> และบรรทัดที่ redirect ออก แล้วใช้ <code>listen 80;</code> แทน</p>
+
+<h2 id="apache">6. ติดตั้งบน Apache</h2>
+<ol>
+  <li>คัดลอกไฟล์ทั้งหมดไปที่ DocumentRoot ของ virtual host เช่น <code>/var/www/pwh</code> โดยต้องมีไฟล์ <code>.htaccess</code> ไปด้วย</li>
+  <li>เปิด module ที่ต้องใช้: <code>sudo a2enmod headers</code></li>
+  <li>ใน virtual host ตั้ง <code>AllowOverride All</code> (หรืออย่างน้อย <code>FileInfo Indexes</code>) ให้โฟลเดอร์นี้ แล้ว <code>sudo systemctl reload apache2</code></li>
+</ol>
+
+<h2 id="check">7. ตรวจหลังติดตั้ง</h2>
+<ol>
+  <li>เปิด <code>https://pwh.company.local/</code> ด้วย Edge หรือ Chrome ต้องเห็นหน้า <b>ตั้งค่าครั้งแรก</b> พร้อมภาพคลังที่มีพนักงานเคลื่อนไหว</li>
+  <li>เปิด <code>/version.txt</code> ต้องเห็นเลขเวอร์ชันตรงกับชุดที่ติดตั้ง</li>
+  <li>กด F12 เปิดแท็บ <b>Network</b> แล้วรีเฟรชหน้า ทุกรายการต้องมาจาก <code>pwh.company.local</code> เท่านั้น และแท็บ <b>Console</b> ต้องไม่มีข้อความสีแดงเรื่อง Content-Security-Policy</li>
+  <li>ตัวอักษรภาษาไทยต้องเป็นฟอนต์ Anuphan ไม่ใช่ Tahoma ถ้าเป็น Tahoma ดูหัวข้อ 12</li>
+  <li>สร้างบัญชีแอดมินคนแรก แล้วลองอัปโหลดไฟล์ Excel หนึ่งไฟล์ในโมดูล 1</li>
+</ol>
+
+<h2 id="data">8. ข้อมูลและการสำรองข้อมูล (สำคัญ)</h2>
+<div class="box warn"><b>ในระยะที่ 1 ข้อมูลไม่ได้อยู่บนเซิร์ฟเวอร์</b> เบราว์เซอร์แต่ละเครื่องเก็บข้อมูลของตัวเอง แยกตามชื่อเว็บที่เปิด</div>
+<ul>
+  <li>เครื่องแต่ละเครื่อง หรือผู้ใช้ Windows แต่ละคน มีข้อมูลและบัญชีผู้ใช้แยกกัน แอดมินต้องตั้งค่าในเครื่องที่ใช้งาน</li>
+  <li><b>ถ้าเปลี่ยนชื่อเว็บ พอร์ต หรือเปลี่ยนจาก http เป็น https</b> เบราว์เซอร์จะมองว่าเป็นเว็บใหม่ และข้อมูลจะเริ่มจากว่าง ให้สำรองข้อมูลก่อนเปลี่ยน แล้วกู้คืนหลังเปลี่ยน ควรตัดสินใจชื่อเว็บและ https ให้เรียบร้อยก่อนเริ่มใช้งานจริง</li>
+  <li>การล้างข้อมูลเบราว์เซอร์ (Clear browsing data → Cookies and site data) จะลบข้อมูล PWH ในเครื่องนั้น</li>
+  <li><b>วิธีสำรอง:</b> แอดมินเข้าเมนู <b>ผู้ใช้</b> แล้วไปที่หัวข้อ <b>สำรองและกู้คืนข้อมูล</b> กด <b>บันทึกไฟล์สำรอง</b> จะได้ไฟล์ <code>pwh-backup-ปีเดือนวัน-เวลา.json</code> ที่รวมไฟล์ Excel ทั้งหมด การตั้งค่า กติกา สถานการณ์จำลอง และบัญชีผู้ใช้ ขนาดประมาณ 20–40 MB</li>
+  <li><b>แนะนำ:</b> สำรองทุกสัปดาห์และทุกครั้งที่อัปโหลดข้อมูลชุดใหญ่ เก็บไฟล์ไว้ในไดรฟ์กลางของบริษัทที่จำกัดสิทธิ์ เพราะไฟล์สำรองมีข้อมูลการผลิตและบัญชีผู้ใช้ (รหัสพนักงานถูกเก็บแบบ hash ไม่ใช่ตัวเลขจริง)</li>
+  <li><b>วิธีกู้คืน:</b> ในเครื่องที่มีบัญชีแล้ว ไปที่เมนู <b>ผู้ใช้ → เลือกไฟล์สำรอง → กู้คืน → ยืนยันกู้คืน</b> ในเครื่องใหม่ที่ยังไม่มีบัญชี ใช้ลิงก์ <b>มีไฟล์สำรองข้อมูล? กู้คืนจากไฟล์</b> ใต้หน้าตั้งค่าครั้งแรก การกู้คืนจะแทนที่ข้อมูลทั้งหมดในเครื่องนั้น จากนั้นเข้าสู่ระบบด้วยบัญชีที่อยู่ในไฟล์สำรอง</li>
+</ul>
+
+<h2 id="move">9. ย้ายข้อมูลจากลิงก์ claude.ai</h2>
+<ol>
+  <li>เปิดลิงก์ PWH เดิมบน claude.ai แล้วเข้าสู่ระบบด้วยบัญชีแอดมิน</li>
+  <li>ไปที่เมนู <b>ผู้ใช้ → บันทึกไฟล์สำรอง</b> แล้วกดยืนยันการบันทึกไฟล์ที่ claude.ai แสดง</li>
+  <li>เปิด PWH บน intranet ในเครื่องที่จะใช้งาน ที่หน้าตั้งค่าครั้งแรก กด <b>มีไฟล์สำรองข้อมูล? กู้คืนจากไฟล์</b> แล้วเลือกไฟล์ที่ได้</li>
+  <li>เข้าสู่ระบบด้วยบัญชีเดิม ข้อมูล บัญชี และรหัสพนักงานใช้ได้เหมือนเดิม</li>
+</ol>
+
+<h2 id="update">10. อัปเดตเวอร์ชัน</h2>
+<ol>
+  <li>แนะนำให้แอดมินสำรองข้อมูลก่อน (หัวข้อ 8)</li>
+  <li>แตกไฟล์ zip เวอร์ชันใหม่ แล้วคัดลอกทับไฟล์เดิมทั้งหมดในโฟลเดอร์ของเว็บ</li>
+  <li>ผู้ใช้เปิดหน้าเว็บใหม่หรือกด F5 ข้อมูลในเบราว์เซอร์ยังอยู่ครบ การตั้งค่า <code>Cache-Control: no-cache</code> ทำให้เบราว์เซอร์ตรวจไฟล์ใหม่ทุกครั้ง จึงไม่ต้องล้างแคช</li>
+</ol>
+
+<h2 id="security">11. ความปลอดภัย</h2>
+<ul>
+  <li><b>ไม่มีข้อมูลออกนอกเครือข่าย</b> แอปไม่มีโค้ดส่งข้อมูลออก และ Content-Security-Policy (<code>connect-src 'self'</code>, <code>default-src 'self'</code>) สั่งให้เบราว์เซอร์บล็อกการเชื่อมต่อไปที่อื่นทั้งหมด</li>
+  <li><b>ระบบล็อกอินในระยะที่ 1</b> ใช้แบ่งหน้าที่ระหว่างแอดมินกับผู้ใช้งาน แต่ยังไม่ใช่การป้องกันระดับเซิร์ฟเวอร์ เพราะข้อมูลและบัญชีอยู่ในเบราว์เซอร์ ผู้ที่ใช้เครื่องมือนักพัฒนาของเบราว์เซอร์ได้ยังเข้าถึงข้อมูลในเครื่องนั้นได้ ระยะที่ 2 (ข้อมูลกลางบนเซิร์ฟเวอร์) จะแก้เรื่องนี้</li>
+  <li><b>HTTPS</b> แนะนำให้ใช้ แม้เปิดแบบ http แอปก็ยังทำงานครบ รวมถึงการเข้ารหัสรหัสพนักงานด้วย SHA-256 แต่ HTTPS ป้องกันการดักอ่านในวง LAN และควรตั้งก่อนเริ่มใช้งานจริงตามเหตุผลในหัวข้อ 8</li>
+  <li><b>จำกัดการเข้าถึง</b> ถ้าต้องการ จำกัดให้เปิดได้เฉพาะวง LAN หรือ VLAN ของคลังด้วยไฟร์วอลล์หรือการตั้งค่าเว็บเซิร์ฟเวอร์</li>
+</ul>
+
+<h2 id="trouble">12. ปัญหาที่พบบ่อย</h2>
+<table>
+  <tr><th>อาการ</th><th>สาเหตุและวิธีแก้</th></tr>
+  <tr><td>หน้าเว็บว่างขาว</td><td>ไฟล์ใน <code>js/</code> ไม่ครบ หรือเซิร์ฟเวอร์ส่งไฟล์ .js ด้วยชนิดผิด กด F12 ดูแท็บ Console แล้วคัดลอกไฟล์ใหม่ทั้งชุด</td></tr>
+  <tr><td>ภาษาไทยเป็นฟอนต์ Tahoma</td><td>เซิร์ฟเวอร์ไม่รู้จักชนิดไฟล์ <code>.woff2</code> บน IIS ตรวจว่ามีไฟล์ <code>web.config</code> อยู่ บน Nginx หรือ Apache ตรวจบรรทัด <code>font/woff2</code></td></tr>
+  <tr><td>IIS แจ้ง error 500.19 หลังวาง web.config</td><td>มีการตั้งชนิดไฟล์หรือ header เดียวกันไว้แล้วที่ระดับเซิร์ฟเวอร์ ลบบรรทัดที่ซ้ำออกจาก <code>web.config</code></td></tr>
+  <tr><td>Console มีข้อความ Content-Security-Policy สีแดง</td><td>อุปกรณ์อื่น เช่น proxy หรือ load balancer ตั้ง CSP ซ้อน ให้ใช้ค่าใน <code>_server/csp.txt</code> เพียงชุดเดียว</td></tr>
+  <tr><td>ข้อมูลหายหลังปิดเบราว์เซอร์</td><td>นโยบายของเครื่องลบข้อมูลเว็บไซต์ตอนปิดเบราว์เซอร์ หรือเปิดในโหมดส่วนตัว (InPrivate หรือ Incognito) ให้ยกเว้นชื่อเว็บ PWH จากนโยบายนั้น แล้วกู้คืนจากไฟล์สำรอง</td></tr>
+  <tr><td>ข้อมูลว่างหลังเปลี่ยนชื่อเว็บหรือเปลี่ยนเป็น https</td><td>เป็นพฤติกรรมปกติของเบราว์เซอร์ (หัวข้อ 8) ให้กู้คืนจากไฟล์สำรอง</td></tr>
+  <tr><td>บันทึกไฟล์สำรองแล้วไม่มีไฟล์</td><td>ตรวจว่าเบราว์เซอร์อนุญาตการดาวน์โหลดจากเว็บนี้ และดูในโฟลเดอร์ Downloads</td></tr>
+</table>
+
+<h2>ระยะถัดไป</h2>
+<p>ระยะที่ 2 จะเพิ่มตัวบริการข้อมูลและฐานข้อมูลบนเซิร์ฟเวอร์เดียวกัน เพื่อให้ทุกเครื่องใช้ข้อมูลชุดเดียวกันและตรวจสิทธิ์ที่เซิร์ฟเวอร์ ข้อมูลที่ใช้ในระยะที่ 1 ย้ายเข้าได้ด้วยไฟล์สำรองข้อมูลชุดเดียวกันนี้</p>
+
+</main></body></html>

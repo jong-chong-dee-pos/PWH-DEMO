@@ -744,8 +744,8 @@
       var f = S.files.filter(function (x) { return x.id === id; })[0];
       PWH.db.getBuffer(id).then(function (buf) {
         if (!buf) return;
-        var url = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
-        var a = document.createElement('a'); a.href = url; a.download = f.name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+        var name = /\.xlsx$/i.test(f.name) ? f.name : f.name.replace(/\.[^.]*$/, '') + '.xlsx';
+        PWH.saveFile(name, buf, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet').catch(function () {});
       });
     }
     else if (act === 'delete') {
@@ -779,7 +779,8 @@
   // ---------- start ----------
   function start() {
     PWH.auth.onSignedOut(function (why) { S.module = 1; S.msgs = []; S.confirm = S.confirmUse = null; S.ask = null; PWH.gate.show('login', why); });
-    PWH.auth.ready().then(function (st) { if (st === 'in') enter(); else PWH.gate.show(st, st === 'idle' ? 'idle' : ''); })
+    var note = ''; try { note = sessionStorage.getItem('pwh-note') || ''; sessionStorage.removeItem('pwh-note'); } catch (e) {}
+    PWH.auth.ready().then(function (st) { if (st === 'in') enter(); else PWH.gate.show(st, st === 'idle' ? 'idle' : note); })
       .catch(function (e) { console.error(e); PWH.gate.show('login'); });
   }
   function enter() {

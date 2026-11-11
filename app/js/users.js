@@ -373,7 +373,8 @@
   }
   function show(mode, why) {
     G.mode = mode === 'setup' ? 'setup' : 'login'; G.err = ''; G.busy = false;
-    G.note = why === 'idle' ? t('au.note.idle') : why === 'out' ? t('au.note.out') : why === 'other' ? t('au.note.other') : '';
+    G.note = why === 'idle' ? t('au.note.idle') : why === 'out' ? t('au.note.out') : why === 'other' ? t('au.note.other') : why === 'restored' ? t('bk.note.restored') : '';
+    G.bk = null;
     document.documentElement.classList.remove('pwh-m3');
     render();
   }
@@ -382,12 +383,15 @@
   }
   function render() {
     var lang = PWH.getLang(), setup = G.mode === 'setup';
-    var form = setup
+    var form = setup && G.bk
+      ? '<h1>' + esc(t('bk.load.h')) + '</h1><p class="glede">' + esc(t('bk.load.p')) + '</p><div class="gbk">' + bkSummary(G.bk, 'g') + '</div><p class="gerr" role="alert">' + esc(G.err) + '</p>'
+      : setup
       ? '<h1>' + esc(t('au.setup.title')) + '</h1><p class="glede">' + esc(t('au.setup.sub')) + '</p>' +
         field('gemail', 'email', t('au.email'), 'username') + field('gname', 'text', t('au.name'), 'name') +
         pin('gcode', t('au.code'), 'new-password') + pin('gcode2', t('au.code2'), 'new-password') +
         '<p class="gerr" role="alert">' + esc(G.err) + '</p><button class="btn primary gbtn" type="submit"' + (G.busy ? ' disabled' : '') + '>' + esc(t('au.setup.go')) + '</button>' +
-        '<p class="gfoot">' + esc(t('au.setup.foot')) + '</p>'
+        '<p class="gfoot">' + esc(t('au.setup.foot')) + '</p>' +
+        '<div class="gbk"><label class="glink">' + esc(t('bk.setup.link')) + '<input type="file" id="gbkfile" accept=".json,application/json" hidden></label></div>'
       : '<h1>' + esc(t('au.login.title')) + '</h1><p class="glede">' + esc(t('au.login.sub')) + '</p>' +
         (G.note ? '<p class="gnote" role="status">' + esc(G.note) + '</p>' : '') +
         field('gemail', 'email', t('au.email'), 'username', G.email) +
@@ -401,7 +405,7 @@
       '<main class="gmain"><div class="lang" role="group" aria-label="Language"><button type="button" data-gl="th" aria-pressed="' + (lang === 'th') + '">TH</button><button type="button" data-gl="en" aria-pressed="' + (lang === 'en') + '">EN</button></div>' +
       '<form class="gform" id="gform" novalidate><div class="glogo">' + logo(52) + '<span><b>PWH</b><small>Part Warehouse</small></span></div>' + form + '</form></main></div>';
     wire(); startLoop();
-    var first = $(setup ? '#gemail' : (G.email ? '#gcode' : '#gemail')); if (first) first.focus();
+    var first = $(setup && G.bk ? '.gbk [data-bk=go]' : setup ? '#gemail' : (G.email ? '#gcode' : '#gemail')); if (first) first.focus();
   }
   function digits(el) { var v = el.value.replace(/\D/g, '').slice(0, 4); if (v !== el.value) el.value = v; return v; }
   function paintPin(el) {
@@ -410,6 +414,12 @@
     return v;
   }
   function wire() {
+    var bf = $('#gbkfile'); if (bf) bf.addEventListener('change', function () { pickBackup(bf.files[0], function (o) { G.bk = o; render(); }, function (m) { G.err = m; render(); }); });
+    document.querySelectorAll('.gbk [data-bk]').forEach(function (b) { b.addEventListener('click', function () {
+      var a = b.getAttribute('data-bk');
+      if (a === 'cancel') { G.bk = null; render(); }
+      else if (a === 'go') { b.disabled = true; doRestore(G.bk); }
+    }); });
     document.querySelectorAll('[data-gl]').forEach(function (b) { b.addEventListener('click', function () { G.email = ($('#gemail') || {}).value || G.email; PWH.setLang(b.getAttribute('data-gl')); t = PWH.t; render(); }); });
     document.querySelectorAll('.gpin input').forEach(function (el) {
       el.addEventListener('input', function () {
@@ -492,7 +502,8 @@
     if (!PWH.auth.can('users.manage')) { v.innerHTML = '<div class="panel">' + esc(t('au.ro.denied')) + '</div>'; return; }
     v.innerHTML = '<div class="ph"><div class="ph-l"><div class="cap">' + esc(t('au.cap2')) + '</div><h1>' + esc(t('nav.users')) + '</h1><p class="lede">' + esc(t('au.lede')) + '</p></div></div>' +
       '<p class="ulocal">' + esc(t('au.local')) + '</p>' +
-      '<div class="ugrid">' + tableHtml() + formHtml() + '</div>' + matrix();
+      '<div class="ugrid">' + tableHtml() + formHtml() + '</div>' + backupPanel() + matrix();
+    var uf = $('#ubkfile'); if (uf) uf.addEventListener('change', function () { pickBackup(uf.files[0], function (o) { U.bk = o; U.bkMsg = null; renderUsers(); }, function (m) { U.bkMsg = ['bad', m]; renderUsers(); }); });
     var f = $('#uform'); if (f) f.addEventListener('submit', function (e) { e.preventDefault(); saveForm(); });
     var c = $('#ucode'); if (c) c.addEventListener('input', function () { var x = c.value.replace(/\D/g, '').slice(0, 4); if (x !== c.value) c.value = x; });
   }
@@ -532,5 +543,49 @@
   function roNote(key) { return '<p class="ronote"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>' + esc(t(key || 'au.ro.note')) + '</p>'; }
 
   PWH.gate = { show: show, logo: logo, _frame: function (t) { var r = $('.gate'); if (r) frame(r, t); }, _T: TL.T };
-  PWH.users = { mount: function (root) { U.root = root; U.edit = 'new'; U.msg = null; U.confirm = null; U.draft = null; renderUsers(); }, roNote: roNote };
+  /* ---------- backup / restore ---------- */
+  function fmtSize(n) { return n > 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; }
+  function bkSummary(o, scope) {
+    var h = o.head, when = fmtDT(Date.parse(h.createdAt));
+    return '<div class="bksum"><b>' + esc(t('bk.sum.title')) + '</b>' +
+      '<dl><dt>' + esc(t('bk.sum.when')) + '</dt><dd>' + when + '</dd><dt>' + esc(t('bk.sum.by')) + '</dt><dd>' + esc(h.createdBy || '–') + '</dd>' +
+      '<dt>' + esc(t('bk.sum.files')) + '</dt><dd>' + (h.counts && h.counts.files || 0) + '</dd><dt>' + esc(t('bk.sum.users')) + '</dt><dd>' + (h.counts && h.counts.users || 0) + '</dd></dl>' +
+      '<p class="bkwarn">' + esc(t(scope === 'g' ? 'bk.warn.setup' : 'bk.warn')) + '</p>' +
+      '<div class="uacts"><button type="button" class="btn primary" data-bk="go">' + esc(t('bk.go')) + '</button><button type="button" class="btn" data-bk="cancel">' + esc(t('au.f.cancel')) + '</button></div></div>';
+  }
+  function pickBackup(file, ok, bad) {
+    if (!file) return;
+    PWH.backup.read(file).then(ok).catch(function (e) { bad(t('bk.err.' + ((e && e.code) || 'read'))); });
+  }
+  function doRestore(o) {
+    PWH.backup.restore(o).then(function () {
+      try { localStorage.removeItem('pwh-session'); sessionStorage.setItem('pwh-note', 'restored'); } catch (e) {}
+      location.reload();   // every module starts again from the restored data
+    }).catch(function () { if (U.root) { U.bkMsg = ['bad', t('bk.err.write')]; renderUsers(); } else { G.err = t('bk.err.write'); render(); } });
+  }
+  function backupPanel() {
+    return '<section class="panel ubk"><h2>' + esc(t('bk.title')) + '</h2><p class="sub">' + esc(t('bk.sub')) + '</p>' +
+      '<div class="ubk-grid"><div class="ubk-col"><h3>' + esc(t('bk.save.h')) + '</h3><p class="sub2">' + esc(t('bk.save.p')) + '</p><button type="button" class="btn primary" data-u="bksave">' + esc(t('bk.save.btn')) + '</button></div>' +
+      '<div class="ubk-col"><h3>' + esc(t('bk.load.h')) + '</h3><p class="sub2">' + esc(t('bk.load.p')) + '</p>' +
+      (U.bk ? bkSummary(U.bk, 'u') : '<label class="btn">' + esc(t('bk.load.btn')) + '<input type="file" id="ubkfile" accept=".json,application/json" hidden></label>') + '</div></div>' +
+      (U.bkMsg ? '<p class="umsg ' + U.bkMsg[0] + '" role="' + (U.bkMsg[0] === 'bad' ? 'alert' : 'status') + '">' + esc(U.bkMsg[1]) + '</p>' : '') + '</section>';
+  }
+  document.addEventListener('click', function (e) {
+    var el = e.target.closest('[data-u="bksave"], .ubk [data-bk]'); if (!el || !U.root || !U.root.contains(el)) return;
+    if (el.getAttribute('data-u') === 'bksave') {
+      el.disabled = true; U.bkMsg = ['ok', t('bk.save.busy')]; var m0 = $('.ubk .umsg');
+      PWH.backup.make().then(function (b) {
+        return PWH.saveFile(b.name, b.text, 'application/json').then(function () { U.bkMsg = ['ok', t('bk.save.ok', { name: b.name, size: fmtSize(b.bytes) })]; });
+      }).catch(function (er) { U.bkMsg = ['bad', t(er && er.code === 'declined' ? 'bk.save.declined' : 'bk.save.fail')]; }).then(renderUsers);
+      return;
+    }
+    var a = el.getAttribute('data-bk');
+    if (a === 'cancel') { U.bk = null; renderUsers(); }
+    else if (a === 'go') {
+      if (!U.bkSure) { U.bkSure = true; el.textContent = t('bk.go.sure'); el.classList.add('danger'); setTimeout(function () { U.bkSure = false; }, 5000); return; }
+      U.bkSure = false; el.disabled = true; doRestore(U.bk);
+    }
+  });
+
+  PWH.users = { mount: function (root) { U.bk = null; U.bkMsg = null; U.root = root; U.edit = 'new'; U.msg = null; U.confirm = null; U.draft = null; renderUsers(); }, roNote: roNote };
 })(window);

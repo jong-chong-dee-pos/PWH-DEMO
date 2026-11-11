@@ -41,8 +41,29 @@
   function hash(code, s) {
     var txt = 'pwh:' + s + ':' + code;
     if (g.crypto && g.crypto.subtle && g.TextEncoder) return g.crypto.subtle.digest('SHA-256', new TextEncoder().encode(txt)).then(hex);
-    var h = 2166136261; for (var i = 0; i < txt.length; i++) { h ^= txt.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }   // fallback when the browser has no Web Crypto
-    return Promise.resolve('f' + h.toString(16));
+    return Promise.resolve(sha256(txt));   // plain-http intranet: the browser hides Web Crypto, same SHA-256 in code so hashes match everywhere
+  }
+  function sha256(str) {
+    var bytes = unescape(encodeURIComponent(str)), K = [], H = [], i, j;
+    function isPrime(n) { for (var f = 2; f * f <= n; f++) if (n % f === 0) return false; return true; }
+    for (var c = 2, n = 0; n < 64; c++) if (isPrime(c)) { if (n < 8) H[n] = (Math.pow(c, 1 / 2) * 4294967296) | 0; K[n++] = (Math.pow(c, 1 / 3) * 4294967296) | 0; }
+    var l = bytes.length, words = [];
+    for (i = 0; i < l; i++) words[i >> 2] |= bytes.charCodeAt(i) << (24 - (i % 4) * 8);
+    words[l >> 2] |= 0x80 << (24 - (l % 4) * 8);
+    words[(((l + 8) >> 6) << 4) + 15] = l * 8;
+    function rot(x, n) { return (x >>> n) | (x << (32 - n)); }
+    for (j = 0; j < words.length; j += 16) {
+      var w = [], a = H[0], b = H[1], cc = H[2], d = H[3], e = H[4], f = H[5], gg = H[6], h = H[7];
+      for (i = 0; i < 64; i++) {
+        if (i < 16) w[i] = words[j + i] | 0;
+        else { var s0 = rot(w[i - 15], 7) ^ rot(w[i - 15], 18) ^ (w[i - 15] >>> 3), s1 = rot(w[i - 2], 17) ^ rot(w[i - 2], 19) ^ (w[i - 2] >>> 10); w[i] = (w[i - 16] + s0 + w[i - 7] + s1) | 0; }
+        var t1 = (h + (rot(e, 6) ^ rot(e, 11) ^ rot(e, 25)) + ((e & f) ^ (~e & gg)) + K[i] + w[i]) | 0;
+        var t2 = ((rot(a, 2) ^ rot(a, 13) ^ rot(a, 22)) + ((a & b) ^ (a & cc) ^ (b & cc))) | 0;
+        h = gg; gg = f; f = e; e = (d + t1) | 0; d = cc; cc = b; b = a; a = (t1 + t2) | 0;
+      }
+      H[0] = (H[0] + a) | 0; H[1] = (H[1] + b) | 0; H[2] = (H[2] + cc) | 0; H[3] = (H[3] + d) | 0; H[4] = (H[4] + e) | 0; H[5] = (H[5] + f) | 0; H[6] = (H[6] + gg) | 0; H[7] = (H[7] + h) | 0;
+    }
+    return H.map(function (x) { return ('00000000' + (x >>> 0).toString(16)).slice(-8); }).join('');
   }
   function pub(u) { return u ? { id: u.id, email: u.email, name: u.name, role: u.role, active: u.active !== false, createdAt: u.createdAt, lastLogin: u.lastLogin || null } : null; }
   function find(id) { return A.users.filter(function (u) { return u.id === id; })[0] || null; }
@@ -170,6 +191,8 @@
     ready: ready, setup: setup, login: login, logout: function () { signOut('out'); }, can: can, me: function () { return A.me; },
     list: list, addUser: addUser, updateUser: updateUser, removeUser: removeUser, okEmail: okEmail, okCode: okCode,
     onSignedOut: function (fn) { A.onOut = fn; }, PERMS: PERMS, IDLE_MS: IDLE_MS,
-    useStore: function (s) { store = s; }   // swap in a central store later
+    useStore: function (s) { store = s; },   // swap in a central store later
+    reload: function () { return store.load().then(function (l) { A.users = l; }); },
+    _sha256: sha256, _hash: hash
   };
 })(window);
